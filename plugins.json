@@ -1,0 +1,23 @@
+[
+    {
+        "iconUrl": "https://raw.githubusercontent.com/adamwolker21/TestPlugins/refs/heads/master/WeCima/images.jpeg",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/adamwolker21/TestPlugins",
+        "fileSize": 23115,
+        "status": 1,
+        "language": "ar",
+        "authors": [
+            "adamwolker21"
+        ],
+        "tvTypes": [
+            "TvSeries",
+            "Movie",
+            "AsianDrama"
+        ],
+        "version": 3,
+        "internalName": "WeCima",
+        "description": "WeCima",
+        "url": "https://raw.githubusercontent.com/adamwolker21/TestPlugins/builds/WeCima.cs3",
+        "name": "WeCima"
+    }
+]
