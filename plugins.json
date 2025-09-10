@@ -1,0 +1,23 @@
+[
+    {
+        "iconUrl": "https://asia2tv.com/frontend/default/assets/images/logo.png?ver=1.2",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/adamwolker21/TestPlugins",
+        "fileSize": 21647,
+        "status": 1,
+        "language": "ar",
+        "authors": [
+            "adamwolker21"
+        ],
+        "tvTypes": [
+            "TvSeries",
+            "Movie",
+            "AsianDrama"
+        ],
+        "version": 37,
+        "internalName": "Asia2tv",
+        "description": "Asia2TV Kdrama Cdrama",
+        "url": "https://raw.githubusercontent.com/adamwolker21/TestPlugins/builds/Asia2tv.cs3",
+        "name": "Asia2tv"
+    }
+]
