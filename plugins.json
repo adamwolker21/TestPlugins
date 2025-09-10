@@ -1,0 +1,43 @@
+[
+    {
+        "iconUrl": "https://www.faselhds.life/icon-faselplud.png",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/adamwolker21/TestPlugins",
+        "fileSize": 17461,
+        "status": 1,
+        "language": "ar",
+        "authors": [
+            "adamwolker21"
+        ],
+        "tvTypes": [
+            "Movie",
+            "TvSeries"
+        ],
+        "version": 1,
+        "internalName": "EgyDead",
+        "description": "EgyDead",
+        "url": "https://raw.githubusercontent.com/adamwolker21/TestPlugins/builds/EgyDead.cs3",
+        "name": "EgyDead"
+    },
+    {
+        "iconUrl": "https://raw.githubusercontent.com/adamwolker21/TestPlugins/refs/heads/master/WeCima/images.jpeg",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/adamwolker21/TestPlugins",
+        "fileSize": 21934,
+        "status": 1,
+        "language": "ar",
+        "authors": [
+            "adamwolker21"
+        ],
+        "tvTypes": [
+            "TvSeries",
+            "Movie",
+            "AsianDrama"
+        ],
+        "version": 3,
+        "internalName": "WeCima",
+        "description": "WeCima",
+        "url": "https://raw.githubusercontent.com/adamwolker21/TestPlugins/builds/WeCima.cs3",
+        "name": "WeCima"
+    }
+]
