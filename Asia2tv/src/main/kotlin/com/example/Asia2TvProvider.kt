@@ -10,7 +10,7 @@ data class PlayerAjaxResponse(
     val embed_url: String
 )
 
-// v9: استخدام محدد CSS الصحيح `div.postmovie` بناءً على تحليل dev tools.
+// v10: إعادة بناء كاملة. الكود الآن يتعرف تلقائيًا على بنية الصفحة (article.item أو div.postmovie) ويستخدم المحلل المناسب.
 class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
@@ -18,28 +18,39 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    // **التصحيح الحاسم**: إعادة كتابة الدالة لتتوافق مع بنية `div.postmovie`
-    private fun Element.toSearchResponse(): SearchResponse? {
-        // الرابط والعنوان يؤخذان من نفس العنصر لضمان التطابق
-        val titleElement = this.selectFirst("div.moviesinfo h3 a") ?: return null
+    // محلل خاص ببنية <article class="item">
+    private fun parseArticleItem(element: Element): SearchResponse? {
+        val titleElement = element.selectFirst("h3 a") ?: return null
         val href = fixUrlNull(titleElement.attr("href")) ?: return null
         val title = titleElement.text()
 
-        val posterUrl = fixUrlNull(this.selectFirst("div.movief img")?.let {
+        val posterUrl = fixUrlNull(element.selectFirst("div.thumbnail img")?.let {
             it.attr("data-src").ifBlank { it.attr("src") }
         })
-
-        // الاعتماد على الرابط لتحديد النوع
         val isMovie = href.contains("/movie/")
 
         return if (isMovie) {
-            newMovieSearchResponse(title, href, TvType.Movie) {
-                this.posterUrl = posterUrl
-            }
+            newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = posterUrl }
         } else {
-            newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
-                this.posterUrl = posterUrl
-            }
+            newTvSeriesSearchResponse(title, href, TvType.TvSeries) { this.posterUrl = posterUrl }
+        }
+    }
+
+    // محلل خاص ببنية <div class="postmovie">
+    private fun parsePostMovie(element: Element): SearchResponse? {
+        val titleElement = element.selectFirst("h4 a") ?: return null // لاحظ: h4 هنا
+        val href = fixUrlNull(titleElement.attr("href")) ?: return null
+        val title = titleElement.text()
+
+        val posterUrl = fixUrlNull(element.selectFirst("div.movief img")?.let {
+            it.attr("data-src").ifBlank { it.attr("src") }
+        })
+        val isMovie = href.contains("/movie/")
+
+        return if (isMovie) {
+            newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = posterUrl }
+        } else {
+            newTvSeriesSearchResponse(title, href, TvType.TvSeries) { this.posterUrl = posterUrl }
         }
     }
 
@@ -55,22 +66,24 @@ class Asia2Tv : MainAPI() {
         val url = "$mainUrl${request.data}/page/$page"
         val document = app.get(url).document
 
-        // **التصحيح الحاسم**: استخدام المحدد الصحيح `div.postmovie`
-        val items = document.select("div.postmovie").mapNotNull {
-            it.toSearchResponse()
+        // **المنطق المزدوج الذكي**
+        // أولاً، حاول البحث عن البنية الأكثر شيوعًا في صفحات الأقسام
+        var items = document.select("article.item").mapNotNull { parseArticleItem(it) }
+
+        // إذا لم يتم العثور على شيء، جرب البنية الثانية (الخاصة بالصفحة الرئيسية القديمة)
+        if (items.isEmpty()) {
+            items = document.select("div.postmovie").mapNotNull { parsePostMovie(it) }
         }
-        
+
         val hasNext = document.selectFirst("a.next.page-numbers") != null
-        
         return newHomePageResponse(request.name, items, hasNext)
     }
-
 
     override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/?s=$query"
         val document = app.get(url).document
-        // استخدام المحدد الصحيح في البحث أيضًا
-        return document.select("div.postmovie").mapNotNull { it.toSearchResponse() }
+        // صفحات البحث تستخدم بنية article.item
+        return document.select("article.item").mapNotNull { parseArticleItem(it) }
     }
 
     override suspend fun load(url: String): LoadResponse {
@@ -139,8 +152,7 @@ class Asia2Tv : MainAPI() {
 
                 val embedUrlFragment = parseJson<PlayerAjaxResponse>(response).embed_url
                 val embedUrl = if (embedUrlFragment.startsWith("//")) "https:$embedUrlFragment" else embedUrlFragment
-
-                // قد لا يكون هناك iframe، بل رابط مباشر في بعض الأحيان
+                
                 val iframeSrc = app.get(embedUrl, referer = data).document.selectFirst("iframe")?.attr("src") ?: embedUrl
                 
                 loadExtractor(iframeSrc, data, subtitleCallback, callback)
