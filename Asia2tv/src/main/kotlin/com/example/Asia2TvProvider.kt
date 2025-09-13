@@ -1,4 +1,4 @@
-// v23: تجربة استخدام وسوم HTML لتنسيق الوصف.
+// v24: إعادة ترتيب الوصف لوضع القصة أولاً لتجنب قطع المعلومات المهمة.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -99,27 +99,25 @@ class Asia2Tv : MainAPI() {
             }
         }
 
-        // --- تجربة تنسيق HTML ---
-        // 1. تجميع المعلومات الإضافية في قائمة HTML
+        // --- تطبيق الترتيب الجديد ---
+        // 1. تجميع المعلومات الإضافية
         val extraInfoList = listOfNotNull(
             statusText?.let { "<b>الحالة:</b> $it" },
             country?.let { "<b>البلد:</b> $it" },
             totalEpisodes?.let { "<b>عدد الحلقات:</b> $it" },
-            broadcastDate?.let { "<b>موعد البث:</b> $it" }
+            broadcastDate?.let { "<b>موعد البth:</b> $it" }
         )
-
-        // 2. تحويل القائمة إلى نص مفصول بوسم <br>
         val extraInfo = extraInfoList.joinToString("<br>")
 
-        // 3. إضافة عنوان "القصة:" للوصف الرئيسي
+        // 2. تجهيز القصة الرئيسية
         val mainPlot = if (plot.isNullOrBlank()) {
             null
         } else {
             "<b>القصة:</b><br>$plot"
         }
 
-        // 4. دمج كل شيء معًا للحصول على التنسيق النهائي
-        plot = listOfNotNull(extraInfo, mainPlot).joinToString("<br><br>").trim()
+        // 3. دمج كل شيء بالترتيب الصحيح (القصة أولاً)
+        plot = listOfNotNull(mainPlot, extraInfo).joinToString("<br><br>").trim()
 
         val episodes = document.select("div.box-loop-episode a").mapNotNull { a ->
             val href = a.attr("href") ?: return@mapNotNull null
