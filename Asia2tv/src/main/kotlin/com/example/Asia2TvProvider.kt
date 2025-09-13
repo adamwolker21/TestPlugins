@@ -1,4 +1,4 @@
-// v22: تحسين تنسيق عرض الوصف والمعلومات الإضافية.
+// v23: تجربة استخدام وسوم HTML لتنسيق الوصف.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -99,27 +99,27 @@ class Asia2Tv : MainAPI() {
             }
         }
 
-        // --- تطبيق التنسيق الجديد ---
-        // 1. تجميع المعلومات الإضافية في قائمة
+        // --- تجربة تنسيق HTML ---
+        // 1. تجميع المعلومات الإضافية في قائمة HTML
         val extraInfoList = listOfNotNull(
-            statusText?.let { "الحالة: $it" },
-            country?.let { "البلد: $it" },
-            totalEpisodes?.let { "عدد الحلقات: $it" },
-            broadcastDate?.let { "موعد البث: $it" }
+            statusText?.let { "<b>الحالة:</b> $it" },
+            country?.let { "<b>البلد:</b> $it" },
+            totalEpisodes?.let { "<b>عدد الحلقات:</b> $it" },
+            broadcastDate?.let { "<b>موعد البث:</b> $it" }
         )
 
-        // 2. تحويل القائمة إلى نص مفصول بسطر جديد
-        val extraInfo = extraInfoList.joinToString("\n")
+        // 2. تحويل القائمة إلى نص مفصول بوسم <br>
+        val extraInfo = extraInfoList.joinToString("<br>")
 
         // 3. إضافة عنوان "القصة:" للوصف الرئيسي
         val mainPlot = if (plot.isNullOrBlank()) {
             null
         } else {
-            "القصة: $plot"
+            "<b>القصة:</b><br>$plot"
         }
 
         // 4. دمج كل شيء معًا للحصول على التنسيق النهائي
-        plot = listOfNotNull(extraInfo, mainPlot).joinToString("\n\n").trim()
+        plot = listOfNotNull(extraInfo, mainPlot).joinToString("<br><br>").trim()
 
         val episodes = document.select("div.box-loop-episode a").mapNotNull { a ->
             val href = a.attr("href") ?: return@mapNotNull null
