@@ -10,7 +10,7 @@ data class PlayerAjaxResponse(
     val embed_url: String
 )
 
-// v7: استخدام قائمة الأقسام الصحيحة، إعادة إضافة الترويسات (Headers)، وتبسيط الكود.
+// v8: العودة إلى البساطة، التركيز على محدد CSS دقيق داخل حاوية المحتوى الرئيسية.
 class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
@@ -23,7 +23,6 @@ class Asia2Tv : MainAPI() {
         val titleElement = this.selectFirst("h3 a") ?: return null
         val title = titleElement.text()
         val href = fixUrlNull(titleElement.attr("href")) ?: return null
-        // **تحسين**: جلب الصورة من `data-src` أولاً، ثم `src` كخيار احتياطي
         val posterUrl = fixUrlNull(this.selectFirst("div.thumbnail img")?.let {
             it.attr("data-src").ifBlank { it.attr("src") }
         })
@@ -42,7 +41,6 @@ class Asia2Tv : MainAPI() {
         }
     }
 
-    // **التصحيح**: استخدام قائمة الأقسام الجديدة والمبسطة
     override val mainPage = mainPageOf(
         "/newepisode" to "الحلقات الجديدة",
         "/status/live" to "يبث حاليا",
@@ -53,18 +51,14 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url = "$mainUrl${request.data}/page/$page"
+        val document = app.get(url).document // إزالة الترويسات غير الضرورية من هنا
 
-        // **التصحيح الحاسم**: إعادة إضافة الترويسات لخداع الموقع وجلب المحتوى
-        val headers = mapOf(
-            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "Referer" to "$mainUrl/"
-        )
-
-        val document = app.get(url, headers = headers).document
+        // **التصحيح الحاسم**: تحديد حاوية المحتوى الرئيسية أولاً، ثم البحث عن العناصر بداخلها.
+        val contentWrapper = document.selectFirst("div.bdaia-content-wrap")
+        val items = contentWrapper?.select("article.item")?.mapNotNull {
+            it.toSearchResponse()
+        } ?: emptyList() // إذا لم يتم العثور على الحاوية، أرجع قائمة فارغة بأمان.
         
-        val items = document.select("article.item").mapNotNull { it.toSearchResponse() }
-        
-        // التحقق من وجود صفحة تالية لمنع التحميل اللانهائي
         val hasNext = document.selectFirst("a.next.page-numbers") != null
         
         return newHomePageResponse(request.name, items, hasNext)
@@ -73,16 +67,12 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/?s=$query"
-        val headers = mapOf(
-            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "Referer" to "$mainUrl/"
-        )
-        val document = app.get(url, headers = headers).document
+        val document = app.get(url).document
         return document.select("article.item").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url, referer = mainUrl).document
+        val document = app.get(url).document
 
         val title = document.selectFirst("h1.entry-title")?.text()?.trim() ?: "No Title"
         val posterUrl = fixUrlNull(document.selectFirst("div.thumb img")?.attr("src"))
