@@ -1,4 +1,4 @@
-// v30: The final stable build. Removed "ComingSoon" to ensure compatibility.
+// v31: The *actual* final layout tweaks.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -23,7 +23,6 @@ class Asia2Tv : MainAPI() {
         return when {
             element?.hasClass("live") == true -> ShowStatus.Ongoing
             element?.hasClass("complete") == true -> ShowStatus.Completed
-            // لا يمكن دعم "ComingSoon" لأن المكتبة قديمة
             else -> ShowStatus.Completed 
         }
     }
@@ -107,13 +106,20 @@ class Asia2Tv : MainAPI() {
             }
         }
 
+        // --- تم التعديل هنا ---
+        // بناء سطر المعلومات الإضافية بالتنسيق المطلوب
+        val statusText = document.selectFirst("span.serie-isstatus")?.text()?.trim()
+
         val extraInfoList = listOfNotNull(
+            statusText?.let { "<b>الحالة:</b> $it" },
             country?.let { "<b>البلد:</b> $it" },
             totalEpisodes?.let { "<b>عدد الحلقات:</b> $it" }
         )
-        val extraInfo = extraInfoList.joinToString("<br>")
+        // استخدام فاصل عادي بدلاً من HTML
+        val extraInfo = extraInfoList.joinToString(" | ")
 
         plot = if (extraInfo.isNotBlank()) {
+            // استخدام فواصل أسطر HTML
             listOfNotNull(plot, extraInfo).joinToString("<br><br>")
         } else {
             plot 
