@@ -1,4 +1,4 @@
-// v20: الحل النهائي المستقر. إزالة ميزة الحالة لتجنب أخطاء البناء، ودمجها كنص مع الوصف.
+// v21: الحل النهائي المستقر. إزالة ميزة الحالة لتجنب أخطاء البناء، ودمجها كنص مع الوصف.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -20,13 +20,12 @@ class Asia2Tv : MainAPI() {
 
     private fun Element.toSearchResponse(): SearchResponse? {
         val titleElement = this.selectFirst("h4 a") ?: return null
-        val href = fixUrl(titleElement.attr("href"))
+        val href = fixUrlNull(titleElement.attr("href")) ?: return null
         val title = titleElement.text()
 
-        val posterElement = this.selectFirst("div.postmovie-photo img")
-        val posterUrl = fixUrl(posterElement?.let {
+        val posterUrl = fixUrlNull(this.selectFirst("div.postmovie-photo img")?.let {
             it.attr("data-src").ifBlank { it.attr("src") }
-        } ?: "")
+        })
 
         val isMovie = href.contains("/movie/")
 
@@ -58,7 +57,7 @@ class Asia2Tv : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val url = "$mainUrl/search?s=${query.encodeUrl()}"
+        val url = "$mainUrl/search?s=$query"
         val document = app.get(url).document
         
         return document.select("div.postmovie").mapNotNull { it.toSearchResponse() }
@@ -72,7 +71,7 @@ class Asia2Tv : MainAPI() {
         val title = detailsContainer?.selectFirst("h1")?.text()?.trim() ?: "No Title"
         var plot = detailsContainer?.selectFirst("p")?.text()?.trim()
 
-        val posterUrl = fixUrl(document.selectFirst("meta[property=og:image]")?.attr("content") ?: "")
+        val posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
 
         val year = detailsContainer?.select("ul.mb-2 li")
             ?.find { it.text().contains("سنة العرض") }
@@ -114,11 +113,11 @@ class Asia2Tv : MainAPI() {
         plot = if (plot.isNullOrBlank()) {
             extraInfo
         } else {
-            "$plot\n\n$extraInfo"
+            "$extraInfo\n\n$plot"
         }
 
         val episodes = document.select("div.box-loop-episode a").mapNotNull { a ->
-            val href = fixUrl(a.attr("href"))
+            val href = a.attr("href") ?: return@mapNotNull null
             val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
             val epNum = epNumText?.toIntOrNull()
 
@@ -135,7 +134,6 @@ class Asia2Tv : MainAPI() {
                 this.plot = plot
                 this.tags = tags
                 this.rating = rating
-                // تم إزالة .showStatus بالكامل
             }
         } else {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
@@ -158,7 +156,7 @@ class Asia2Tv : MainAPI() {
         
         val servers = document.select("ul.servers-tabs li")
         
-        servers.map { server ->
+        servers.apmap { server ->
             try {
                 val videoId = server.attr("data-id")
                 val postId = server.attr("data-post")
@@ -174,12 +172,10 @@ class Asia2Tv : MainAPI() {
                     referer = data
                 ).text
 
-                val playerResponse = parseJson<PlayerAjaxResponse>(response)
-                val embedUrlFragment = playerResponse.embed_url
+                val embedUrlFragment = parseJson<PlayerAjaxResponse>(response).embed_url
                 val embedUrl = if (embedUrlFragment.startsWith("//")) "https:$embedUrlFragment" else embedUrlFragment
                 
-                val embedDoc = app.get(embedUrl, referer = data).document
-                val iframeSrc = embedDoc.selectFirst("iframe")?.attr("src") ?: embedUrl
+                val iframeSrc = app.get(embedUrl, referer = data).document.selectFirst("iframe")?.attr("src") ?: embedUrl
                 
                 loadExtractor(iframeSrc, data, subtitleCallback, callback)
 
