@@ -10,7 +10,7 @@ data class PlayerAjaxResponse(
     val embed_url: String
 )
 
-// v6: استخدام بنية الروابط الصحيحة وإعادة تطبيق `mainPageOf` مع منطق جلب محسن.
+// v7: استخدام قائمة الأقسام الصحيحة، إعادة إضافة الترويسات (Headers)، وتبسيط الكود.
 class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
@@ -23,7 +23,10 @@ class Asia2Tv : MainAPI() {
         val titleElement = this.selectFirst("h3 a") ?: return null
         val title = titleElement.text()
         val href = fixUrlNull(titleElement.attr("href")) ?: return null
-        val posterUrl = fixUrlNull(this.selectFirst("div.thumbnail img")?.attr("data-src"))
+        // **تحسين**: جلب الصورة من `data-src` أولاً، ثم `src` كخيار احتياطي
+        val posterUrl = fixUrlNull(this.selectFirst("div.thumbnail img")?.let {
+            it.attr("data-src").ifBlank { it.attr("src") }
+        })
 
         val typeText = this.selectFirst("span.type")?.text()?.lowercase()
         val isMovie = typeText?.contains("فيلم") == true || href.contains("/movie/")
@@ -39,53 +42,47 @@ class Asia2Tv : MainAPI() {
         }
     }
 
-    // **التصحيح**: استخدام الروابط الصحيحة التي قدمها المستخدم
+    // **التصحيح**: استخدام قائمة الأقسام الجديدة والمبسطة
     override val mainPage = mainPageOf(
-        "/" to "الصفحة الرئيسية",
-        "/movies" to "الأفلام",
-        "/series" to "المسلسلات",
+        "/newepisode" to "الحلقات الجديدة",
         "/status/live" to "يبث حاليا",
-        "/status/complete" to "أعمال مكتملة"
+        "/series" to "المسلسلات",
+        "/status/complete" to "أعمال مكتملة",
+        "/movies" to "الأفلام"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        // **التصحيح**: بناء الرابط مع دعم الترقيم للصفحات الفرعية
-        val url = if (request.data == "/") {
-            // الصفحة الرئيسية لا تدعم الترقيم
-            if (page > 1) return HomePageResponse(emptyList())
-            mainUrl
-        } else {
-            "$mainUrl${request.data}/page/$page"
-        }
+        val url = "$mainUrl${request.data}/page/$page"
 
-        val document = app.get(url).document
+        // **التصحيح الحاسم**: إعادة إضافة الترويسات لخداع الموقع وجلب المحتوى
+        val headers = mapOf(
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Referer" to "$mainUrl/"
+        )
 
-        // **التصحيح**: التعامل مع الصفحة الرئيسية كحالة خاصة
-        if (request.data == "/") {
-            val homePageList = document.select("div.bdaia-home-container-wrap").mapNotNull { section ->
-                val title = section.selectFirst("div.widget-title h4.block-title span")?.text() ?: return@mapNotNull null
-                val items = section.select("article.item").mapNotNull { it.toSearchResponse() }
-                if (items.isNotEmpty()) HomePageList(title, items) else null
-            }
-            return HomePageResponse(homePageList)
-        } else {
-            // التعامل مع جميع الصفحات الأخرى كقائمة عادية
-            val items = document.select("article.item").mapNotNull { it.toSearchResponse() }
-            // يجب التأكد من أن الصفحة ليست الأخيرة لمنع التحميل اللانهائي
-            val hasNext = document.selectFirst("a.next") != null
-            return newHomePageResponse(request.name, items, hasNext)
-        }
+        val document = app.get(url, headers = headers).document
+        
+        val items = document.select("article.item").mapNotNull { it.toSearchResponse() }
+        
+        // التحقق من وجود صفحة تالية لمنع التحميل اللانهائي
+        val hasNext = document.selectFirst("a.next.page-numbers") != null
+        
+        return newHomePageResponse(request.name, items, hasNext)
     }
 
 
     override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/?s=$query"
-        val document = app.get(url).document
+        val headers = mapOf(
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Referer" to "$mainUrl/"
+        )
+        val document = app.get(url, headers = headers).document
         return document.select("article.item").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url, referer = mainUrl).document
 
         val title = document.selectFirst("h1.entry-title")?.text()?.trim() ?: "No Title"
         val posterUrl = fixUrlNull(document.selectFirst("div.thumb img")?.attr("src"))
