@@ -1,4 +1,4 @@
-// v27: إزالة عنوان القصة وإضافة قسم "الأعمال القادمة".
+// v28: Implemented the correct ShowStatus enum based on user's discovery.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -18,6 +18,15 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
+    // دالة مساعدة لتحديد حالة المسلسل بناءً على الـ class
+    private fun getStatus(element: Element?): ShowStatus {
+        return when {
+            element?.hasClass("live") == true -> ShowStatus.Ongoing
+            element?.hasClass("complete") == true -> ShowStatus.Completed
+            else -> ShowStatus.Completed // Default to completed if not specified
+        }
+    }
+
     private fun Element.toSearchResponse(): SearchResponse? {
         val titleElement = this.selectFirst("h4 a") ?: return null
         val href = fixUrlNull(titleElement.attr("href")) ?: return null
@@ -35,8 +44,7 @@ class Asia2Tv : MainAPI() {
             newTvSeriesSearchResponse(title, href, TvType.TvSeries) { this.posterUrl = posterUrl }
         }
     }
-
-    // -- تم التعديل هنا --
+    
     override val mainPage = mainPageOf(
         "/newepisode" to "الحلقات الجديدة",
         "/status/live" to "يبث حاليا",
@@ -71,7 +79,7 @@ class Asia2Tv : MainAPI() {
         val detailsContainer = document.selectFirst("div.info-detail-single")
         
         val title = detailsContainer?.selectFirst("h1")?.text()?.trim() ?: "No Title"
-        var plot = detailsContainer?.selectFirst("p")?.text()?.trim()
+        val plot = detailsContainer?.selectFirst("p")?.text()?.trim()
 
         val posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
 
@@ -84,37 +92,9 @@ class Asia2Tv : MainAPI() {
 
         val tags = detailsContainer?.select("div.post_tags a")?.map { it.text() }
 
-        val statusText = document.selectFirst("span.serie-isstatus")?.text()?.trim()
-        
-        var country: String? = null
-        var totalEpisodes: String? = null
-
-        detailsContainer?.select("ul.mb-2 li")?.forEach { li ->
-            val text = li.text()
-            if (text.contains("البلد المنتج")) {
-                country = li.selectFirst("a")?.text()?.trim()
-            } else if (text.contains("عدد الحلقات")) {
-                totalEpisodes = li.ownText().trim().removePrefix(": ")
-            }
-        }
-
-        val conciseInfoList = listOfNotNull(
-            statusText?.let { "الحالة: $it" },
-            country?.let { "البلد: $it" },
-            totalEpisodes?.let { "عدد الحلقات: $it" }
-        )
-        val conciseInfo = conciseInfoList.joinToString(" | ")
-
-        // -- تم التعديل هنا --
-        // 2. تجهيز القصة الرئيسية بدون عنوان
-        val mainPlot = if (plot.isNullOrBlank()) {
-            null
-        } else {
-            plot // إزالة عنوان "القصة"
-        }
-
-        // 3. دمج كل شيء بالترتيب الصحيح (القصة ثم سطر المعلومات)
-        plot = listOfNotNull(mainPlot, conciseInfo).joinToString("<br><br>").trim()
+        // --- تم التعديل هنا ---
+        // استدعاء الدالة المساعدة الجديدة
+        val status = getStatus(document.selectFirst("span.serie-isstatus"))
 
         val episodes = document.select("div.box-loop-episode a").mapNotNull { a ->
             val href = a.attr("href") ?: return@mapNotNull null
@@ -134,6 +114,8 @@ class Asia2Tv : MainAPI() {
                 this.plot = plot
                 this.tags = tags
                 this.rating = rating
+                // استخدام showStatus بدلاً من دمج الحالة مع الوصف
+                this.showStatus = status
             }
         } else {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
