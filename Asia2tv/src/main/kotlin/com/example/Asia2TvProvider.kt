@@ -1,7 +1,6 @@
 package com.example
 
 import com.lagradost.cloudstream3.*
-// **الإصلاح: إضافة الاستيراد المفقود**
 import com.lagradost.cloudstream3.TvSeriesStatus
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
@@ -12,7 +11,7 @@ data class PlayerAjaxResponse(
     val embed_url: String
 )
 
-// v16: إصلاح الاستيراد المفقود لـ TvSeriesStatus
+// v17: العودة إلى الاستقرار. إزالة منطق المواسم المعقد والتركيز على الأساسيات.
 class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
@@ -118,43 +117,18 @@ class Asia2Tv : MainAPI() {
             plot += "\n\n$extraInfo"
         }
 
-        val seasons = document.select("div.parts-custom-select option").mapNotNull {
-            val seasonName = it.text()
-            val seasonUrl = it.attr("value")
-            val seasonDoc = app.get(seasonUrl, referer = url).document
-            
-            val episodes = seasonDoc.select("div.box-loop-episode a").mapNotNull { a ->
-                val href = a.attr("href") ?: return@mapNotNull null
-                val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
-                val epNum = epNumText?.toIntOrNull()
+        val episodes = document.select("div.box-loop-episode a").mapNotNull { a ->
+            val href = a.attr("href") ?: return@mapNotNull null
+            val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
+            val epNum = epNumText?.toIntOrNull()
 
-                newEpisode(href) {
-                    name = a.selectFirst(".titlepisode")?.text()?.trim()
-                    episode = epNum
-                    this.season = seasonName.replace(Regex("[^0-9]"), "").trim().toIntOrNull()
-                }
-            }.reversed()
+            newEpisode(href) {
+                name = a.selectFirst(".titlepisode")?.text()?.trim()
+                episode = epNum
+            }
+        }.reversed()
 
-            // استخدام Data class لتخزين بيانات الموسم مؤقتًا
-            SeasonData(name = seasonName, episodes = episodes)
-        }
-
-        val episodes = if (seasons.isNotEmpty()) {
-            seasons.flatMap { it.episodes }
-        } else {
-            document.select("div.box-loop-episode a").mapNotNull { a ->
-                val href = a.attr("href") ?: return@mapNotNull null
-                val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
-                val epNum = epNumText?.toIntOrNull()
-
-                newEpisode(href) {
-                    name = a.selectFirst(".titlepisode")?.text()?.trim()
-                    episode = epNum
-                }
-            }.reversed()
-        }
-
-        return if (episodes.isNotEmpty() || seasons.isNotEmpty()) {
+        return if (episodes.isNotEmpty()) {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = posterUrl
                 this.year = year
@@ -162,10 +136,6 @@ class Asia2Tv : MainAPI() {
                 this.tags = tags
                 this.rating = rating
                 this.showStatus = status
-                // تحويل بيانات المواسم إلى الشكل الذي يفهمه التطبيق
-                this.seasons = seasons.mapIndexed { index, seasonData ->
-                    newSeason(index + 1, seasonData.name)
-                }
             }
         } else {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
