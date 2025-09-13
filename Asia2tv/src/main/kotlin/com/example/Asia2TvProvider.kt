@@ -1,7 +1,7 @@
-package com.example
+// v19: إصلاح اسم الحزمة والاستيراد المفقود
+package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
-// **الإصلاح النهائي: إعادة الاستيراد المفقود**
 import com.lagradost.cloudstream3.TvSeriesStatus
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
@@ -12,7 +12,6 @@ data class PlayerAjaxResponse(
     val embed_url: String
 )
 
-// v18: الإصلاح النهائي والمؤكد. إعادة الاستيراد المفقود لـ TvSeriesStatus.
 class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
