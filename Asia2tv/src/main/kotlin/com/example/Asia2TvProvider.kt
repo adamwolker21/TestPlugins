@@ -10,7 +10,8 @@ data class PlayerAjaxResponse(
     val embed_url: String
 )
 
-class Asia2TvProvider : MainAPI() {
+// v2: تم تغيير اسم الفئة من Asia2TvProvider إلى Asia2Tv لحل خطأ التحويل
+class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
     override var lang = "ar"
@@ -80,10 +81,11 @@ class Asia2TvProvider : MainAPI() {
                 val a = el.selectFirst("a")
                 val href = a?.attr("href") ?: return@mapNotNull null
                 val epTitle = a.selectFirst(".episode-title")?.text()
-                val epNum = a.selectFirst(".episode-number")?.text()?.replace(Regex("[^0-9]"), "")?.toIntOrNull()
+                val epNumText = a.selectFirst(".episode-number")?.text()?.replace(Regex("[^0-9]"), "")
+                val epNum = epNumText?.toIntOrNull()
                 
                 newEpisode(href) {
-                    name = epTitle ?: "الحلقة $epNum"
+                    name = epTitle ?: "الحلقة $epNumText"
                     episode = epNum
                 }
             }.reversed() // عكس ترتيب الحلقات لتكون من الأقدم للأحدث
@@ -116,28 +118,37 @@ class Asia2TvProvider : MainAPI() {
         val servers = document.select("ul.servers-tabs li")
         
         servers.apmap { server ->
-            val videoId = server.attr("data-id")
-            val postId = server.attr("data-post")
+            try {
+                val videoId = server.attr("data-id")
+                val postId = server.attr("data-post")
 
-            // إرسال طلب AJAX للحصول على رابط الـ iframe
-            val ajaxUrl = "$mainUrl/wp-admin/admin-ajax.php"
-            val response = app.post(
-                ajaxUrl,
-                data = mapOf(
-                    "action" to "bdaia_player_ajax",
-                    "post_id" to postId,
-                    "video_id" to videoId
-                ),
-                referer = data // مهم جدًا
-            ).text
+                // إرسال طلب AJAX للحصول على رابط الـ iframe
+                val ajaxUrl = "$mainUrl/wp-admin/admin-ajax.php"
+                val response = app.post(
+                    ajaxUrl,
+                    data = mapOf(
+                        "action" to "bdaia_player_ajax",
+                        "post_id" to postId,
+                        "video_id" to videoId
+                    ),
+                    referer = data // مهم جدًا
+                ).text
 
-            // استخراج رابط الـ iframe من استجابة JSON
-            val embedUrl = parseJson<PlayerAjaxResponse>(response).embed_url
-            val iframeSrc = app.get(embedUrl, referer = data).document.selectFirst("iframe")?.attr("src")
-            
-            if (iframeSrc != null) {
-                // استخدام loadExtractor لجلب الروابط النهائية
-                loadExtractor(iframeSrc, data, subtitleCallback, callback)
+                // استخراج رابط الـ iframe من استجابة JSON
+                // قد لا يكون الرابط كاملاً، لذا نتحقق منه
+                val embedUrlFragment = parseJson<PlayerAjaxResponse>(response).embed_url
+                // بعض الروابط قد تكون نسبية أو تفتقد للبروتوكول
+                val embedUrl = if (embedUrlFragment.startsWith("//")) "https:$embedUrlFragment" else embedUrlFragment
+
+                val iframeSrc = app.get(embedUrl, referer = data).document.selectFirst("iframe")?.attr("src")
+                
+                if (iframeSrc != null) {
+                    // استخدام loadExtractor لجلب الروابط النهائية
+                    loadExtractor(fixUrl(iframeSrc, embedUrl), data, subtitleCallback, callback)
+                }
+            } catch (e: Exception) {
+                // تجاهل الأخطاء في سيرفر معين والمتابعة مع البقية
+                e.printStackTrace()
             }
         }
         return true
