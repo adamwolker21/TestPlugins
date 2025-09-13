@@ -1,4 +1,4 @@
-// v26: تحسين تنسيق سطر المعلومات الإضافية ليصبح أكثر وضوحًا.
+// v27: إزالة عنوان القصة وإضافة قسم "الأعمال القادمة".
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -36,11 +36,13 @@ class Asia2Tv : MainAPI() {
         }
     }
 
+    // -- تم التعديل هنا --
     override val mainPage = mainPageOf(
         "/newepisode" to "الحلقات الجديدة",
         "/status/live" to "يبث حاليا",
-        "/series" to "المسلسلات",
+        "/status/coming-soon" to "الأعمال القادمة",
         "/status/complete" to "أعمال مكتملة",
+        "/series" to "المسلسلات",
         "/movies" to "الأفلام"
     )
 
@@ -96,8 +98,6 @@ class Asia2Tv : MainAPI() {
             }
         }
 
-        // --- تطبيق التنسيق النهائي المحسّن ---
-        // 1. تجميع المعلومات الهامة في سطر واحد بتنسيق واضح
         val conciseInfoList = listOfNotNull(
             statusText?.let { "الحالة: $it" },
             country?.let { "البلد: $it" },
@@ -105,11 +105,12 @@ class Asia2Tv : MainAPI() {
         )
         val conciseInfo = conciseInfoList.joinToString(" | ")
 
-        // 2. تجهيز القصة الرئيسية
+        // -- تم التعديل هنا --
+        // 2. تجهيز القصة الرئيسية بدون عنوان
         val mainPlot = if (plot.isNullOrBlank()) {
             null
         } else {
-            "<b>القصة:</b><br>$plot"
+            plot // إزالة عنوان "القصة"
         }
 
         // 3. دمج كل شيء بالترتيب الصحيح (القصة ثم سطر المعلومات)
