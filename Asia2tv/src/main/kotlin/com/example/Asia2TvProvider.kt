@@ -10,7 +10,7 @@ data class PlayerAjaxResponse(
     val embed_url: String
 )
 
-// v11: النسخة النهائية المبنية على نتائج التحقيق. تستخدم المحددات الصحيحة فقط.
+// v12: استخدام بنية الروابط الصحيحة للبحث والتنقل بين الصفحات بناءً على التحقيق.
 class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
@@ -18,13 +18,11 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    // دالة تحليل واحدة وصحيحة مبنية على الأدلة
     private fun Element.toSearchResponse(): SearchResponse? {
         val titleElement = this.selectFirst("h4 a") ?: return null
         val href = fixUrlNull(titleElement.attr("href")) ?: return null
         val title = titleElement.text()
 
-        // استخدام المحدد الصحيح للصورة الذي اكتشفناه
         val posterUrl = fixUrlNull(this.selectFirst("div.postmovie-photo img")?.let {
             it.attr("data-src").ifBlank { it.attr("src") }
         })
@@ -47,22 +45,24 @@ class Asia2Tv : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val url = "$mainUrl${request.data}/page/$page"
+        // **الإصلاح الحاسم الأول: استخدام بنية التنقل الصحيحة ?page=**
+        val url = "$mainUrl${request.data}?page=$page"
         val document = app.get(url).document
 
-        // استخدام الحاوية الصحيحة والمحلل الصحيح
         val items = document.select("div.postmovie").mapNotNull {
             it.toSearchResponse()
         }
         
-        val hasNext = document.selectFirst("a.next.page-numbers") != null
+        // قد نحتاج لتحديث محدد الصفحة التالية أيضًا
+        val hasNext = document.selectFirst("a.next.page-numbers, a[rel=next]") != null
         return newHomePageResponse(request.name, items, hasNext)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val url = "$mainUrl/?s=$query"
+        // **الإصلاح الحاسم الثاني: استخدام رابط ومسار البحث الصحيح**
+        val url = "$mainUrl/search?s=$query"
         val document = app.get(url).document
-        // نفترض أن البحث يستخدم نفس البنية، وهو الاحتمال الأكبر
+        
         return document.select("div.postmovie").mapNotNull { it.toSearchResponse() }
     }
 
