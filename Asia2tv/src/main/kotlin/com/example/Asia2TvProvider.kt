@@ -1,4 +1,4 @@
-// v24: إعادة ترتيب الوصف لوضع القصة أولاً لتجنب قطع المعلومات المهمة.
+// v25: تطبيق تنسيق "الخيار الثاني" الأنيق للوصف.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -85,29 +85,25 @@ class Asia2Tv : MainAPI() {
         val statusText = document.selectFirst("span.serie-isstatus")?.text()?.trim()
         
         var country: String? = null
-        var broadcastDate: String? = null
         var totalEpisodes: String? = null
 
         detailsContainer?.select("ul.mb-2 li")?.forEach { li ->
             val text = li.text()
             if (text.contains("البلد المنتج")) {
                 country = li.selectFirst("a")?.text()?.trim()
-            } else if (text.contains("موعد البث")) {
-                broadcastDate = li.ownText().trim().removePrefix(": ")
             } else if (text.contains("عدد الحلقات")) {
                 totalEpisodes = li.ownText().trim().removePrefix(": ")
             }
         }
 
-        // --- تطبيق الترتيب الجديد ---
-        // 1. تجميع المعلومات الإضافية
-        val extraInfoList = listOfNotNull(
-            statusText?.let { "<b>الحالة:</b> $it" },
-            country?.let { "<b>البلد:</b> $it" },
-            totalEpisodes?.let { "<b>عدد الحلقات:</b> $it" },
-            broadcastDate?.let { "<b>موعد البth:</b> $it" }
+        // --- تطبيق التنسيق الأنيق ---
+        // 1. تجميع المعلومات الهامة في سطر واحد مختصر
+        val conciseInfoList = listOfNotNull(
+            statusText,
+            country,
+            totalEpisodes?.let { "$it حلقات" }
         )
-        val extraInfo = extraInfoList.joinToString("<br>")
+        val conciseInfo = conciseInfoList.joinToString(" | ")
 
         // 2. تجهيز القصة الرئيسية
         val mainPlot = if (plot.isNullOrBlank()) {
@@ -116,8 +112,8 @@ class Asia2Tv : MainAPI() {
             "<b>القصة:</b><br>$plot"
         }
 
-        // 3. دمج كل شيء بالترتيب الصحيح (القصة أولاً)
-        plot = listOfNotNull(mainPlot, extraInfo).joinToString("<br><br>").trim()
+        // 3. دمج كل شيء بالترتيب الصحيح (القصة ثم سطر المعلومات)
+        plot = listOfNotNull(mainPlot, conciseInfo).joinToString("<br><br>").trim()
 
         val episodes = document.select("div.box-loop-episode a").mapNotNull { a ->
             val href = a.attr("href") ?: return@mapNotNull null
