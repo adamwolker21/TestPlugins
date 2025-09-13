@@ -1,4 +1,4 @@
-// v21: الحل النهائي المستقر. إزالة ميزة الحالة لتجنب أخطاء البناء، ودمجها كنص مع الوصف.
+// v22: تحسين تنسيق عرض الوصف والمعلومات الإضافية.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -82,8 +82,6 @@ class Asia2Tv : MainAPI() {
 
         val tags = detailsContainer?.select("div.post_tags a")?.map { it.text() }
 
-        // --- تطبيق الخيار الرابع ---
-        // 1. استخراج الحالة كنص
         val statusText = document.selectFirst("span.serie-isstatus")?.text()?.trim()
         
         var country: String? = null
@@ -101,20 +99,27 @@ class Asia2Tv : MainAPI() {
             }
         }
 
-        // 2. تجميع كل المعلومات الإضافية في نص واحد
-        val extraInfo = listOfNotNull(
+        // --- تطبيق التنسيق الجديد ---
+        // 1. تجميع المعلومات الإضافية في قائمة
+        val extraInfoList = listOfNotNull(
             statusText?.let { "الحالة: $it" },
             country?.let { "البلد: $it" },
             totalEpisodes?.let { "عدد الحلقات: $it" },
             broadcastDate?.let { "موعد البث: $it" }
-        ).joinToString("\n")
+        )
 
-        // 3. دمج المعلومات مع الوصف الرئيسي
-        plot = if (plot.isNullOrBlank()) {
-            extraInfo
+        // 2. تحويل القائمة إلى نص مفصول بسطر جديد
+        val extraInfo = extraInfoList.joinToString("\n")
+
+        // 3. إضافة عنوان "القصة:" للوصف الرئيسي
+        val mainPlot = if (plot.isNullOrBlank()) {
+            null
         } else {
-            "$extraInfo\n\n$plot"
+            "القصة: $plot"
         }
+
+        // 4. دمج كل شيء معًا للحصول على التنسيق النهائي
+        plot = listOfNotNull(extraInfo, mainPlot).joinToString("\n\n").trim()
 
         val episodes = document.select("div.box-loop-episode a").mapNotNull { a ->
             val href = a.attr("href") ?: return@mapNotNull null
