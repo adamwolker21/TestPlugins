@@ -10,7 +10,7 @@ data class PlayerAjaxResponse(
     val embed_url: String
 )
 
-// v3: تم إصلاح خطأ الوسائط المتعددة عن طريق إزالة الاستدعاء غير الضروري لـ fixUrl
+// v4: تم إضافة ترويسات (Headers) لخداع الموقع وجلب المحتوى بنجاح
 class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
@@ -50,7 +50,12 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url = "$mainUrl${request.data}$page"
-        val document = app.get(url).document
+        // **التصحيح**: إضافة ترويسات (Headers) لمحاكاة متصفح حقيقي
+        val headers = mapOf(
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Referer" to "$mainUrl/"
+        )
+        val document = app.get(url, headers = headers).document
         val home = document.select("article.item").map {
             it.toSearchResponse()
         }
@@ -59,7 +64,12 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/search/$query"
-        val document = app.get(url).document
+        // **التصحيح**: إضافة ترويسات (Headers) لمحاكاة متصفح حقيقي
+        val headers = mapOf(
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Referer" to "$mainUrl/"
+        )
+        val document = app.get(url, headers = headers).document
         return document.select("article.item").map {
             it.toSearchResponse()
         }
@@ -73,7 +83,6 @@ class Asia2Tv : MainAPI() {
         val plot = document.selectFirst("div.entry-content p")?.text()?.trim() ?: ""
         val tags = document.select("div.genres a").map { it.text() }
         
-        // التحقق من وجود قائمة حلقات لتحديد النوع
         val episodesList = document.select("ul.seasons-list li.episode-item")
 
         return if (episodesList.isNotEmpty()) {
@@ -88,7 +97,7 @@ class Asia2Tv : MainAPI() {
                     name = epTitle ?: "الحلقة $epNumText"
                     episode = epNum
                 }
-            }.reversed() // عكس ترتيب الحلقات لتكون من الأقدم للأحدث
+            }.reversed()
 
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = posterUrl
@@ -96,7 +105,6 @@ class Asia2Tv : MainAPI() {
                 this.tags = tags
             }
         } else {
-            // إذا لم تكن هناك حلقات، فهي فيلم
             newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = posterUrl
                 this.plot = plot
@@ -111,10 +119,8 @@ class Asia2Tv : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        // 'data' هنا هو رابط صفحة المشاهدة
         val document = app.get(data).document
         
-        // جلب جميع السيرفرات المتوفرة
         val servers = document.select("ul.servers-tabs li")
         
         servers.apmap { server ->
@@ -122,7 +128,6 @@ class Asia2Tv : MainAPI() {
                 val videoId = server.attr("data-id")
                 val postId = server.attr("data-post")
 
-                // إرسال طلب AJAX للحصول على رابط الـ iframe
                 val ajaxUrl = "$mainUrl/wp-admin/admin-ajax.php"
                 val response = app.post(
                     ajaxUrl,
@@ -131,22 +136,18 @@ class Asia2Tv : MainAPI() {
                         "post_id" to postId,
                         "video_id" to videoId
                     ),
-                    referer = data // مهم جدًا
+                    referer = data
                 ).text
 
-                // استخراج رابط الـ iframe من استجابة JSON
                 val embedUrlFragment = parseJson<PlayerAjaxResponse>(response).embed_url
                 val embedUrl = if (embedUrlFragment.startsWith("//")) "https:$embedUrlFragment" else embedUrlFragment
 
-                // جلب رابط الـ src من داخل الـ iframe
                 val iframeSrc = app.get(embedUrl, referer = data).document.selectFirst("iframe")?.attr("src")
                 
                 if (iframeSrc != null) {
-                    // **التصحيح**: تم تمرير iframeSrc مباشرة إلى loadExtractor
                     loadExtractor(iframeSrc, data, subtitleCallback, callback)
                 }
             } catch (e: Exception) {
-                // تجاهل الأخطاء في سيرفر معين والمتابعة مع البقية
                 e.printStackTrace()
             }
         }
