@@ -4,15 +4,13 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.nodes.Element
-import java.math.RoundingMode
-import java.text.DecimalFormat
 
 // Definir بنية بيانات لاستقبال استجابة AJAX
 data class PlayerAjaxResponse(
     val embed_url: String
 )
 
-// v13: النسخة النهائية الكاملة. وظيفة load مكتملة ومبنية على نتائج التحقيق.
+// v14: إصلاح خطأ نوع بيانات التقييم (Float -> Int)
 class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
@@ -65,37 +63,28 @@ class Asia2Tv : MainAPI() {
         return document.select("div.postmovie").mapNotNull { it.toSearchResponse() }
     }
     
-    // لتقريب التقييم إلى رقم عشري واحد
-    private fun roundToOneDecimal(value: Float): Float {
-        val df = DecimalFormat("#.#")
-        df.roundingMode = RoundingMode.HALF_UP
-        return df.format(value).toFloat()
-    }
-    
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         
-        // **استخدام المحددات الصحيحة التي اكتشفناها**
         val detailsContainer = document.selectFirst("div.info-detail-single")
         
         val title = detailsContainer?.selectFirst("h1")?.text()?.trim() ?: "No Title"
         val plot = detailsContainer?.selectFirst("p")?.text()?.trim()
 
-        // **الطريقة المثلى لجلب البوستر من وسوم meta**
         val posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
 
         val year = detailsContainer?.select("ul.mb-2 li")
             ?.find { it.text().contains("سنة العرض") }
             ?.selectFirst("a")?.text()?.toIntOrNull()
 
-        val ratingText = detailsContainer?.selectFirst("div.post_review_avg")?.text()?.trim()
-        val rating = ratingText?.toFloatOrNull()?.let { roundToOneDecimal(it) }
+        // **الإصلاح: تحويل التقييم من عشري إلى صحيح**
+        val rating = detailsContainer?.selectFirst("div.post_review_avg")?.text()?.trim()
+            ?.toFloatOrNull()?.times(100)?.toInt()
 
         val tags = detailsContainer?.select("div.post_tags a")?.map { it.text() }
 
         val episodes = document.select("div.box-loop-episode a").mapNotNull { a ->
             val href = a.attr("href") ?: return@mapNotNull null
-            // استخراج الأرقام فقط من عنوان الحلقة
             val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
             val epNum = epNumText?.toIntOrNull()
 
@@ -114,7 +103,6 @@ class Asia2Tv : MainAPI() {
                 this.rating = rating
             }
         } else {
-            // منطق الأفلام يبقى كما هو
             newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = posterUrl
                 this.year = year
