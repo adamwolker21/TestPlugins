@@ -10,7 +10,7 @@ data class PlayerAjaxResponse(
     val embed_url: String
 )
 
-// v8: العودة إلى البساطة، التركيز على محدد CSS دقيق داخل حاوية المحتوى الرئيسية.
+// v9: استخدام محدد CSS الصحيح `div.postmovie` بناءً على تحليل dev tools.
 class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
@@ -18,17 +18,19 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    // دالة لتحويل عنصر HTML إلى نتيجة بحث
+    // **التصحيح الحاسم**: إعادة كتابة الدالة لتتوافق مع بنية `div.postmovie`
     private fun Element.toSearchResponse(): SearchResponse? {
-        val titleElement = this.selectFirst("h3 a") ?: return null
-        val title = titleElement.text()
+        // الرابط والعنوان يؤخذان من نفس العنصر لضمان التطابق
+        val titleElement = this.selectFirst("div.moviesinfo h3 a") ?: return null
         val href = fixUrlNull(titleElement.attr("href")) ?: return null
-        val posterUrl = fixUrlNull(this.selectFirst("div.thumbnail img")?.let {
+        val title = titleElement.text()
+
+        val posterUrl = fixUrlNull(this.selectFirst("div.movief img")?.let {
             it.attr("data-src").ifBlank { it.attr("src") }
         })
 
-        val typeText = this.selectFirst("span.type")?.text()?.lowercase()
-        val isMovie = typeText?.contains("فيلم") == true || href.contains("/movie/")
+        // الاعتماد على الرابط لتحديد النوع
+        val isMovie = href.contains("/movie/")
 
         return if (isMovie) {
             newMovieSearchResponse(title, href, TvType.Movie) {
@@ -51,13 +53,12 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url = "$mainUrl${request.data}/page/$page"
-        val document = app.get(url).document // إزالة الترويسات غير الضرورية من هنا
+        val document = app.get(url).document
 
-        // **التصحيح الحاسم**: تحديد حاوية المحتوى الرئيسية أولاً، ثم البحث عن العناصر بداخلها.
-        val contentWrapper = document.selectFirst("div.bdaia-content-wrap")
-        val items = contentWrapper?.select("article.item")?.mapNotNull {
+        // **التصحيح الحاسم**: استخدام المحدد الصحيح `div.postmovie`
+        val items = document.select("div.postmovie").mapNotNull {
             it.toSearchResponse()
-        } ?: emptyList() // إذا لم يتم العثور على الحاوية، أرجع قائمة فارغة بأمان.
+        }
         
         val hasNext = document.selectFirst("a.next.page-numbers") != null
         
@@ -68,7 +69,8 @@ class Asia2Tv : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/?s=$query"
         val document = app.get(url).document
-        return document.select("article.item").mapNotNull { it.toSearchResponse() }
+        // استخدام المحدد الصحيح في البحث أيضًا
+        return document.select("div.postmovie").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
@@ -138,11 +140,11 @@ class Asia2Tv : MainAPI() {
                 val embedUrlFragment = parseJson<PlayerAjaxResponse>(response).embed_url
                 val embedUrl = if (embedUrlFragment.startsWith("//")) "https:$embedUrlFragment" else embedUrlFragment
 
-                val iframeSrc = app.get(embedUrl, referer = data).document.selectFirst("iframe")?.attr("src")
+                // قد لا يكون هناك iframe، بل رابط مباشر في بعض الأحيان
+                val iframeSrc = app.get(embedUrl, referer = data).document.selectFirst("iframe")?.attr("src") ?: embedUrl
                 
-                if (iframeSrc != null) {
-                    loadExtractor(iframeSrc, data, subtitleCallback, callback)
-                }
+                loadExtractor(iframeSrc, data, subtitleCallback, callback)
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
