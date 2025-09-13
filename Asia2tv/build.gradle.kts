@@ -1,4 +1,4 @@
-version = 24
+version = 33
 
 cloudstream {
     language = "ar"
