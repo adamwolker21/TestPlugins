@@ -4,13 +4,14 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.nodes.Element
+import java.util.ArrayList
 
 // Definir بنية بيانات لاستقبال استجابة AJAX
 data class PlayerAjaxResponse(
     val embed_url: String
 )
 
-// v4: تم إضافة ترويسات (Headers) لخداع الموقع وجلب المحتوى بنجاح
+// v5: إعادة كتابة منطق جلب الصفحة الرئيسية بالكامل ليتوافق مع بنية الموقع الفعلية
 class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
@@ -18,14 +19,13 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    // دالة لتحويل عنصر HTML إلى نتيجة بحث
+    // دالة لتحويل عنصر HTML إلى نتيجة بحث (لا تغيير هنا)
     private fun Element.toSearchResponse(): SearchResponse {
         val titleElement = this.selectFirst("h3 a")
         val title = titleElement?.text() ?: "No Title"
         val href = fixUrlNull(titleElement?.attr("href")) ?: ""
         val posterUrl = fixUrlNull(this.selectFirst("div.thumbnail img")?.attr("data-src"))
 
-        // تحديد النوع بناءً على النص أو الرابط
         val typeText = this.selectFirst("span.type")?.text()?.lowercase()
         val isMovie = typeText?.contains("فيلم") == true || href.contains("/movie/")
 
@@ -40,38 +40,50 @@ class Asia2Tv : MainAPI() {
         }
     }
 
-    override val mainPage = mainPageOf(
-        "/category/recently-added/page/" to "أحدث الإضافات",
-        "/list/movies/page/" to "الأفلام",
-        "/list/series/page/" to "المسلسلات",
-        "/category/airing/page/" to "يبث حاليا",
-        "/category/completed/page/" to "أعمال مكتملة"
-    )
+    // تم حذف `mainPageOf` لأننا سنبني الصفحة الرئيسية يدويًا
+    // override val mainPage = mainPageOf(...)
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val url = "$mainUrl${request.data}$page"
-        // **التصحيح**: إضافة ترويسات (Headers) لمحاكاة متصفح حقيقي
-        val headers = mapOf(
-            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "Referer" to "$mainUrl/"
-        )
-        val document = app.get(url, headers = headers).document
-        val home = document.select("article.item").map {
-            it.toSearchResponse()
+        // الصفحة الرئيسية لا تدعم الترقيم، لذا نرجع فارغًا إذا طلب المستخدم صفحة غير الأولى
+        if (page > 1) return HomePageResponse(emptyList())
+
+        val document = app.get(mainUrl).document
+        val homePageList = ArrayList<HomePageList>()
+
+        // استهداف جميع أقسام المحتوى في الصفحة الرئيسية
+        val allSections = document.select("div.bdaia-home-container-wrap")
+
+        allSections.forEach { section ->
+            // استخراج عنوان القسم
+            val title = section.selectFirst("div.widget-title h4.block-title span")?.text() ?: return@forEach
+            
+            // استخراج جميع العناصر (أفلام/مسلسلات) داخل هذا القسم
+            val items = section.select("article.item").mapNotNull {
+                try {
+                    it.toSearchResponse()
+                } catch (e: Exception) {
+                    null
+                }
+            }
+
+            // إضافة القسم إلى القائمة فقط إذا كان يحتوي على عناصر
+            if (items.isNotEmpty()) {
+                homePageList.add(HomePageList(title, items))
+            }
         }
-        return newHomePageResponse(request.name, home)
+
+        return HomePageResponse(homePageList)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val url = "$mainUrl/search/$query"
-        // **التصحيح**: إضافة ترويسات (Headers) لمحاكاة متصفح حقيقي
-        val headers = mapOf(
-            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "Referer" to "$mainUrl/"
-        )
-        val document = app.get(url, headers = headers).document
-        return document.select("article.item").map {
-            it.toSearchResponse()
+        val url = "$mainUrl/?s=$query" // استخدام رابط البحث الصحيح
+        val document = app.get(url).document
+        return document.select("article.item").mapNotNull {
+            try {
+                it.toSearchResponse()
+            } catch (e: Exception) {
+                null
+            }
         }
     }
 
