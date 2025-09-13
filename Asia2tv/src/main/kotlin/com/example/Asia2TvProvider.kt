@@ -8,7 +8,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.awaitAll
 
-// v16: The Final Touch. Adding the 'Referer' header to `load` and `loadLinks` to ensure they can fetch content.
+// v17: The Dynamic Referer Fix. This version correctly sets the referer
+// when loading movie/series details, which should be the final fix.
 class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
@@ -26,18 +27,15 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url = if (page > 1) {
-            // Appending /page/ correctly
             "$mainUrl${request.data.removeSuffix("/")}/page/$page/"
         } else {
             "$mainUrl${request.data}"
         }
         
-        // This Referer is crucial for category pages to load their content.
         val headers = mapOf("Referer" to mainUrl)
         val document = app.get(url, headers = headers).document
 
         if (request.data == "/") {
-            // Logic for the TRUE main page (using <article>)
             val homePageList = mutableListOf<HomePageList>()
             document.select("div.mov-cat-d").forEach { block ->
                 val title = block.selectFirst("h2.mov-cat-d-title")?.text() ?: return@forEach
@@ -48,7 +46,6 @@ class Asia2Tv : MainAPI() {
             }
             return HomePageResponse(homePageList)
         } else {
-            // Logic for CATEGORY pages (using div.postmovie)
             val items = document.select("div.postmovie").mapNotNull { it.toSearchResponse(false) }
             val hasNext = document.selectFirst("a.next") != null
             return newHomePageResponse(request.name, items, hasNext)
@@ -86,8 +83,14 @@ class Asia2Tv : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse? {
-        // The key fix for v16: Adding the Referer header to the load request.
-        val headers = mapOf("Referer" to mainUrl)
+        // This is the CRITICAL FIX for v17.
+        // We create a dynamic referer based on the content type.
+        val referer = when {
+            url.contains("/serie/") -> "$mainUrl/series/"
+            url.contains("/movie/") -> "$mainUrl/movies/"
+            else -> mainUrl // Fallback
+        }
+        val headers = mapOf("Referer" to referer)
         val document = app.get(url, headers = headers).document
         
         val title = document.selectFirst("h1.name")?.text()?.trim() ?: return null
@@ -120,7 +123,8 @@ class Asia2Tv : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        // Precautionary fix for v16: Adding the Referer header here as well.
+        // The referer for the episode page is the series/movie page itself.
+        // While we don't have the parent URL, 'data' (the episode URL) is sufficient as a referer.
         val headers = mapOf("Referer" to data)
         val document = app.get(data, headers = headers).document
         
@@ -131,7 +135,6 @@ class Asia2Tv : MainAPI() {
                 async {
                     val iframeSrc = fixUrl(iframe.attr("src"))
                     if (iframeSrc.isNotBlank()) {
-                        // Pass the referer to the extractor as well
                         loadExtractor(iframeSrc, data, subtitleCallback, callback)
                     }
                 }
