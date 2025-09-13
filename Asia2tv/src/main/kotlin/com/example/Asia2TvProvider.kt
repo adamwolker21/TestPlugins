@@ -1,6 +1,8 @@
 package com.example
 
 import com.lagradost.cloudstream3.*
+// **الإصلاح: إضافة الاستيراد المفقود**
+import com.lagradost.cloudstream3.TvSeriesStatus
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.nodes.Element
@@ -10,7 +12,7 @@ data class PlayerAjaxResponse(
     val embed_url: String
 )
 
-// v15: النسخة النهائية مع كل التحسينات: المواسم، الحالة، والتفاصيل الإضافية.
+// v16: إصلاح الاستيراد المفقود لـ TvSeriesStatus
 class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
@@ -82,7 +84,6 @@ class Asia2Tv : MainAPI() {
 
         val tags = detailsContainer?.select("div.post_tags a")?.map { it.text() }
 
-        // --- **التحسينات الجديدة** ---
         val statusText = document.selectFirst("span.serie-isstatus")?.text()?.trim()
         val status = when {
             statusText?.contains("مكتملة") == true -> TvSeriesStatus.Completed
@@ -105,7 +106,6 @@ class Asia2Tv : MainAPI() {
             }
         }
 
-        // دمج التفاصيل الإضافية في القصة
         val extraInfo = listOfNotNull(
             country?.let { "البلد: $it" },
             totalEpisodes?.let { "عدد الحلقات: $it" },
@@ -118,13 +118,12 @@ class Asia2Tv : MainAPI() {
             plot += "\n\n$extraInfo"
         }
 
-        // --- **دعم المواسم المتعددة** ---
         val seasons = document.select("div.parts-custom-select option").mapNotNull {
             val seasonName = it.text()
             val seasonUrl = it.attr("value")
-            // استخراج الحلقات لكل موسم
-            val seasonDocument = app.get(seasonUrl).document
-            val episodes = seasonDocument.select("div.box-loop-episode a").mapNotNull { a ->
+            val seasonDoc = app.get(seasonUrl, referer = url).document
+            
+            val episodes = seasonDoc.select("div.box-loop-episode a").mapNotNull { a ->
                 val href = a.attr("href") ?: return@mapNotNull null
                 val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
                 val epNum = epNumText?.toIntOrNull()
@@ -135,14 +134,14 @@ class Asia2Tv : MainAPI() {
                     this.season = seasonName.replace(Regex("[^0-9]"), "").trim().toIntOrNull()
                 }
             }.reversed()
-            Pair(seasonName, episodes)
+
+            // استخدام Data class لتخزين بيانات الموسم مؤقتًا
+            SeasonData(name = seasonName, episodes = episodes)
         }
 
         val episodes = if (seasons.isNotEmpty()) {
-            // إذا وجدنا مواسم، نستخدم قائمة الحلقات منها
-            seasons.flatMap { it.second }
+            seasons.flatMap { it.episodes }
         } else {
-            // إذا لم نجد مواسم، نستخدم الطريقة القديمة
             document.select("div.box-loop-episode a").mapNotNull { a ->
                 val href = a.attr("href") ?: return@mapNotNull null
                 val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
@@ -163,8 +162,10 @@ class Asia2Tv : MainAPI() {
                 this.tags = tags
                 this.rating = rating
                 this.showStatus = status
-                // يمكنك إضافة المواسم هنا إذا كانت واجهة المستخدم تدعمها
-                // this.seasons = seasons.map { ... }
+                // تحويل بيانات المواسم إلى الشكل الذي يفهمه التطبيق
+                this.seasons = seasons.mapIndexed { index, seasonData ->
+                    newSeason(index + 1, seasonData.name)
+                }
             }
         } else {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
