@@ -4,13 +4,15 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.nodes.Element
+import java.math.RoundingMode
+import java.text.DecimalFormat
 
 // Definir بنية بيانات لاستقبال استجابة AJAX
 data class PlayerAjaxResponse(
     val embed_url: String
 )
 
-// v12: استخدام بنية الروابط الصحيحة للبحث والتنقل بين الصفحات بناءً على التحقيق.
+// v13: النسخة النهائية الكاملة. وظيفة load مكتملة ومبنية على نتائج التحقيق.
 class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
@@ -45,61 +47,80 @@ class Asia2Tv : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        // **الإصلاح الحاسم الأول: استخدام بنية التنقل الصحيحة ?page=**
         val url = "$mainUrl${request.data}?page=$page"
         val document = app.get(url).document
 
         val items = document.select("div.postmovie").mapNotNull {
             it.toSearchResponse()
         }
-        
-        // قد نحتاج لتحديث محدد الصفحة التالية أيضًا
+
         val hasNext = document.selectFirst("a.next.page-numbers, a[rel=next]") != null
         return newHomePageResponse(request.name, items, hasNext)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        // **الإصلاح الحاسم الثاني: استخدام رابط ومسار البحث الصحيح**
         val url = "$mainUrl/search?s=$query"
         val document = app.get(url).document
         
         return document.select("div.postmovie").mapNotNull { it.toSearchResponse() }
     }
-
+    
+    // لتقريب التقييم إلى رقم عشري واحد
+    private fun roundToOneDecimal(value: Float): Float {
+        val df = DecimalFormat("#.#")
+        df.roundingMode = RoundingMode.HALF_UP
+        return df.format(value).toFloat()
+    }
+    
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
-
-        val title = document.selectFirst("h1.entry-title")?.text()?.trim() ?: "No Title"
-        val posterUrl = fixUrlNull(document.selectFirst("div.thumb img")?.attr("src"))
-        val plot = document.selectFirst("div.entry-content p")?.text()?.trim() ?: ""
-        val tags = document.select("div.genres a").map { it.text() }
         
-        val episodesList = document.select("ul.seasons-list li.episode-item")
+        // **استخدام المحددات الصحيحة التي اكتشفناها**
+        val detailsContainer = document.selectFirst("div.info-detail-single")
+        
+        val title = detailsContainer?.selectFirst("h1")?.text()?.trim() ?: "No Title"
+        val plot = detailsContainer?.selectFirst("p")?.text()?.trim()
 
-        return if (episodesList.isNotEmpty()) {
-            val episodes = episodesList.mapNotNull { el ->
-                val a = el.selectFirst("a")
-                val href = a?.attr("href") ?: return@mapNotNull null
-                val epTitle = a.selectFirst(".episode-title")?.text()
-                val epNumText = a.selectFirst(".episode-number")?.text()?.replace(Regex("[^0-9]"), "")
-                val epNum = epNumText?.toIntOrNull()
-                
-                newEpisode(href) {
-                    name = epTitle ?: "الحلقة $epNumText"
-                    episode = epNum
-                }
-            }.reversed()
+        // **الطريقة المثلى لجلب البوستر من وسوم meta**
+        val posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
 
+        val year = detailsContainer?.select("ul.mb-2 li")
+            ?.find { it.text().contains("سنة العرض") }
+            ?.selectFirst("a")?.text()?.toIntOrNull()
+
+        val ratingText = detailsContainer?.selectFirst("div.post_review_avg")?.text()?.trim()
+        val rating = ratingText?.toFloatOrNull()?.let { roundToOneDecimal(it) }
+
+        val tags = detailsContainer?.select("div.post_tags a")?.map { it.text() }
+
+        val episodes = document.select("div.box-loop-episode a").mapNotNull { a ->
+            val href = a.attr("href") ?: return@mapNotNull null
+            // استخراج الأرقام فقط من عنوان الحلقة
+            val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
+            val epNum = epNumText?.toIntOrNull()
+
+            newEpisode(href) {
+                name = a.selectFirst(".titlepisode")?.text()?.trim()
+                episode = epNum
+            }
+        }.reversed()
+
+        return if (episodes.isNotEmpty()) {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = posterUrl
+                this.year = year
                 this.plot = plot
                 this.tags = tags
+                this.rating = rating
             }
         } else {
+            // منطق الأفلام يبقى كما هو
             newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = posterUrl
+                this.year = year
                 this.plot = plot
                 this.tags = tags
+                this.rating = rating
             }
         }
     }
