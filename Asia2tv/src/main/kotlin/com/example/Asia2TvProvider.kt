@@ -1,4 +1,4 @@
-// v31: The *actual* final layout tweaks.
+// v32: The final aesthetic touch. Removed bold tags from the plot info.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -106,20 +106,18 @@ class Asia2Tv : MainAPI() {
             }
         }
 
-        // --- تم التعديل هنا ---
-        // بناء سطر المعلومات الإضافية بالتنسيق المطلوب
         val statusText = document.selectFirst("span.serie-isstatus")?.text()?.trim()
 
+        // --- تم التعديل هنا ---
+        // بناء سطر المعلومات الإضافية بدون خط خشن
         val extraInfoList = listOfNotNull(
-            statusText?.let { "<b>الحالة:</b> $it" },
-            country?.let { "<b>البلد:</b> $it" },
-            totalEpisodes?.let { "<b>عدد الحلقات:</b> $it" }
+            statusText?.let { "الحالة: $it" },
+            country?.let { "البلد: $it" },
+            totalEpisodes?.let { "عدد الحلقات: $it" }
         )
-        // استخدام فاصل عادي بدلاً من HTML
         val extraInfo = extraInfoList.joinToString(" | ")
 
         plot = if (extraInfo.isNotBlank()) {
-            // استخدام فواصل أسطر HTML
             listOfNotNull(plot, extraInfo).joinToString("<br><br>")
         } else {
             plot 
