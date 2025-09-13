@@ -1,14 +1,17 @@
-// v32: The final aesthetic touch. Removed bold tags from the plot info.
+// v33: Completely rebuilt loadLinks to support the new ajaxGetRequest endpoint.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
-// Definir بنية بيانات لاستقبال استجابة AJAX
-data class PlayerAjaxResponse(
-    val embed_url: String
+// -- تم التعديل هنا --
+// بنية بيانات جديدة لتناسب الرد الجديد من الموقع
+data class NewPlayerAjaxResponse(
+    val status: Boolean,
+    val codeplay: String
 )
 
 class Asia2Tv : MainAPI() {
@@ -18,12 +21,11 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    // دالة مساعدة لتحديد حالة المسلسل بناءً على الـ class
     private fun getStatus(element: Element?): ShowStatus {
         return when {
             element?.hasClass("live") == true -> ShowStatus.Ongoing
             element?.hasClass("complete") == true -> ShowStatus.Completed
-            else -> ShowStatus.Completed 
+            else -> ShowStatus.Completed
         }
     }
 
@@ -44,7 +46,7 @@ class Asia2Tv : MainAPI() {
             newTvSeriesSearchResponse(title, href, TvType.TvSeries) { this.posterUrl = posterUrl }
         }
     }
-    
+
     override val mainPage = mainPageOf(
         "/newepisode" to "الحلقات الجديدة",
         "/status/live" to "يبث حاليا",
@@ -69,15 +71,15 @@ class Asia2Tv : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/search?s=$query"
         val document = app.get(url).document
-        
+
         return document.select("div.postmovie").mapNotNull { it.toSearchResponse() }
     }
-    
+
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
-        
+
         val detailsContainer = document.selectFirst("div.info-detail-single")
-        
+
         val title = detailsContainer?.selectFirst("h1")?.text()?.trim() ?: "No Title"
         var plot = detailsContainer?.selectFirst("p")?.text()?.trim()
 
@@ -91,9 +93,9 @@ class Asia2Tv : MainAPI() {
             ?.toFloatOrNull()?.times(100)?.toInt()
 
         val tags = detailsContainer?.select("div.post_tags a")?.map { it.text() }
-        
+
         val status = getStatus(document.selectFirst("span.serie-isstatus"))
-        
+
         var country: String? = null
         var totalEpisodes: String? = null
 
@@ -107,9 +109,7 @@ class Asia2Tv : MainAPI() {
         }
 
         val statusText = document.selectFirst("span.serie-isstatus")?.text()?.trim()
-
-        // --- تم التعديل هنا ---
-        // بناء سطر المعلومات الإضافية بدون خط خشن
+        
         val extraInfoList = listOfNotNull(
             statusText?.let { "الحالة: $it" },
             country?.let { "البلد: $it" },
@@ -120,7 +120,7 @@ class Asia2Tv : MainAPI() {
         plot = if (extraInfo.isNotBlank()) {
             listOfNotNull(plot, extraInfo).joinToString("<br><br>")
         } else {
-            plot 
+            plot
         }
 
         val episodes = document.select("div.box-loop-episode a").mapNotNull { a ->
@@ -154,6 +154,8 @@ class Asia2Tv : MainAPI() {
         }
     }
 
+    // -- تم التعديل هنا --
+    // إعادة بناء الوظيفة بالكامل
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -162,29 +164,37 @@ class Asia2Tv : MainAPI() {
     ): Boolean {
         val document = app.get(data).document
         
+        // البحث عن السيرفرات (بافتراض أن لديها الآن `data-code`)
         val servers = document.select("ul.servers-tabs li")
         
         servers.apmap { server ->
             try {
-                val videoId = server.attr("data-id")
-                val postId = server.attr("data-post")
+                // استخراج الرمز السري الجديد
+                val code = server.attr("data-code")
+                // تخطي السيرفر إذا لم يكن لديه رمز
+                if (code.isBlank()) return@apmap
 
-                val ajaxUrl = "$mainUrl/wp-admin/admin-ajax.php"
+                val ajaxUrl = "$mainUrl/ajaxGetRequest"
                 val response = app.post(
                     ajaxUrl,
                     data = mapOf(
-                        "action" to "bdaia_player_ajax",
-                        "post_id" to postId,
-                        "video_id" to videoId
+                        "action" to "iframe_server",
+                        "code" to code
                     ),
-                    referer = data
+                    referer = data,
+                    headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).text
 
-                val embedUrlFragment = parseJson<PlayerAjaxResponse>(response).embed_url
-                val embedUrl = if (embedUrlFragment.startsWith("//")) "https:$embedUrlFragment" else embedUrlFragment
+                // تحليل الرد الجديد
+                val jsonResponse = parseJson<NewPlayerAjaxResponse>(response)
+                if (!jsonResponse.status) return@apmap
+
+                // استخراج رابط المشغل من كود iframe
+                val iframeHtml = jsonResponse.codeplay
+                val iframeSrc = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src")
+                if (iframeSrc.isNullOrBlank()) return@apmap
                 
-                val iframeSrc = app.get(embedUrl, referer = data).document.selectFirst("iframe")?.attr("src") ?: embedUrl
-                
+                // إرسال الرابط النهائي إلى Cloudstream
                 loadExtractor(iframeSrc, data, subtitleCallback, callback)
 
             } catch (e: Exception) {
