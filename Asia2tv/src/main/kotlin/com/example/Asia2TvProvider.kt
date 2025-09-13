@@ -1,118 +1,104 @@
 package com.example
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.nodes.Element
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.awaitAll
 
-// v17: The Dynamic Referer Fix. This version correctly sets the referer
-// when loading movie/series details, which should be the final fix.
-class Asia2Tv : MainAPI() {
+// Definir بنية بيانات لاستقبال استجابة AJAX
+data class PlayerAjaxResponse(
+    val embed_url: String
+)
+
+class Asia2TvProvider : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
     override var lang = "ar"
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
+    // دالة لتحويل عنصر HTML إلى نتيجة بحث
+    private fun Element.toSearchResponse(): SearchResponse {
+        val titleElement = this.selectFirst("h3 a")
+        val title = titleElement?.text() ?: "No Title"
+        val href = fixUrlNull(titleElement?.attr("href")) ?: ""
+        val posterUrl = fixUrlNull(this.selectFirst("div.thumbnail img")?.attr("data-src"))
+
+        // تحديد النوع بناءً على النص أو الرابط
+        val typeText = this.selectFirst("span.type")?.text()?.lowercase()
+        val isMovie = typeText?.contains("فيلم") == true || href.contains("/movie/")
+
+        return if (isMovie) {
+            newMovieSearchResponse(title, href, TvType.Movie) {
+                this.posterUrl = posterUrl
+            }
+        } else {
+            newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
+                this.posterUrl = posterUrl
+            }
+        }
+    }
+
     override val mainPage = mainPageOf(
-        "/" to "الرئيسية",
-        "/movies" to "الأفلام",
-        "/series" to "المسلسلات",
-        "/status/live" to "يبث حاليا",
-        "/status/complete" to "أعمال مكتملة"
+        "/category/recently-added/page/" to "أحدث الإضافات",
+        "/list/movies/page/" to "الأفلام",
+        "/list/series/page/" to "المسلسلات",
+        "/category/airing/page/" to "يبث حاليا",
+        "/category/completed/page/" to "أعمال مكتملة"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val url = if (page > 1) {
-            "$mainUrl${request.data.removeSuffix("/")}/page/$page/"
-        } else {
-            "$mainUrl${request.data}"
+        val url = "$mainUrl${request.data}$page"
+        val document = app.get(url).document
+        val home = document.select("article.item").map {
+            it.toSearchResponse()
         }
-        
-        val headers = mapOf("Referer" to mainUrl)
-        val document = app.get(url, headers = headers).document
-
-        if (request.data == "/") {
-            val homePageList = mutableListOf<HomePageList>()
-            document.select("div.mov-cat-d").forEach { block ->
-                val title = block.selectFirst("h2.mov-cat-d-title")?.text() ?: return@forEach
-                val items = block.select("article").mapNotNull { it.toSearchResponse(true) }
-                if (items.isNotEmpty()) {
-                    homePageList.add(HomePageList(title, items))
-                }
-            }
-            return HomePageResponse(homePageList)
-        } else {
-            val items = document.select("div.postmovie").mapNotNull { it.toSearchResponse(false) }
-            val hasNext = document.selectFirst("a.next") != null
-            return newHomePageResponse(request.name, items, hasNext)
-        }
-    }
-    
-    private fun Element.toSearchResponse(isHomePage: Boolean): SearchResponse? {
-        val linkElement: Element?
-        val title: String?
-        
-        if (isHomePage) {
-            linkElement = this.selectFirst("h3.post-box-title a")
-            title = linkElement?.text()
-        } else {
-            linkElement = this.selectFirst("h4 > a")
-            title = linkElement?.text()
-        }
-
-        val href = linkElement?.attr("href")?.let { fixUrl(it) } ?: return null
-        if (title.isNullOrBlank()) return null
-
-        val posterUrl = this.selectFirst("img")?.attr("data-src")
-
-        return if (href.contains("/movie/")) {
-            newMovieSearchResponse(title, href) { this.posterUrl = posterUrl }
-        } else {
-            newTvSeriesSearchResponse(title, href) { this.posterUrl = posterUrl }
-        }
+        return newHomePageResponse(request.name, home)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val url = "$mainUrl/?s=$query"
+        val url = "$mainUrl/search/$query"
         val document = app.get(url).document
-        return document.select("div.postmovie").mapNotNull { it.toSearchResponse(false) }
+        return document.select("article.item").map {
+            it.toSearchResponse()
+        }
     }
 
-    override suspend fun load(url: String): LoadResponse? {
-        // This is the CRITICAL FIX for v17.
-        // We create a dynamic referer based on the content type.
-        val referer = when {
-            url.contains("/serie/") -> "$mainUrl/series/"
-            url.contains("/movie/") -> "$mainUrl/movies/"
-            else -> mainUrl // Fallback
-        }
-        val headers = mapOf("Referer" to referer)
-        val document = app.get(url, headers = headers).document
-        
-        val title = document.selectFirst("h1.name")?.text()?.trim() ?: return null
-        val poster = document.selectFirst("div.poster img")?.attr("src")
-        val plot = document.selectFirst("div.story")?.text()?.trim()
-        val year = document.selectFirst("div.extra-info span:contains(سنة) a")?.text()?.toIntOrNull()
-        val tags = document.select("div.extra-info span:contains(النوع) a").map { it.text() }
+    override suspend fun load(url: String): LoadResponse {
+        val document = app.get(url).document
 
-        return if (url.contains("/movie/")) {
-            newMovieLoadResponse(title, url, TvType.Movie, url) {
-                this.posterUrl = poster; this.year = year; this.plot = plot; this.tags = tags
+        val title = document.selectFirst("h1.entry-title")?.text()?.trim() ?: "No Title"
+        val posterUrl = fixUrlNull(document.selectFirst("div.thumb img")?.attr("src"))
+        val plot = document.selectFirst("div.entry-content p")?.text()?.trim() ?: ""
+        val tags = document.select("div.genres a").map { it.text() }
+        
+        // التحقق من وجود قائمة حلقات لتحديد النوع
+        val episodesList = document.select("ul.seasons-list li.episode-item")
+
+        return if (episodesList.isNotEmpty()) {
+            val episodes = episodesList.mapNotNull { el ->
+                val a = el.selectFirst("a")
+                val href = a?.attr("href") ?: return@mapNotNull null
+                val epTitle = a.selectFirst(".episode-title")?.text()
+                val epNum = a.selectFirst(".episode-number")?.text()?.replace(Regex("[^0-9]"), "")?.toIntOrNull()
+                
+                newEpisode(href) {
+                    name = epTitle ?: "الحلقة $epNum"
+                    episode = epNum
+                }
+            }.reversed() // عكس ترتيب الحلقات لتكون من الأقدم للأحدث
+
+            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+                this.posterUrl = posterUrl
+                this.plot = plot
+                this.tags = tags
             }
         } else {
-            val episodes = document.select("div#DivEpisodes a").mapNotNull { epElement ->
-                val epHref = epElement.attr("data-url")
-                if (epHref.isBlank()) return@mapNotNull null
-                val epName = epElement.text().trim()
-                val epNum = epName.filter { it.isDigit() }.toIntOrNull()
-                newEpisode(epHref) { this.name = epName; this.episode = epNum }
-            }
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.reversed()) {
-                this.posterUrl = poster; this.year = year; this.plot = plot; this.tags = tags
+            // إذا لم تكن هناك حلقات، فهي فيلم
+            newMovieLoadResponse(title, url, TvType.Movie, url) {
+                this.posterUrl = posterUrl
+                this.plot = plot
+                this.tags = tags
             }
         }
     }
@@ -123,22 +109,36 @@ class Asia2Tv : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        // The referer for the episode page is the series/movie page itself.
-        // While we don't have the parent URL, 'data' (the episode URL) is sufficient as a referer.
-        val headers = mapOf("Referer" to data)
-        val document = app.get(data, headers = headers).document
+        // 'data' هنا هو رابط صفحة المشاهدة
+        val document = app.get(data).document
         
-        val iframes = document.select("iframe")
+        // جلب جميع السيرفرات المتوفرة
+        val servers = document.select("ul.servers-tabs li")
+        
+        servers.apmap { server ->
+            val videoId = server.attr("data-id")
+            val postId = server.attr("data-post")
 
-        coroutineScope {
-            iframes.map { iframe ->
-                async {
-                    val iframeSrc = fixUrl(iframe.attr("src"))
-                    if (iframeSrc.isNotBlank()) {
-                        loadExtractor(iframeSrc, data, subtitleCallback, callback)
-                    }
-                }
-            }.awaitAll()
+            // إرسال طلب AJAX للحصول على رابط الـ iframe
+            val ajaxUrl = "$mainUrl/wp-admin/admin-ajax.php"
+            val response = app.post(
+                ajaxUrl,
+                data = mapOf(
+                    "action" to "bdaia_player_ajax",
+                    "post_id" to postId,
+                    "video_id" to videoId
+                ),
+                referer = data // مهم جدًا
+            ).text
+
+            // استخراج رابط الـ iframe من استجابة JSON
+            val embedUrl = parseJson<PlayerAjaxResponse>(response).embed_url
+            val iframeSrc = app.get(embedUrl, referer = data).document.selectFirst("iframe")?.attr("src")
+            
+            if (iframeSrc != null) {
+                // استخدام loadExtractor لجلب الروابط النهائية
+                loadExtractor(iframeSrc, data, subtitleCallback, callback)
+            }
         }
         return true
     }
