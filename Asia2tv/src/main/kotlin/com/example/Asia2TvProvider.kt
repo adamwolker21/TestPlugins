@@ -10,7 +10,7 @@ data class PlayerAjaxResponse(
     val embed_url: String
 )
 
-// v2: تم تغيير اسم الفئة من Asia2TvProvider إلى Asia2Tv لحل خطأ التحويل
+// v3: تم إصلاح خطأ الوسائط المتعددة عن طريق إزالة الاستدعاء غير الضروري لـ fixUrl
 class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
@@ -135,16 +135,15 @@ class Asia2Tv : MainAPI() {
                 ).text
 
                 // استخراج رابط الـ iframe من استجابة JSON
-                // قد لا يكون الرابط كاملاً، لذا نتحقق منه
                 val embedUrlFragment = parseJson<PlayerAjaxResponse>(response).embed_url
-                // بعض الروابط قد تكون نسبية أو تفتقد للبروتوكول
                 val embedUrl = if (embedUrlFragment.startsWith("//")) "https:$embedUrlFragment" else embedUrlFragment
 
+                // جلب رابط الـ src من داخل الـ iframe
                 val iframeSrc = app.get(embedUrl, referer = data).document.selectFirst("iframe")?.attr("src")
                 
                 if (iframeSrc != null) {
-                    // استخدام loadExtractor لجلب الروابط النهائية
-                    loadExtractor(fixUrl(iframeSrc, embedUrl), data, subtitleCallback, callback)
+                    // **التصحيح**: تم تمرير iframeSrc مباشرة إلى loadExtractor
+                    loadExtractor(iframeSrc, data, subtitleCallback, callback)
                 }
             } catch (e: Exception) {
                 // تجاهل الأخطاء في سيرفر معين والمتابعة مع البقية
