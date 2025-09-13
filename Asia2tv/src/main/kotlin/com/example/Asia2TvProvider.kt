@@ -1,4 +1,4 @@
-// v29: Added "Coming Soon" status and moved extra info back to the plot.
+// v30: The final stable build. Removed "ComingSoon" to ensure compatibility.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -23,7 +23,7 @@ class Asia2Tv : MainAPI() {
         return when {
             element?.hasClass("live") == true -> ShowStatus.Ongoing
             element?.hasClass("complete") == true -> ShowStatus.Completed
-            element?.hasClass("coming-soon") == true -> ShowStatus.ComingSoon // -- تم التعديل هنا --
+            // لا يمكن دعم "ComingSoon" لأن المكتبة قديمة
             else -> ShowStatus.Completed 
         }
     }
@@ -95,7 +95,6 @@ class Asia2Tv : MainAPI() {
         
         val status = getStatus(document.selectFirst("span.serie-isstatus"))
         
-        // -- تم التعديل هنا --
         var country: String? = null
         var totalEpisodes: String? = null
 
@@ -108,14 +107,12 @@ class Asia2Tv : MainAPI() {
             }
         }
 
-        // بناء سطر المعلومات الإضافية
         val extraInfoList = listOfNotNull(
             country?.let { "<b>البلد:</b> $it" },
             totalEpisodes?.let { "<b>عدد الحلقات:</b> $it" }
         )
         val extraInfo = extraInfoList.joinToString("<br>")
 
-        // دمج القصة مع المعلومات الإضافية
         plot = if (extraInfo.isNotBlank()) {
             listOfNotNull(plot, extraInfo).joinToString("<br><br>")
         } else {
