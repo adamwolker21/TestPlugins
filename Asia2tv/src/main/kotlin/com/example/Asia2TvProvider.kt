@@ -10,7 +10,7 @@ data class PlayerAjaxResponse(
     val embed_url: String
 )
 
-// v14: إصلاح خطأ نوع بيانات التقييم (Float -> Int)
+// v15: النسخة النهائية مع كل التحسينات: المواسم، الحالة، والتفاصيل الإضافية.
 class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
@@ -69,7 +69,7 @@ class Asia2Tv : MainAPI() {
         val detailsContainer = document.selectFirst("div.info-detail-single")
         
         val title = detailsContainer?.selectFirst("h1")?.text()?.trim() ?: "No Title"
-        val plot = detailsContainer?.selectFirst("p")?.text()?.trim()
+        var plot = detailsContainer?.selectFirst("p")?.text()?.trim()
 
         val posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
 
@@ -77,30 +77,94 @@ class Asia2Tv : MainAPI() {
             ?.find { it.text().contains("سنة العرض") }
             ?.selectFirst("a")?.text()?.toIntOrNull()
 
-        // **الإصلاح: تحويل التقييم من عشري إلى صحيح**
         val rating = detailsContainer?.selectFirst("div.post_review_avg")?.text()?.trim()
             ?.toFloatOrNull()?.times(100)?.toInt()
 
         val tags = detailsContainer?.select("div.post_tags a")?.map { it.text() }
 
-        val episodes = document.select("div.box-loop-episode a").mapNotNull { a ->
-            val href = a.attr("href") ?: return@mapNotNull null
-            val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
-            val epNum = epNumText?.toIntOrNull()
+        // --- **التحسينات الجديدة** ---
+        val statusText = document.selectFirst("span.serie-isstatus")?.text()?.trim()
+        val status = when {
+            statusText?.contains("مكتملة") == true -> TvSeriesStatus.Completed
+            statusText?.contains("حاليا") == true -> TvSeriesStatus.Ongoing
+            else -> null
+        }
+        
+        var country: String? = null
+        var broadcastDate: String? = null
+        var totalEpisodes: String? = null
 
-            newEpisode(href) {
-                name = a.selectFirst(".titlepisode")?.text()?.trim()
-                episode = epNum
+        detailsContainer?.select("ul.mb-2 li")?.forEach { li ->
+            val text = li.text()
+            if (text.contains("البلد المنتج")) {
+                country = li.selectFirst("a")?.text()?.trim()
+            } else if (text.contains("موعد البث")) {
+                broadcastDate = li.ownText().trim().removePrefix(": ")
+            } else if (text.contains("عدد الحلقات")) {
+                totalEpisodes = li.ownText().trim().removePrefix(": ")
             }
-        }.reversed()
+        }
 
-        return if (episodes.isNotEmpty()) {
+        // دمج التفاصيل الإضافية في القصة
+        val extraInfo = listOfNotNull(
+            country?.let { "البلد: $it" },
+            totalEpisodes?.let { "عدد الحلقات: $it" },
+            broadcastDate?.let { "موعد البث: $it" }
+        ).joinToString("\n")
+
+        if (plot.isNullOrBlank()) {
+            plot = extraInfo
+        } else {
+            plot += "\n\n$extraInfo"
+        }
+
+        // --- **دعم المواسم المتعددة** ---
+        val seasons = document.select("div.parts-custom-select option").mapNotNull {
+            val seasonName = it.text()
+            val seasonUrl = it.attr("value")
+            // استخراج الحلقات لكل موسم
+            val seasonDocument = app.get(seasonUrl).document
+            val episodes = seasonDocument.select("div.box-loop-episode a").mapNotNull { a ->
+                val href = a.attr("href") ?: return@mapNotNull null
+                val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
+                val epNum = epNumText?.toIntOrNull()
+
+                newEpisode(href) {
+                    name = a.selectFirst(".titlepisode")?.text()?.trim()
+                    episode = epNum
+                    this.season = seasonName.replace(Regex("[^0-9]"), "").trim().toIntOrNull()
+                }
+            }.reversed()
+            Pair(seasonName, episodes)
+        }
+
+        val episodes = if (seasons.isNotEmpty()) {
+            // إذا وجدنا مواسم، نستخدم قائمة الحلقات منها
+            seasons.flatMap { it.second }
+        } else {
+            // إذا لم نجد مواسم، نستخدم الطريقة القديمة
+            document.select("div.box-loop-episode a").mapNotNull { a ->
+                val href = a.attr("href") ?: return@mapNotNull null
+                val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
+                val epNum = epNumText?.toIntOrNull()
+
+                newEpisode(href) {
+                    name = a.selectFirst(".titlepisode")?.text()?.trim()
+                    episode = epNum
+                }
+            }.reversed()
+        }
+
+        return if (episodes.isNotEmpty() || seasons.isNotEmpty()) {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = posterUrl
                 this.year = year
                 this.plot = plot
                 this.tags = tags
                 this.rating = rating
+                this.showStatus = status
+                // يمكنك إضافة المواسم هنا إذا كانت واجهة المستخدم تدعمها
+                // this.seasons = seasons.map { ... }
             }
         } else {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
