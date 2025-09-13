@@ -4,14 +4,13 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.nodes.Element
-import java.util.ArrayList
 
 // Definir بنية بيانات لاستقبال استجابة AJAX
 data class PlayerAjaxResponse(
     val embed_url: String
 )
 
-// v5: إعادة كتابة منطق جلب الصفحة الرئيسية بالكامل ليتوافق مع بنية الموقع الفعلية
+// v6: استخدام بنية الروابط الصحيحة وإعادة تطبيق `mainPageOf` مع منطق جلب محسن.
 class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
@@ -19,11 +18,11 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    // دالة لتحويل عنصر HTML إلى نتيجة بحث (لا تغيير هنا)
-    private fun Element.toSearchResponse(): SearchResponse {
-        val titleElement = this.selectFirst("h3 a")
-        val title = titleElement?.text() ?: "No Title"
-        val href = fixUrlNull(titleElement?.attr("href")) ?: ""
+    // دالة لتحويل عنصر HTML إلى نتيجة بحث
+    private fun Element.toSearchResponse(): SearchResponse? {
+        val titleElement = this.selectFirst("h3 a") ?: return null
+        val title = titleElement.text()
+        val href = fixUrlNull(titleElement.attr("href")) ?: return null
         val posterUrl = fixUrlNull(this.selectFirst("div.thumbnail img")?.attr("data-src"))
 
         val typeText = this.selectFirst("span.type")?.text()?.lowercase()
@@ -40,51 +39,49 @@ class Asia2Tv : MainAPI() {
         }
     }
 
-    // تم حذف `mainPageOf` لأننا سنبني الصفحة الرئيسية يدويًا
-    // override val mainPage = mainPageOf(...)
+    // **التصحيح**: استخدام الروابط الصحيحة التي قدمها المستخدم
+    override val mainPage = mainPageOf(
+        "/" to "الصفحة الرئيسية",
+        "/movies" to "الأفلام",
+        "/series" to "المسلسلات",
+        "/status/live" to "يبث حاليا",
+        "/status/complete" to "أعمال مكتملة"
+    )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        // الصفحة الرئيسية لا تدعم الترقيم، لذا نرجع فارغًا إذا طلب المستخدم صفحة غير الأولى
-        if (page > 1) return HomePageResponse(emptyList())
-
-        val document = app.get(mainUrl).document
-        val homePageList = ArrayList<HomePageList>()
-
-        // استهداف جميع أقسام المحتوى في الصفحة الرئيسية
-        val allSections = document.select("div.bdaia-home-container-wrap")
-
-        allSections.forEach { section ->
-            // استخراج عنوان القسم
-            val title = section.selectFirst("div.widget-title h4.block-title span")?.text() ?: return@forEach
-            
-            // استخراج جميع العناصر (أفلام/مسلسلات) داخل هذا القسم
-            val items = section.select("article.item").mapNotNull {
-                try {
-                    it.toSearchResponse()
-                } catch (e: Exception) {
-                    null
-                }
-            }
-
-            // إضافة القسم إلى القائمة فقط إذا كان يحتوي على عناصر
-            if (items.isNotEmpty()) {
-                homePageList.add(HomePageList(title, items))
-            }
+        // **التصحيح**: بناء الرابط مع دعم الترقيم للصفحات الفرعية
+        val url = if (request.data == "/") {
+            // الصفحة الرئيسية لا تدعم الترقيم
+            if (page > 1) return HomePageResponse(emptyList())
+            mainUrl
+        } else {
+            "$mainUrl${request.data}/page/$page"
         }
 
-        return HomePageResponse(homePageList)
+        val document = app.get(url).document
+
+        // **التصحيح**: التعامل مع الصفحة الرئيسية كحالة خاصة
+        if (request.data == "/") {
+            val homePageList = document.select("div.bdaia-home-container-wrap").mapNotNull { section ->
+                val title = section.selectFirst("div.widget-title h4.block-title span")?.text() ?: return@mapNotNull null
+                val items = section.select("article.item").mapNotNull { it.toSearchResponse() }
+                if (items.isNotEmpty()) HomePageList(title, items) else null
+            }
+            return HomePageResponse(homePageList)
+        } else {
+            // التعامل مع جميع الصفحات الأخرى كقائمة عادية
+            val items = document.select("article.item").mapNotNull { it.toSearchResponse() }
+            // يجب التأكد من أن الصفحة ليست الأخيرة لمنع التحميل اللانهائي
+            val hasNext = document.selectFirst("a.next") != null
+            return newHomePageResponse(request.name, items, hasNext)
+        }
     }
 
+
     override suspend fun search(query: String): List<SearchResponse> {
-        val url = "$mainUrl/?s=$query" // استخدام رابط البحث الصحيح
+        val url = "$mainUrl/?s=$query"
         val document = app.get(url).document
-        return document.select("article.item").mapNotNull {
-            try {
-                it.toSearchResponse()
-            } catch (e: Exception) {
-                null
-            }
-        }
+        return document.select("article.item").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
