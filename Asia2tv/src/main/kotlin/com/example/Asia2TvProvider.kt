@@ -1,8 +1,7 @@
-// v19: إصلاح اسم الحزمة والاستيراد المفقود
+// v20: الحل النهائي المستقر. إزالة ميزة الحالة لتجنب أخطاء البناء، ودمجها كنص مع الوصف.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.TvSeriesStatus
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.nodes.Element
@@ -83,12 +82,9 @@ class Asia2Tv : MainAPI() {
 
         val tags = detailsContainer?.select("div.post_tags a")?.map { it.text() }
 
+        // --- تطبيق الخيار الرابع ---
+        // 1. استخراج الحالة كنص
         val statusText = document.selectFirst("span.serie-isstatus")?.text()?.trim()
-        val status = when {
-            statusText?.contains("مكتملة") == true -> TvSeriesStatus.Completed
-            statusText?.contains("حاليا") == true -> TvSeriesStatus.Ongoing
-            else -> null
-        }
         
         var country: String? = null
         var broadcastDate: String? = null
@@ -105,16 +101,19 @@ class Asia2Tv : MainAPI() {
             }
         }
 
+        // 2. تجميع كل المعلومات الإضافية في نص واحد
         val extraInfo = listOfNotNull(
+            statusText?.let { "الحالة: $it" },
             country?.let { "البلد: $it" },
             totalEpisodes?.let { "عدد الحلقات: $it" },
             broadcastDate?.let { "موعد البث: $it" }
         ).joinToString("\n")
 
-        if (plot.isNullOrBlank()) {
-            plot = extraInfo
+        // 3. دمج المعلومات مع الوصف الرئيسي
+        plot = if (plot.isNullOrBlank()) {
+            extraInfo
         } else {
-            plot += "\n\n$extraInfo"
+            "$extraInfo\n\n$plot"
         }
 
         val episodes = document.select("div.box-loop-episode a").mapNotNull { a ->
@@ -135,7 +134,7 @@ class Asia2Tv : MainAPI() {
                 this.plot = plot
                 this.tags = tags
                 this.rating = rating
-                this.showStatus = status
+                // تم إزالة .showStatus بالكامل
             }
         } else {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
