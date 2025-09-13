@@ -8,8 +8,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.awaitAll
 
-// v15: Final, simplified, and correct implementation based on all findings.
-// This version uses a single, smart `getMainPage` to handle both the main page and category pages.
+// v16: The Final Touch. Adding the 'Referer' header to `load` and `loadLinks` to ensure they can fetch content.
 class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
@@ -17,7 +16,6 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    // Static list of categories, which acts as the main navigation.
     override val mainPage = mainPageOf(
         "/" to "الرئيسية",
         "/movies" to "الأفلام",
@@ -28,15 +26,18 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url = if (page > 1) {
-            "$mainUrl${request.data}page/$page/"
+            // Appending /page/ correctly
+            "$mainUrl${request.data.removeSuffix("/")}/page/$page/"
         } else {
             "$mainUrl${request.data}"
         }
-        val document = app.get(url).document
+        
+        // This Referer is crucial for category pages to load their content.
+        val headers = mapOf("Referer" to mainUrl)
+        val document = app.get(url, headers = headers).document
 
-        // This is the core logic: we check which type of page we are on.
         if (request.data == "/") {
-            // Logic for the TRUE main page (based on Asia2tv.com.html)
+            // Logic for the TRUE main page (using <article>)
             val homePageList = mutableListOf<HomePageList>()
             document.select("div.mov-cat-d").forEach { block ->
                 val title = block.selectFirst("h2.mov-cat-d-title")?.text() ?: return@forEach
@@ -47,23 +48,21 @@ class Asia2Tv : MainAPI() {
             }
             return HomePageResponse(homePageList)
         } else {
-            // Logic for CATEGORY pages (based on status live.html)
+            // Logic for CATEGORY pages (using div.postmovie)
             val items = document.select("div.postmovie").mapNotNull { it.toSearchResponse(false) }
-            return newHomePageResponse(request.name, items, true) // Assuming pagination exists
+            val hasNext = document.selectFirst("a.next") != null
+            return newHomePageResponse(request.name, items, hasNext)
         }
     }
     
-    // A single, smart helper function to parse items from ANY page.
     private fun Element.toSearchResponse(isHomePage: Boolean): SearchResponse? {
         val linkElement: Element?
         val title: String?
         
         if (isHomePage) {
-            // Selectors for the main page <article> structure
             linkElement = this.selectFirst("h3.post-box-title a")
             title = linkElement?.text()
         } else {
-            // Selectors for the category page <div.postmovie> structure
             linkElement = this.selectFirst("h4 > a")
             title = linkElement?.text()
         }
@@ -83,12 +82,14 @@ class Asia2Tv : MainAPI() {
     override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/?s=$query"
         val document = app.get(url).document
-        // Search results use the category page structure.
         return document.select("div.postmovie").mapNotNull { it.toSearchResponse(false) }
     }
 
     override suspend fun load(url: String): LoadResponse? {
-        val document = app.get(url).document
+        // The key fix for v16: Adding the Referer header to the load request.
+        val headers = mapOf("Referer" to mainUrl)
+        val document = app.get(url, headers = headers).document
+        
         val title = document.selectFirst("h1.name")?.text()?.trim() ?: return null
         val poster = document.selectFirst("div.poster img")?.attr("src")
         val plot = document.selectFirst("div.story")?.text()?.trim()
@@ -119,7 +120,10 @@ class Asia2Tv : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).document
+        // Precautionary fix for v16: Adding the Referer header here as well.
+        val headers = mapOf("Referer" to data)
+        val document = app.get(data, headers = headers).document
+        
         val iframes = document.select("iframe")
 
         coroutineScope {
@@ -127,6 +131,7 @@ class Asia2Tv : MainAPI() {
                 async {
                     val iframeSrc = fixUrl(iframe.attr("src"))
                     if (iframeSrc.isNotBlank()) {
+                        // Pass the referer to the extractor as well
                         loadExtractor(iframeSrc, data, subtitleCallback, callback)
                     }
                 }
