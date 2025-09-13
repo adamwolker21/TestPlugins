@@ -1,4 +1,4 @@
-// v28: Implemented the correct ShowStatus enum based on user's discovery.
+// v29: Added "Coming Soon" status and moved extra info back to the plot.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -23,7 +23,8 @@ class Asia2Tv : MainAPI() {
         return when {
             element?.hasClass("live") == true -> ShowStatus.Ongoing
             element?.hasClass("complete") == true -> ShowStatus.Completed
-            else -> ShowStatus.Completed // Default to completed if not specified
+            element?.hasClass("coming-soon") == true -> ShowStatus.ComingSoon // -- تم التعديل هنا --
+            else -> ShowStatus.Completed 
         }
     }
 
@@ -79,7 +80,7 @@ class Asia2Tv : MainAPI() {
         val detailsContainer = document.selectFirst("div.info-detail-single")
         
         val title = detailsContainer?.selectFirst("h1")?.text()?.trim() ?: "No Title"
-        val plot = detailsContainer?.selectFirst("p")?.text()?.trim()
+        var plot = detailsContainer?.selectFirst("p")?.text()?.trim()
 
         val posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
 
@@ -91,10 +92,35 @@ class Asia2Tv : MainAPI() {
             ?.toFloatOrNull()?.times(100)?.toInt()
 
         val tags = detailsContainer?.select("div.post_tags a")?.map { it.text() }
-
-        // --- تم التعديل هنا ---
-        // استدعاء الدالة المساعدة الجديدة
+        
         val status = getStatus(document.selectFirst("span.serie-isstatus"))
+        
+        // -- تم التعديل هنا --
+        var country: String? = null
+        var totalEpisodes: String? = null
+
+        detailsContainer?.select("ul.mb-2 li")?.forEach { li ->
+            val text = li.text()
+            if (text.contains("البلد المنتج")) {
+                country = li.selectFirst("a")?.text()?.trim()
+            } else if (text.contains("عدد الحلقات")) {
+                totalEpisodes = li.ownText().trim().removePrefix(": ")
+            }
+        }
+
+        // بناء سطر المعلومات الإضافية
+        val extraInfoList = listOfNotNull(
+            country?.let { "<b>البلد:</b> $it" },
+            totalEpisodes?.let { "<b>عدد الحلقات:</b> $it" }
+        )
+        val extraInfo = extraInfoList.joinToString("<br>")
+
+        // دمج القصة مع المعلومات الإضافية
+        plot = if (extraInfo.isNotBlank()) {
+            listOfNotNull(plot, extraInfo).joinToString("<br><br>")
+        } else {
+            plot 
+        }
 
         val episodes = document.select("div.box-loop-episode a").mapNotNull { a ->
             val href = a.attr("href") ?: return@mapNotNull null
@@ -114,7 +140,6 @@ class Asia2Tv : MainAPI() {
                 this.plot = plot
                 this.tags = tags
                 this.rating = rating
-                // استخدام showStatus بدلاً من دمج الحالة مع الوصف
                 this.showStatus = status
             }
         } else {
