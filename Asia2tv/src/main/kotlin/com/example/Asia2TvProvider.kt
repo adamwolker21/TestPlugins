@@ -1,6 +1,7 @@
 package com.example
 
 import com.lagradost.cloudstream3.*
+// **الإصلاح النهائي: إعادة الاستيراد المفقود**
 import com.lagradost.cloudstream3.TvSeriesStatus
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
@@ -11,7 +12,7 @@ data class PlayerAjaxResponse(
     val embed_url: String
 )
 
-// v17: العودة إلى الاستقرار. إزالة منطق المواسم المعقد والتركيز على الأساسيات.
+// v18: الإصلاح النهائي والمؤكد. إعادة الاستيراد المفقود لـ TvSeriesStatus.
 class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
     override var mainUrl = "https://asia2tv.com"
