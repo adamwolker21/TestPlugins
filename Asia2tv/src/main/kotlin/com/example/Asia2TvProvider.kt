@@ -1,4 +1,4 @@
-// v25: تطبيق تنسيق "الخيار الثاني" الأنيق للوصف.
+// v26: تحسين تنسيق سطر المعلومات الإضافية ليصبح أكثر وضوحًا.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -96,12 +96,12 @@ class Asia2Tv : MainAPI() {
             }
         }
 
-        // --- تطبيق التنسيق الأنيق ---
-        // 1. تجميع المعلومات الهامة في سطر واحد مختصر
+        // --- تطبيق التنسيق النهائي المحسّن ---
+        // 1. تجميع المعلومات الهامة في سطر واحد بتنسيق واضح
         val conciseInfoList = listOfNotNull(
-            statusText,
-            country,
-            totalEpisodes?.let { "$it حلقات" }
+            statusText?.let { "الحالة: $it" },
+            country?.let { "البلد: $it" },
+            totalEpisodes?.let { "عدد الحلقات: $it" }
         )
         val conciseInfo = conciseInfoList.joinToString(" | ")
 
