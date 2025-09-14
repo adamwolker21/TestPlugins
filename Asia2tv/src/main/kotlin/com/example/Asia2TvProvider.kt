@@ -1,4 +1,4 @@
-// v36: Reverted to the original loadExtractor for compatibility.
+// v37: The final build, implementing advanced multi-step extraction with Regex.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -153,6 +153,8 @@ class Asia2Tv : MainAPI() {
         }
     }
 
+    // --- تم التعديل هنا ---
+    // إعادة بناء الوظيفة بالكامل لتستخدم التقنيات المتقدمة
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -168,13 +170,11 @@ class Asia2Tv : MainAPI() {
                 val code = server.attr("data-code")
                 if (code.isBlank()) return@apmap
 
+                // الخطوة الأولى: الحصول على رابط المشغل المضمن
                 val ajaxUrl = "$mainUrl/ajaxGetRequest"
                 val response = app.post(
                     ajaxUrl,
-                    data = mapOf(
-                        "action" to "iframe_server",
-                        "code" to code
-                    ),
+                    data = mapOf("action" to "iframe_server", "code" to code),
                     referer = data,
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).text
@@ -185,11 +185,35 @@ class Asia2Tv : MainAPI() {
                 val iframeHtml = jsonResponse.codeplay
                 val iframeSrc = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src")
                 if (iframeSrc.isNullOrBlank()) return@apmap
-                
-                // --- تم التعديل هنا ---
-                // العودة إلى الدالة الأصلية
-                loadExtractor(iframeSrc, data, subtitleCallback, callback)
 
+                // الخطوة الثانية: زيارة المشغل والبحث عن رابط الفيديو النهائي
+                val playerDocument = app.get(iframeSrc, referer = data).document
+                
+                // البحث داخل وسوم <script> عن رابط .m3u8
+                val scriptTags = playerDocument.select("script:not([src])")
+                for (script in scriptTags) {
+                    val scriptContent = script.html()
+                    // Regex للبحث عن أي رابط ينتهي بـ .m3u8
+                    val m3u8Regex = """"(https?://.*?\.m3u8.*?)"""".toRegex()
+                    val match = m3u8Regex.find(scriptContent)
+                    if (match != null) {
+                        val m3u8Url = match.groupValues[1]
+                        
+                        // إنشاء رابط HLS عالي الجودة
+                        callback.invoke(
+                            ExtractorLink(
+                                name, // اسم الإضافة
+                                server.text(), // اسم السيرفر
+                                m3u8Url,
+                                data, // Referer هو صفحة الحلقة
+                                Qualities.Unknown.value,
+                                isM3u8 = true
+                            )
+                        )
+                        // الخروج من الحلقة بعد العثور على الرابط
+                        break 
+                    }
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
