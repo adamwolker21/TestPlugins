@@ -1,4 +1,4 @@
-// v52: Final corrected version with all syntax errors fixed
+// v53: Using ExtractorLink directly instead of newExtractorLink with modification block
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -267,18 +267,16 @@ class Asia2Tv : MainAPI() {
                     if (m3u8Url.contains("m3u8")) {
                         println("DEBUG: Found m3u8 URL: $m3u8Url")
                         
-                        // استخدام الصيغة الصحيحة لإنشاء ExtractorLink
-                        callback.invoke(
-                            newExtractorLink(
-                                source = name,
-                                name = serverName,
-                                url = m3u8Url
-                            ) {
-                                this.referer = iframeUrl
-                                this.quality = Qualities.Unknown.value
-                                this.isM3u8 = true
-                            }
+                        // استخدام ExtractorLink مباشرة بدلاً من newExtractorLink مع كتلة التعديل
+                        val extractorLink = ExtractorLink(
+                            source = name,
+                            name = serverName,
+                            url = m3u8Url,
+                            referer = iframeUrl,
+                            quality = Qualities.Unknown.value,
+                            isM3u8 = true
                         )
+                        callback.invoke(extractorLink)
                         return true
                     }
                 }
@@ -302,7 +300,7 @@ class Asia2Tv : MainAPI() {
         return false
     }
 
-    // دالة لاستخراج روابط من doodstream (تم تصحيح اسم الدالة)
+    // دالة لاستخراج روابط من doodstream
     private suspend fun extractDoodLinks(
         iframeUrl: String,
         referer: String,
@@ -327,17 +325,15 @@ class Asia2Tv : MainAPI() {
                 m3u8Match?.value?.let { m3u8Url ->
                     println("DEBUG: Found m3u8 from Doodstream: $m3u8Url")
                     
-                    // استخدام الصيغة الصحيحة لإنشاء ExtractorLink
-                    callback.invoke(
-                        newExtractorLink(
-                            source = name,
-                            name = serverName,
-                            url = m3u8Url
-                        ) {
-                            this.referer = doodUrl
-                            this.isM3u8 = true
-                        }
+                    // استخدام ExtractorLink مباشرة بدلاً من newExtractorLink مع كتلة التعديل
+                    val extractorLink = ExtractorLink(
+                        source = name,
+                        name = serverName,
+                        url = m3u8Url,
+                        referer = doodUrl,
+                        isM3u8 = true
                     )
+                    callback.invoke(extractorLink)
                     return true
                 }
             }
