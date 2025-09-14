@@ -1,12 +1,10 @@
-// v44: The final fix, adding the crucial ExtractorLinkType import discovered by the user.
+// v45: The true final fix, built entirely on the user's correct analysis.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-// --- تم التعديل هنا ---
-// إضافة الاستيراد الذي تم اكتشافه
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
@@ -197,15 +195,16 @@ class Asia2Tv : MainAPI() {
                         val m3u8Url = match.groupValues[1]
                         
                         // --- تم التعديل هنا ---
-                        // استخدام الطريقة الحديثة مع الـ import الصحيح
+                        // تطبيق الحل الصحيح الذي تم اكتشافه
                         newExtractorLink(
                             source = name,
                             name = server.text(),
-                            url = m3u8Url,
-                            referer = data,
-                            quality = Qualities.Unknown.value,
+                            url = m3u8Url
                         ) {
-                            this.type = ExtractorLinkType.HLS // HLS is for .m3u8
+                            this.referer = data
+                            this.quality = Qualities.Unknown.value
+                            this.type = ExtractorLinkType.VIDEO // استخدام النوع الآمن
+                            this.isM3u8 = true
                         }.let { callback.invoke(it) }
                         break 
                     }
