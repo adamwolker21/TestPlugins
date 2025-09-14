@@ -1,4 +1,4 @@
-// v47: Enhanced with direct link extraction for various servers
+// v48: Fixed 'val cannot be reassigned' errors by using proper constructor parameters
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -266,16 +266,17 @@ class Asia2Tv : MainAPI() {
                     val m3u8Url = match.value
                     if (m3u8Url.contains("m3u8")) {
                         println("DEBUG: Found m3u8 URL: $m3u8Url")
+                        
+                        // استخدام الصيغة الصحيحة لإنشاء ExtractorLink
                         callback.invoke(
                             newExtractorLink(
                                 source = name,
                                 name = serverName,
-                                url = m3u8Url
-                            ) {
-                                this.referer = iframeUrl
-                                this.isM3u8 = true
-                                this.quality = Qualities.Unknown.value
-                            }
+                                url = m3u8Url,
+                                referer = iframeUrl,
+                                quality = Qualities.Unknown.value,
+                                isM3u8 = true
+                            )
                         )
                         return true
                     }
@@ -324,15 +325,16 @@ class Asia2Tv : MainAPI() {
                 
                 m3u8Match?.value?.let { m3u8Url ->
                     println("DEBUG: Found m3u8 from Doodstream: $m3u8Url")
+                    
+                    // استخدام الصيغة الصحيحة لإنشاء ExtractorLink
                     callback.invoke(
                         newExtractorLink(
                             source = name,
                             name = serverName,
-                            url = m3u8Url
-                        ) {
-                            this.referer = doodUrl
-                            this.isM3u8 = true
-                        }
+                            url = m3u8Url,
+                            referer = doodUrl,
+                            isM3u8 = true
+                        )
                     )
                     return true
                 }
