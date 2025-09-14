@@ -1,4 +1,4 @@
-// v33: Completely rebuilt loadLinks to support the new ajaxGetRequest endpoint.
+// v34: The evidence-based fix for loadLinks using the correct server selector.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -7,7 +7,6 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
-// -- تم التعديل هنا --
 // بنية بيانات جديدة لتناسب الرد الجديد من الموقع
 data class NewPlayerAjaxResponse(
     val status: Boolean,
@@ -154,8 +153,6 @@ class Asia2Tv : MainAPI() {
         }
     }
 
-    // -- تم التعديل هنا --
-    // إعادة بناء الوظيفة بالكامل
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -164,14 +161,15 @@ class Asia2Tv : MainAPI() {
     ): Boolean {
         val document = app.get(data).document
         
-        // البحث عن السيرفرات (بافتراض أن لديها الآن `data-code`)
-        val servers = document.select("ul.servers-tabs li")
+        // --- تم التعديل هنا ---
+        // استخدام المحدد الصحيح الذي تم اكتشافه
+        // نحن نبحث عن وسوم <a> داخل <li> داخل <ul> التي لديها class="dropdown-menu"
+        val servers = document.select("ul.dropdown-menu li a")
         
         servers.apmap { server ->
             try {
-                // استخراج الرمز السري الجديد
+                // استخراج الرمز السري من وسم <a>
                 val code = server.attr("data-code")
-                // تخطي السيرفر إذا لم يكن لديه رمز
                 if (code.isBlank()) return@apmap
 
                 val ajaxUrl = "$mainUrl/ajaxGetRequest"
@@ -185,16 +183,13 @@ class Asia2Tv : MainAPI() {
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).text
 
-                // تحليل الرد الجديد
                 val jsonResponse = parseJson<NewPlayerAjaxResponse>(response)
                 if (!jsonResponse.status) return@apmap
 
-                // استخراج رابط المشغل من كود iframe
                 val iframeHtml = jsonResponse.codeplay
                 val iframeSrc = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src")
                 if (iframeSrc.isNullOrBlank()) return@apmap
                 
-                // إرسال الرابط النهائي إلى Cloudstream
                 loadExtractor(iframeSrc, data, subtitleCallback, callback)
 
             } catch (e: Exception) {
