@@ -1,4 +1,4 @@
-// v46: The final fix, reverting to loadExtractor as the correct approach.
+// v47: Enhanced with direct link extraction for various servers
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -19,6 +19,17 @@ class Asia2Tv : MainAPI() {
     override var lang = "ar"
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
+
+    // Headers مخصصة للطلبات
+    private val customHeaders = mapOf(
+        "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language" to "en-US,en;q=0.5",
+        "Accept-Encoding" to "gzip, deflate",
+        "DNT" to "1",
+        "Connection" to "keep-alive",
+        "Upgrade-Insecure-Requests" to "1"
+    )
 
     private fun getStatus(element: Element?): ShowStatus {
         return when {
@@ -57,7 +68,7 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url = "$mainUrl${request.data}?page=$page"
-        val document = app.get(url).document
+        val document = app.get(url, headers = customHeaders).document
 
         val items = document.select("div.postmovie").mapNotNull {
             it.toSearchResponse()
@@ -69,13 +80,13 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/search?s=$query"
-        val document = app.get(url).document
+        val document = app.get(url, headers = customHeaders).document
 
         return document.select("div.postmovie").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url, headers = customHeaders).document
 
         val detailsContainer = document.selectFirst("div.info-detail-single")
 
@@ -159,9 +170,10 @@ class Asia2Tv : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data, headers = customHeaders).document
         
         val servers = document.select("ul.dropdown-menu li a")
+        var foundLinks = false
         
         servers.apmap { server ->
             try {
@@ -173,7 +185,10 @@ class Asia2Tv : MainAPI() {
                     ajaxUrl,
                     data = mapOf("action" to "iframe_server", "code" to code),
                     referer = data,
-                    headers = mapOf("X-Requested-With" to "XMLHttpRequest")
+                    headers = customHeaders + mapOf(
+                        "X-Requested-With" to "XMLHttpRequest",
+                        "Origin" to mainUrl
+                    )
                 ).text
 
                 val jsonResponse = parseJson<NewPlayerAjaxResponse>(response)
@@ -183,14 +198,149 @@ class Asia2Tv : MainAPI() {
                 val iframeSrc = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src")
                 if (iframeSrc.isNullOrBlank()) return@apmap
 
-                // --- تم التعديل هنا ---
-                // العودة إلى الطريقة الصحيحة والمجربة
-                loadExtractor(iframeSrc, data, subtitleCallback, callback)
+                // معالجة أنواع السيرفرات المختلفة
+                val serverName = server.text()
+                println("DEBUG: Processing server: $serverName")
+                println("DEBUG: Iframe URL: $iframeSrc")
+
+                when {
+                    iframeSrc.contains("vidmoly", true) -> {
+                        println("DEBUG: Detected Vidmoly server")
+                        if (extractVidmolyLinks(iframeSrc, data, serverName, callback)) {
+                            foundLinks = true
+                            return@apmap
+                        }
+                    }
+                    iframeSrc.contains("dood", true) -> {
+                        println("DEBUG: Detected Doodstream server")
+                        if (extractDoodLinks(iframeSrc, data, serverName, callback)) {
+                            foundLinks = true
+                            return@apmap
+                        }
+                    }
+                    else -> {
+                        println("DEBUG: Trying loadExtractor as fallback")
+                        // المحاولة مع loadExtractor كخيار احتياطي
+                        try {
+                            loadExtractor(iframeSrc, data, subtitleCallback, callback)
+                            foundLinks = true
+                            return@apmap
+                        } catch (e: Exception) {
+                            println("DEBUG: loadExtractor failed: ${e.message}")
+                            e.printStackTrace()
+                        }
+                    }
+                }
 
             } catch (e: Exception) {
+                println("DEBUG: Error processing server: ${e.message}")
                 e.printStackTrace()
             }
         }
-        return true
+        return foundLinks
+    }
+
+    // --- الدوال المساعدة الجديدة ---
+    
+    // دالة خاصة لاستخراج روابط من vidmoly
+    private suspend fun extractVidmolyLinks(
+        iframeUrl: String,
+        referer: String,
+        serverName: String,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        try {
+            println("DEBUG: Extracting from Vidmoly: $iframeUrl")
+            val document = app.get(iframeUrl, headers = customHeaders + mapOf("Referer" to referer)).document
+            
+            // البحث في السكريبتات عن روابط m3u8
+            val scripts = document.select("script")
+            for (script in scripts) {
+                val scriptContent = script.html()
+                
+                // regex محسن للعثور على روابط m3u8
+                val m3u8Regex = """(https?://[^"'`\s]*\.m3u8[^"'`\s]*)""".toRegex()
+                val matches = m3u8Regex.findAll(scriptContent)
+                
+                for (match in matches) {
+                    val m3u8Url = match.value
+                    if (m3u8Url.contains("m3u8")) {
+                        println("DEBUG: Found m3u8 URL: $m3u8Url")
+                        callback.invoke(
+                            newExtractorLink(
+                                source = name,
+                                name = serverName,
+                                url = m3u8Url
+                            ) {
+                                this.referer = iframeUrl
+                                this.isM3u8 = true
+                                this.quality = Qualities.Unknown.value
+                            }
+                        )
+                        return true
+                    }
+                }
+            }
+            
+            // البحث في iframes الداخلية
+            val nestedIframes = document.select("iframe")
+            for (iframe in nestedIframes) {
+                val nestedSrc = iframe.attr("src")
+                if (nestedSrc.isNotBlank()) {
+                    println("DEBUG: Found nested iframe: $nestedSrc")
+                    if (extractVidmolyLinks(nestedSrc, iframeUrl, serverName, callback)) {
+                        return true
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("DEBUG: Vidmoly extraction failed: ${e.message}")
+            e.printStackTrace()
+        }
+        return false
+    }
+
+    // دالة لاستخراج روابط من doodstream
+    private suspend fun extractDoodLinks(
+        iframeUrl: String,
+        referer: String,
+        serverName: String,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        try {
+            println("DEBUG: Extracting from Doodstream: $iframeUrl")
+            val document = app.get(iframeUrl, headers = customHeaders + mapOf("Referer" to referer)).document
+            val scriptContent = document.select("script").html()
+            
+            // regex خاص بـ doodstream
+            val doodRegex = """https?://[^/]+/e/[^"']+""".toRegex()
+            val doodMatch = doodRegex.find(scriptContent)
+            
+            doodMatch?.value?.let { doodUrl ->
+                println("DEBUG: Found Doodstream URL: $doodUrl")
+                val response = app.get(doodUrl, referer = iframeUrl, headers = customHeaders).text
+                val m3u8Regex = """(https?://[^"'`\s]*\.m3u8[^"'`\s]*)""".toRegex()
+                val m3u8Match = m3u8Regex.find(response)
+                
+                m3u8Match?.value?.let { m3u8Url ->
+                    println("DEBUG: Found m3u8 from Doodstream: $m3u8Url")
+                    callback.invoke(
+                        newExtractorLink(
+                            source = name,
+                            name = serverName,
+                            url = m3u8Url
+                        ) {
+                            this.referer = doodUrl
+                            this.isM3u8 = true
+                        }
+                    )
+                    return true
+                }
+            }
+        } catch (e: Exception) {
+            println("DEBUG: Doodstream extraction failed: ${e.message}")
+            e.printStackTrace()
+        }
+        return false
     }
 }
