@@ -1,4 +1,4 @@
-// v38: Used the modern newExtractorLink function to fix the final build error.
+// v39: Implemented the correct lambda-based newExtractorLink for compatibility.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -194,17 +194,17 @@ class Asia2Tv : MainAPI() {
                         val m3u8Url = match.groupValues[1]
                         
                         // --- تم التعديل هنا ---
-                        // استخدام الدالة الحديثة لإنشاء الرابط
-                        callback.invoke(
-                            newExtractorLink(
-                                name, // اسم الإضافة
-                                server.text(), // اسم السيرفر
-                                m3u8Url,
-                                data, // Referer هو صفحة الحلقة
-                                Qualities.Unknown.value,
-                                isM3u8 = true
-                            )
-                        )
+                        // استخدام الطريقة الصحيحة والمتوافقة
+                        newExtractorLink(
+                            source = name,
+                            name = server.text(),
+                            url = m3u8Url,
+                            referer = data,
+                            quality = Qualities.Unknown.value
+                        ) {
+                            // تحديد أن الرابط هو HLS (m3u8) داخل هذا البلوك
+                            this.isM3u8 = true
+                        }.let { callback.invoke(it) } // إرسال الرابط إلى التطبيق
                         break 
                     }
                 }
