@@ -1,4 +1,4 @@
-// v42: The true final fix, using the correct classic syntax for ExtractorLink properties.
+// v43: The final fix, creating ExtractorLink correctly without extra parameters.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -194,15 +194,14 @@ class Asia2Tv : MainAPI() {
                         val m3u8Url = match.groupValues[1]
                         
                         // --- تم التعديل هنا ---
-                        // استخدام الطريقة الكلاسيكية والصحيحة
+                        // استخدام الطريقة الصحيحة والمتوافقة
                         val extractorLink = newExtractorLink(
-                            source = name,
-                            name = server.text(),
-                            url = m3u8Url,
-                            referer = data,
-                            quality = Qualities.Unknown.value
+                            server.text(),
+                            server.text(),
+                            m3u8Url,
+                            data, // Referer
+                            Qualities.Unknown.value
                         )
-                        // تحديد الخصائص بشكل منفصل
                         extractorLink.isM3u8 = true
                         callback.invoke(extractorLink)
                         break 
