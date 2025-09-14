@@ -1,4 +1,4 @@
-// v41: Returning to the correct modern implementation and fixing the lambda syntax.
+// v42: The true final fix, using the correct classic syntax for ExtractorLink properties.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -194,18 +194,17 @@ class Asia2Tv : MainAPI() {
                         val m3u8Url = match.groupValues[1]
                         
                         // --- تم التعديل هنا ---
-                        // استخدام الطريقة الحديثة بالصيغة الصحيحة
-                        callback.invoke(
-                            newExtractorLink(
-                                source = name,
-                                name = server.text(),
-                                url = m3u8Url,
-                                referer = data,
-                                quality = Qualities.Unknown.value
-                            ).apply {
-                                this.isM3u8 = true
-                            }
-                         )
+                        // استخدام الطريقة الكلاسيكية والصحيحة
+                        val extractorLink = newExtractorLink(
+                            source = name,
+                            name = server.text(),
+                            url = m3u8Url,
+                            referer = data,
+                            quality = Qualities.Unknown.value
+                        )
+                        // تحديد الخصائص بشكل منفصل
+                        extractorLink.isM3u8 = true
+                        callback.invoke(extractorLink)
                         break 
                     }
                 }
