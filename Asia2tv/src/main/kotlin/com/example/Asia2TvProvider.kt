@@ -1,4 +1,4 @@
-// v35: Fixed the referer issue in loadExtractor.
+// v36: Reverted to the original loadExtractor for compatibility.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -187,8 +187,8 @@ class Asia2Tv : MainAPI() {
                 if (iframeSrc.isNullOrBlank()) return@apmap
                 
                 // --- تم التعديل هنا ---
-                // استخدام دالة safeLoadExtractor التي تتعامل مع الـ referer بشكل أفضل
-                safeLoadExtractor(iframeSrc, data, subtitleCallback, callback)
+                // العودة إلى الدالة الأصلية
+                loadExtractor(iframeSrc, data, subtitleCallback, callback)
 
             } catch (e: Exception) {
                 e.printStackTrace()
