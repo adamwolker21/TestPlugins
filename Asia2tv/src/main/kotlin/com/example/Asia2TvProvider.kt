@@ -1,4 +1,4 @@
-// v34: The evidence-based fix for loadLinks using the correct server selector.
+// v35: Fixed the referer issue in loadExtractor.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -161,14 +161,10 @@ class Asia2Tv : MainAPI() {
     ): Boolean {
         val document = app.get(data).document
         
-        // --- تم التعديل هنا ---
-        // استخدام المحدد الصحيح الذي تم اكتشافه
-        // نحن نبحث عن وسوم <a> داخل <li> داخل <ul> التي لديها class="dropdown-menu"
         val servers = document.select("ul.dropdown-menu li a")
         
         servers.apmap { server ->
             try {
-                // استخراج الرمز السري من وسم <a>
                 val code = server.attr("data-code")
                 if (code.isBlank()) return@apmap
 
@@ -190,7 +186,9 @@ class Asia2Tv : MainAPI() {
                 val iframeSrc = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src")
                 if (iframeSrc.isNullOrBlank()) return@apmap
                 
-                loadExtractor(iframeSrc, data, subtitleCallback, callback)
+                // --- تم التعديل هنا ---
+                // استخدام دالة safeLoadExtractor التي تتعامل مع الـ referer بشكل أفضل
+                safeLoadExtractor(iframeSrc, data, subtitleCallback, callback)
 
             } catch (e: Exception) {
                 e.printStackTrace()
