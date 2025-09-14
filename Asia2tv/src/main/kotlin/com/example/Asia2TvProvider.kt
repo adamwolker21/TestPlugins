@@ -1,4 +1,4 @@
-// v49: Fixed parameter errors by using the correct newExtractorLink syntax
+// v50: Fixed function name typos and syntax errors
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -221,4 +221,67 @@ class Asia2Tv : MainAPI() {
                     else -> {
                         println("DEBUG: Trying loadExtractor as fallback")
                         // المحاولة مع loadExtractor كخيار احتياطي
-                        try
+                        try {
+                            loadExtractor(iframeSrc, data, subtitleCallback, callback)
+                            foundLinks = true
+                            return@apmap
+                        } catch (e: Exception) {
+                            println("DEBUG: loadExtractor failed: ${e.message}")
+                            e.printStackTrace()
+                        }
+                    }
+                }
+
+            } catch (e: Exception) {
+                println("DEBUG: Error processing server: ${e.message}")
+                e.printStackTrace()
+            }
+        }
+        return foundLinks
+    }
+
+    // --- الدوال المساعدة الجديدة ---
+    
+    // دالة خاصة لاستخراج روابط من vidmoly
+    private suspend fun extractVidmolyLinks(
+        iframeUrl: String,
+        referer: String,
+        serverName: String,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        try {
+            println("DEBUG: Extracting from Vidmoly: $iframeUrl")
+            val document = app.get(iframeUrl, headers = customHeaders + mapOf("Referer" to referer)).document
+            
+            // البحث في السكريبتات عن روابط m3u8
+            val scripts = document.select("script")
+            for (script in scripts) {
+                val scriptContent = script.html()
+                
+                // regex محسن للعثور على روابط m3u8
+                val m3u8Regex = """(https?://[^"'`\s]*\.m3u8[^"'`\s]*)""".toRegex()
+                val matches = m3u8Regex.findAll(scriptContent)
+                
+                for (match in matches) {
+                    val m3u8Url = match.value
+                    if (m3u8Url.contains("m3u8")) {
+                        println("DEBUG: Found m3u8 URL: $m3u8Url")
+                        
+                        // استخدام الصيغة الصحيحة لإنشاء ExtractorLink
+                        callback.invoke(
+                            newExtractorLink(
+                                source = name,
+                                name = serverName,
+                                url = m3u8Url
+                            ) {
+                                this.referer = iframeUrl
+                                this.quality = Qualities.Unknown.value
+                                this.isM3u8 = true
+                            }
+                        )
+                        return true
+                    }
+                }
+            }
+            
+            // البحث في if
