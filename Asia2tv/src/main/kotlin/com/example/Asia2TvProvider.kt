@@ -1,10 +1,9 @@
-// v45: The true final fix, built entirely on the user's correct analysis.
+// v46: The final fix, reverting to loadExtractor as the correct approach.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
@@ -184,31 +183,10 @@ class Asia2Tv : MainAPI() {
                 val iframeSrc = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src")
                 if (iframeSrc.isNullOrBlank()) return@apmap
 
-                val playerDocument = app.get(iframeSrc, referer = data).document
-                
-                val scriptTags = playerDocument.select("script:not([src])")
-                for (script in scriptTags) {
-                    val scriptContent = script.html()
-                    val m3u8Regex = """"(https?://.*?\.m3u8.*?)"""".toRegex()
-                    val match = m3u8Regex.find(scriptContent)
-                    if (match != null) {
-                        val m3u8Url = match.groupValues[1]
-                        
-                        // --- تم التعديل هنا ---
-                        // تطبيق الحل الصحيح الذي تم اكتشافه
-                        newExtractorLink(
-                            source = name,
-                            name = server.text(),
-                            url = m3u8Url
-                        ) {
-                            this.referer = data
-                            this.quality = Qualities.Unknown.value
-                            this.type = ExtractorLinkType.VIDEO // استخدام النوع الآمن
-                            this.isM3u8 = true
-                        }.let { callback.invoke(it) }
-                        break 
-                    }
-                }
+                // --- تم التعديل هنا ---
+                // العودة إلى الطريقة الصحيحة والمجربة
+                loadExtractor(iframeSrc, data, subtitleCallback, callback)
+
             } catch (e: Exception) {
                 e.printStackTrace()
             }
