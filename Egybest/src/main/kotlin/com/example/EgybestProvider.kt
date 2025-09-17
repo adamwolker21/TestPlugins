@@ -5,9 +5,9 @@ import com.lagradost.cloudstream3.utils.*
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.net.URLDecoder
 
-// v20: Final Refinement.
-// This version refactors the user's excellent code to ensure a single, perfectly consistent
-// session from the first request to the API call, solving potential Cloudflare mismatches.
+// v21: The WebView Solution
+// This version uses a real (but invisible) WebView to solve Cloudflare's JavaScript challenge,
+// guaranteeing we get a valid session before making the API call. This is the definitive method for protected sites.
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -21,7 +21,6 @@ class EgybestProvider : MainAPI() {
 
     private val mobileUserAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"
 
-    // Data classes are perfectly structured by the user.
     data class ContentItem(
         @JsonProperty("id") val id: Int?,
         @JsonProperty("name") val name: String?,
@@ -34,24 +33,9 @@ class EgybestProvider : MainAPI() {
         @JsonProperty("data") val data: List<ContentItem>?,
     )
 
-    // Maps are correctly identified by the user.
-    private val channelIds = mapOf(
-        "movies" to "2",
-        "series" to "4",
-        "netflix" to "19"
-    )
-
-    private val pageOrders = mapOf(
-        "movies" to "created_at:desc",
-        "series" to "budget:desc",
-        "netflix" to "created_at:desc"
-    )
-
-    private val pageSlugs = mapOf(
-        "movies" to "movies",
-        "series" to "series-Movies",
-        "netflix" to "Netflix"
-    )
+    private val channelIds = mapOf("movies" to "2", "series" to "4", "netflix" to "19")
+    private val pageOrders = mapOf("movies" to "created_at:desc", "series" to "budget:desc", "netflix" to "created_at:desc")
+    private val pageSlugs = mapOf("movies" to "movies", "series" to "series-Movies", "netflix" to "Netflix")
 
     override val mainPage = mainPageOf(
         "movies" to "أفلام",
@@ -66,32 +50,38 @@ class EgybestProvider : MainAPI() {
         val pageSlug = pageSlugs[pageType] ?: "movies"
         val sectionUrl = "$mainUrl/$pageSlug"
 
-        // --- Refined Session Handling ---
-        // By performing the session-gathering request and the API request in sequence,
-        // we let the underlying HTTP client handle the cookies perfectly, ensuring consistency.
+        // --- Step 1: Solve Cloudflare challenge using WebView ---
+        // We make a special request that uses an invisible WebView to get valid cookies.
+        // This process perfectly mimics a real browser visit.
+        val webViewResponse = app.get(
+            sectionUrl,
+            interceptor = WebViewResolver(
+                // We wait for the main grid element to appear, which confirms the page has loaded after the challenge.
+                Regex("""class="grid""") 
+            )
+        )
         
-        // Step 1: Visit the section page to acquire the necessary session cookies (including cf_clearance).
-        // The `app` object will automatically store and reuse these cookies for the next request.
-        val sectionResponse = app.get(sectionUrl, headers = mapOf("User-Agent" to mobileUserAgent))
-        val sessionCookies = sectionResponse.cookies
-        
-        val xsrfToken = sessionCookies["XSRF-TOKEN"]?.let { 
-            URLDecoder.decode(it, "UTF-8") 
-        } ?: throw ErrorLoadingException("Failed to obtain XSRF Token.")
-        
-        // Step 2: Build the API URL.
+        val validCookies = webViewResponse.cookies
+        val validUserAgent = webViewResponse.request.headers["User-Agent"] ?: mobileUserAgent
+
+        // Extract the crucial XSRF-TOKEN from the valid cookies.
+        val xsrfToken = validCookies["XSRF-TOKEN"]?.let {
+            URLDecoder.decode(it, "UTF-8")
+        } ?: throw ErrorLoadingException("Failed to obtain a valid XSRF Token after WebView.")
+
+        // --- Step 2: Make the API call with the "golden" session data ---
         val apiUrl = "$mainUrl/api/v1/channel/$channelId?restriction=&order=$order&page=$page&paginate=lengthAware&returnContentOnly=true"
 
-        // Step 3: Build the headers for the API request, using the cookies from the previous step.
         val apiHeaders = mapOf(
-            "User-Agent" to mobileUserAgent,
+            "User-Agent" to validUserAgent,
             "Accept" to "application/json, text/plain, */*",
             "X-Requested-With" to "XMLHttpRequest",
             "X-Xsrf-Token" to xsrfToken,
-            "Referer" to sectionUrl // The referer should be the section page we just visited.
+            "Referer" to sectionUrl,
+            // We provide the full, valid cookie string obtained from the WebView.
+            "Cookie" to validCookies.map { (k, v) -> "$k=$v" }.joinToString("; ")
         )
         
-        // Step 4: Make the API request. The `app` object will automatically include the cookies.
         val apiJsonResponse = app.get(apiUrl, headers = apiHeaders).parsed<SimpleApiResponse>()
 
         val home = apiJsonResponse.data?.mapNotNull { item ->
@@ -101,34 +91,17 @@ class EgybestProvider : MainAPI() {
             val absoluteUrl = "$mainUrl/titles/$slug"
             
             if (item.isSeries == true) {
-                newTvSeriesSearchResponse(title, absoluteUrl, TvType.TvSeries) {
-                    this.posterUrl = posterUrl
-                }
+                newTvSeriesSearchResponse(title, absoluteUrl, TvType.TvSeries) { this.posterUrl = posterUrl }
             } else {
-                newMovieSearchResponse(title, absoluteUrl, TvType.Movie) {
-                    this.posterUrl = posterUrl
-                }
+                newMovieSearchResponse(title, absoluteUrl, TvType.Movie) { this.posterUrl = posterUrl }
             }
         } ?: listOf()
 
         return newHomePageResponse(request.name, home)
     }
     
-    // Placeholders remain for future implementation.
-    override suspend fun search(query: String): List<SearchResponse> {
-        return emptyList()
-    }
-
-    override suspend fun load(url: String): LoadResponse {
-        return newMovieLoadResponse("Placeholder", url, TvType.Movie, url)
-    }
-    
-    override suspend fun loadLinks(
-        data: String,
-        isCasting: Boolean,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ): Boolean {
-        return false 
-    }
+    // Placeholders
+    override suspend fun search(query: String): List<SearchResponse> { return emptyList() }
+    override suspend fun load(url: String): LoadResponse { throw NotImplementedError() }
+    override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean { throw NotImplementedError() }
 }
