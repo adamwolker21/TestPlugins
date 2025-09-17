@@ -5,8 +5,6 @@ import com.lagradost.cloudstream3.utils.*
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.net.URLDecoder
 
-// v18: Perfecting the simulation by adding a mobile User-Agent.
-// This is a critical header that makes our requests indistinguishable from a real browser.
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -18,7 +16,6 @@ class EgybestProvider : MainAPI() {
         TvType.TvSeries,
     )
 
-    // A standard mobile browser User-Agent.
     private val mobileUserAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Mobile Safari/537.36"
 
     data class ApiDataItem(
@@ -50,47 +47,70 @@ class EgybestProvider : MainAPI() {
         val pagePath = pagePaths[request.name] ?: "movies"
         val pageUrl = "$mainUrl/$pagePath"
 
-        // Step 1: Visit the section page to get cookies, mimicking the first part of navigation.
+        // Visit the section page to get cookies
         val mainPageResponse = app.get(pageUrl, headers = mapOf("User-Agent" to mobileUserAgent))
         val cookies = mainPageResponse.cookies
-        val xsrfToken = cookies["XSRF-TOKEN"]?.let { URLDecoder.decode(it, "UTF-8") }
+        
+        // Extract XSRF token correctly from cookies
+        val xsrfToken = cookies["XSRF-TOKEN"]?.let { 
+            URLDecoder.decode(it, "UTF-8") 
+        }
 
         if (xsrfToken == null) {
             throw ErrorLoadingException("Failed to retrieve XSRF token for page: $pageUrl")
         }
 
+        // Build correct API URL with proper parameters
         val apiUrl = "$mainUrl/api/v1/channel/$channelId?restriction=&order=created_at:desc&page=$page&paginate=lengthAware&returnContentOnly=true"
 
-        // Step 2: Make the API call with ALL necessary headers, including the User-Agent.
+        // Prepare cookies for the request
+        val cookieString = cookies.map { (key, value) -> 
+            "$key=${URLDecoder.decode(value, "UTF-8")}" 
+        }.joinToString("; ")
+
+        // Get cf_clearance cookie if available (important for Cloudflare)
+        val cfClearance = cookies["cf_clearance"] ?: ""
+
+        // Complete headers as seen in the screenshot
         val headers = mapOf(
             "User-Agent" to mobileUserAgent,
-            "Accept" to "application/json",
+            "Accept" to "application/json, text/plain, */*",
+            "Accept-Encoding" to "gzip, deflate, br",
+            "Accept-Language" to "en-US,en;q=0.9",
             "X-Requested-With" to "XMLHttpRequest",
             "X-Xsrf-Token" to xsrfToken,
             "Referer" to pageUrl,
-            "Cookie" to cookies.map { (key, value) -> "$key=$value" }.joinToString("; ")
+            "Sec-Fetch-Dest" to "empty",
+            "Sec-Fetch-Mode" to "cors",
+            "Sec-Fetch-Site" to "same-origin",
+            "Cookie" to "$cookieString${if (cfClearance.isNotEmpty()) "; cf_clearance=$cfClearance" else ""}"
         )
 
-        val apiResponse = app.get(apiUrl, headers = headers).parsed<ApiResponseData>()
+        try {
+            val apiResponse = app.get(apiUrl, headers = headers).parsed<ApiResponseData>()
 
-        val home = apiResponse.data?.mapNotNull { item ->
-            val title = item.name ?: return@mapNotNull null
-            val slug = item.slug ?: return@mapNotNull null
-            val posterUrl = item.poster
-            val absoluteUrl = "$mainUrl/titles/$slug"
+            val home = apiResponse.data?.mapNotNull { item ->
+                val title = item.name ?: return@mapNotNull null
+                val slug = item.slug ?: return@mapNotNull null
+                val posterUrl = item.poster
+                val absoluteUrl = "$mainUrl/titles/$slug"
+                
+                if (item.isSeries == true) {
+                    newTvSeriesSearchResponse(title, absoluteUrl, TvType.TvSeries) {
+                        this.posterUrl = posterUrl
+                    }
+                } else {
+                    newMovieSearchResponse(title, absoluteUrl, TvType.Movie) {
+                        this.posterUrl = posterUrl
+                    }
+                }
+            } ?: listOf()
             
-            if (item.isSeries == true) {
-                newTvSeriesSearchResponse(title, absoluteUrl, TvType.TvSeries) {
-                    this.posterUrl = posterUrl
-                }
-            } else {
-                newMovieSearchResponse(title, absoluteUrl, TvType.Movie) {
-                    this.posterUrl = posterUrl
-                }
-            }
-        } ?: listOf()
-        
-        return newHomePageResponse(request.name, home)
+            return newHomePageResponse(request.name, home)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw ErrorLoadingException("Failed to load content: ${e.message}")
+        }
     }
     
     override suspend fun search(query: String): List<SearchResponse> {
