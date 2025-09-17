@@ -5,10 +5,10 @@ import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
 import org.jsoup.Jsoup
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.webView // v6: The correct import for the modern WebView helper function.
 
-// v5: This version adapts to the modern CloudStream API for WebViewResolver and coroutines.
+// v6: This version uses the modern `webView` helper to fix all previous compilation issues.
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -124,37 +124,22 @@ class EgybestProvider : MainAPI() {
         val iframeHtml = parseJson<EgybestApiResponse>(apiResponse).html
         val iframeSrc = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src") ?: return false
 
-        // v5: Updated WebViewResolver logic to use the new request interceptor API.
-        val m3u8Links = mutableListOf<String>()
-        val resolver = WebViewResolver(
-            // We can add a regex to pre-filter, but intercepting all and checking is more reliable.
-            // Let's keep it simple and check in the interceptor.
-            anyRequest = true,
-            interceptor = { request ->
-                // This lambda is called for each network request inside the WebView.
-                if (request.url.endsWith(".m3u8")) {
-                    m3u8Links.add(request.url)
-                }
-                // Return true to allow the request to continue.
-                true
-            }
-        )
-        // The `resolve` function now takes the parameters directly.
-        resolver.resolve(
+        // v6: New implementation using the modern `webView` suspend function.
+        // This is the correct way to handle link interception in recent CloudStream versions.
+        val webViewResult = webView(
             url = iframeSrc,
-            referer = videoPageUrl
+            referer = videoPageUrl,
+            interceptorUrl = ".*\\.m3u8.*" // A regex to capture the master m3u8 file
         )
 
-        if (m3u8Links.isEmpty()) return false
+        // The result might be null if nothing is found or an error occurs.
+        val m3u8Link = webViewResult?.url ?: return false
 
-        // v5: Use a 'for' loop to correctly handle suspend function calls within a coroutine.
-        for (link in m3u8Links) {
-            M3u8Helper.generateM3u8(
-                this.name,
-                link,
-                iframeSrc,
-            ).forEach(callback)
-        }
+        M3u8Helper.generateM3u8(
+            this.name,
+            m3u8Link,
+            iframeSrc, // The referer for the m3u8 segments is the page that contains the player.
+        ).forEach(callback)
 
         return true
     }
