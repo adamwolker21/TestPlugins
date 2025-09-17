@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.utils.*
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.net.URLDecoder
 
-// v5: Fixed API endpoints and order parameters based on network analysis
+// v6: Using alternative API endpoints based on network analysis
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -31,31 +31,22 @@ class EgybestProvider : MainAPI() {
         @JsonProperty("data") val data: List<ApiDataItem>?
     )
 
-    private val pagePaths = mapOf(
+    private val pageApiEndpoints = mapOf(
         "movies" to "movies",
-        "series-Movies" to "series-Movies",
+        "series-Movies" to "series-Movies", 
         "Netflix" to "Netflix"
     )
 
-    // Different order parameters for each channel based on network analysis
-    private val channelOrders = mapOf(
-        "2" to "budget.desc",  // movies
-        "4" to "budget.desc",  // series-Movies
-        "19" to "created_at.desc"  // Netflix
-    )
-
     override val mainPage = mainPageOf(
-        "2" to "movies",
-        "4" to "series-Movies",
-        "19" to "Netflix",
+        "movies" to "أفلام",
+        "series-Movies" to "مسلسلات",
+        "Netflix" to "نتفليكس"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val channelId = request.data
         val pageName = request.name
-        val pagePath = pagePaths[pageName] ?: "movies"
+        val pagePath = pageApiEndpoints[request.data] ?: "movies"
         val pageUrl = "$mainUrl/$pagePath"
-        val order = channelOrders[channelId] ?: "created_at.desc"
 
         try {
             // Step 1: Get initial cookies by visiting the main page first
@@ -69,10 +60,6 @@ class EgybestProvider : MainAPI() {
             ))
             
             val finalCookies = sectionPageResponse.cookies
-            println("Egybest Debug: Final cookies from $pageUrl")
-            finalCookies.forEach { (key, value) ->
-                println("$key: $value")
-            }
 
             // Extract XSRF token from cookies
             val xsrfToken = finalCookies["XSRF-TOKEN"]?.let { 
@@ -84,14 +71,17 @@ class EgybestProvider : MainAPI() {
                 return newHomePageResponse(pageName, emptyList())
             }
 
-            // Build API URL with correct order parameter
-            val apiUrl = "$mainUrl/api/v1/channel/$channelId?restriction=&order=$order&page=$page&paginate=lengthAware&returnContentOnly=true"
+            // Use the alternative API endpoint discovered in network analysis
+            val apiUrl = "$mainUrl/api/v1/channel/$pagePath?channelType=channel&restriction=&loader=channelPage&page=$page"
             println("Egybest Debug: API URL: $apiUrl")
 
             // Prepare cookies string
             val cookieString = finalCookies.map { (key, value) -> 
                 "$key=${URLDecoder.decode(value, "UTF-8")}" 
             }.joinToString("; ")
+
+            // Get cf_clearance cookie if available
+            val cfClearance = finalCookies["cf_clearance"] ?: ""
 
             // Prepare headers exactly as in the browser
             val headers = mapOf(
@@ -105,7 +95,7 @@ class EgybestProvider : MainAPI() {
                 "Sec-Fetch-Dest" to "empty",
                 "Sec-Fetch-Mode" to "cors",
                 "Sec-Fetch-Site" to "same-origin",
-                "Cookie" to cookieString
+                "Cookie" to "$cookieString${if (cfClearance.isNotEmpty()) "; cf_clearance=$cfClearance" else ""}"
             )
 
             // Make API request
@@ -118,7 +108,9 @@ class EgybestProvider : MainAPI() {
             if (response.code != 200) {
                 println("Egybest Error: API request failed with status ${response.code}")
                 println("Egybest Error: Response body: ${response.text.take(500)}")
-                return newHomePageResponse(pageName, emptyList())
+                
+                // Fallback to numeric channel IDs if the new endpoint fails
+                return getMainPageFallback(page, request, finalCookies, pageUrl, xsrfToken)
             }
 
             // Get response body as text
@@ -163,14 +155,86 @@ class EgybestProvider : MainAPI() {
             return newHomePageResponse(pageName, emptyList())
         }
     }
+
+    // Fallback method using numeric channel IDs
+    private suspend fun getMainPageFallback(
+        page: Int, 
+        request: MainPageRequest, 
+        cookies: Map<String, String>,
+        pageUrl: String,
+        xsrfToken: String
+    ): HomePageResponse {
+        val channelIds = mapOf(
+            "movies" to "2",
+            "series-Movies" to "4", 
+            "Netflix" to "19"
+        )
+        
+        val channelId = channelIds[request.data] ?: "2"
+        val order = when (channelId) {
+            "2" -> "budget.desc"
+            "4" -> "budget.desc"
+            "19" -> "created_at.desc"
+            else -> "created_at.desc"
+        }
+
+        val apiUrl = "$mainUrl/api/v1/channel/$channelId?restriction=&order=$order&page=$page&paginate=lengthAware&returnContentOnly=true"
+        println("Egybest Debug: Fallback API URL: $apiUrl")
+
+        // Prepare cookies string
+        val cookieString = cookies.map { (key, value) -> 
+            "$key=${URLDecoder.decode(value, "UTF-8")}" 
+        }.joinToString("; ")
+
+        // Prepare headers
+        val headers = mapOf(
+            "User-Agent" to mobileUserAgent,
+            "Accept" to "application/json, text/plain, */*",
+            "Accept-Encoding" to "gzip, deflate, br",
+            "Accept-Language" to "en-US,en;q=0.9",
+            "X-Requested-With" to "XMLHttpRequest",
+            "X-Xsrf-Token" to xsrfToken,
+            "Referer" to pageUrl,
+            "Sec-Fetch-Dest" to "empty",
+            "Sec-Fetch-Mode" to "cors",
+            "Sec-Fetch-Site" to "same-origin",
+            "Cookie" to cookieString
+        )
+
+        try {
+            val response = app.get(apiUrl, headers = headers)
+            val apiResponse = response.parsedSafe<ApiResponseData>()
+            
+            val home = apiResponse?.data?.mapNotNull { item ->
+                val title = item.name ?: return@mapNotNull null
+                val slug = item.slug ?: return@mapNotNull null
+                val posterUrl = item.poster
+                val absoluteUrl = "$mainUrl/titles/$slug"
+                
+                if (item.isSeries == true) {
+                    newTvSeriesSearchResponse(title, absoluteUrl, TvType.TvSeries) {
+                        this.posterUrl = posterUrl
+                    }
+                } else {
+                    newMovieSearchResponse(title, absoluteUrl, TvType.Movie) {
+                        this.posterUrl = posterUrl
+                    }
+                }
+            } ?: listOf()
+            
+            println("Egybest Debug: Fallback loaded ${home.size} items")
+            return newHomePageResponse(request.name, home)
+        } catch (e: Exception) {
+            println("Egybest Error: Fallback also failed: ${e.message}")
+            return newHomePageResponse(request.name, emptyList())
+        }
+    }
     
     override suspend fun search(query: String): List<SearchResponse> {
-        // TODO: Implement search functionality
         return emptyList()
     }
 
     override suspend fun load(url: String): LoadResponse {
-        // TODO: Implement load functionality
         return newMovieLoadResponse("Placeholder", url, TvType.Movie, url)
     }
     
@@ -180,7 +244,6 @@ class EgybestProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        // TODO: Implement loadLinks functionality
         return false 
     }
 }
