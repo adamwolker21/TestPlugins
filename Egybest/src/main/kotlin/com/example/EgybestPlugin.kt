@@ -6,9 +6,8 @@ import android.content.Context
 
 @CloudstreamPlugin
 class EgybestPlugin: Plugin() {
-    // This is the entry point of the plugin.
-    // v2: No major changes needed here, this file primarily registers the provider.
-    // The core logic is handled in EgybestProvider.
+    // v3: No changes needed in this file.
+    // It correctly registers the provider.
     override fun load(context: Context) {
         registerMainAPI(EgybestProvider())
     }
