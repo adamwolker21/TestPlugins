@@ -34,14 +34,14 @@ class EgybestProvider : MainAPI() {
     )
 
     private val pagePaths = mapOf(
-        "أفلام" to "movies",
-        "مسلسلات" to "series-Movies",
+        "movies" to "movies",
+        "series-Movies" to "series-Movies",
         "Netflix" to "Netflix"
     )
 
     override val mainPage = mainPageOf(
-        "2" to "أفلام",
-        "4" to "مسلسلات",
+        "2" to "movies",
+        "4" to "series-Movies",
         "19" to "Netflix",
     )
 
