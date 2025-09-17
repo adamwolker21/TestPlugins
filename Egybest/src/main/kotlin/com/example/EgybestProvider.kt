@@ -4,10 +4,11 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
 import org.jsoup.Jsoup
-import com.fasterxml.jackson.annotation.JsonProperty
+import java.net.URLDecoder
 
-// v14: Final implementation using the correct API endpoint discovered by the user.
-// The app now calls the same API as the website, ensuring content is always loaded correctly.
+// v15: The definitive solution. Implements a two-step process to mimic browser behavior.
+// 1. Fetches the main page to acquire necessary cookies (especially XSRF-TOKEN).
+// 2. Makes the API call with all the required headers (Cookie, Referer, X-Xsrf-Token).
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -19,29 +20,48 @@ class EgybestProvider : MainAPI() {
         TvType.TvSeries,
     )
 
+    // Using the path segments as keys for cleaner code.
     override val mainPage = mainPageOf(
         "movies" to "أفلام",
         "series" to "مسلسلات",
-        "netflix" to "Netflix", // This might need a different channel name, we can adjust later
+        // Netflix might be a special channel, we can investigate later if needed.
+        "netflix" to "Netflix",
     )
 
-    // v14: This function now calls the correct API endpoint.
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        // The API URL discovered by the user. This is the key to the solution.
-        val apiUrl = "$mainUrl/api/v1/channel?channel=${request.data}&page=$page&paginate=true&returnContentOnly=true"
+        val pageUrl = "$mainUrl/${request.data}"
 
-        // The API returns HTML content directly, not JSON.
-        val apiResponseHtml = app.get(apiUrl).text
-        // We parse this returned HTML string.
+        // Step 1: Visit the main page to get the session cookies and security tokens.
+        val mainPageResponse = app.get(pageUrl)
+        val cookies = mainPageResponse.cookies
+        // The XSRF-TOKEN is crucial for the API call to be accepted.
+        val xsrfToken = cookies["XSRF-TOKEN"]?.let { URLDecoder.decode(it, "UTF-8") }
+
+        // If we can't get the token, we can't proceed.
+        if (xsrfToken == null) {
+            throw ErrorLoadingException("Failed to retrieve XSRF token.")
+        }
+
+        // The correct API URL structure discovered by the user.
+        val apiUrl = "$mainUrl/api/v1/channel/${request.data}?channelType=channel&restriction=&loader=channelPage&page=$page"
+
+        // Step 2: Make the API call with all the necessary headers to look like a real browser.
+        val headers = mapOf(
+            "Accept" to "application/json",
+            "X-Requested-With" to "XMLHttpRequest",
+            "X-Xsrf-Token" to xsrfToken,
+            "Referer" to pageUrl,
+            "Cookie" to cookies.map { (key, value) -> "$key=$value" }.joinToString("; ")
+        )
+        
+        val apiResponseHtml = app.get(apiUrl, headers = headers).text
         val document = Jsoup.parse(apiResponseHtml)
 
-        // We use the same reliable parsing logic from v12 on the API's HTML response.
         val home = document.select("div.grid > div").mapNotNull { it.toSearchResult() }
         
         return newHomePageResponse(request.name, home)
     }
 
-    // This function is now correct for parsing the HTML fragment returned by the API.
     private fun Element.toSearchResult(): SearchResponse? {
         val linkElement = this.selectFirst("a.text-inherit") ?: return null
         
@@ -65,11 +85,8 @@ class EgybestProvider : MainAPI() {
         }
     }
 
-    // v14: Search will also need to be updated to use an API.
-    // For now, let's confirm the main page works.
     override suspend fun search(query: String): List<SearchResponse> {
-        // The old search will not work. We need to find the search API endpoint next.
-        // Let's focus on the main page first. Returning an empty list for now.
+        // Will be fixed later, focusing on the main page.
         return emptyList()
     }
 
