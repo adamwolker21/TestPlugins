@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.utils.*
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.net.URLDecoder
 
-// v10: Focus on numeric channel ID endpoint with improved token handling
+// v11: Using advanced techniques inspired by reference project
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -28,24 +28,7 @@ class EgybestProvider : MainAPI() {
         @JsonProperty("is_series") val isSeries: Boolean?,
         @JsonProperty("release_date") val releaseDate: String?,
         @JsonProperty("rating") val rating: Double?,
-        @JsonProperty("runtime") val runtime: Int?,
-        @JsonProperty("model_type") val modelType: String?,
-        @JsonProperty("status") val status: String?,
-        @JsonProperty("certification") val certification: String?,
-        @JsonProperty("description") val description: String?,
-        @JsonProperty("primary_video") val primaryVideo: PrimaryVideo?
-    )
-
-    data class PrimaryVideo(
-        @JsonProperty("id") val id: Int?,
-        @JsonProperty("title_id") val titleId: Int?,
-        @JsonProperty("name") val name: String?,
-        @JsonProperty("category") val category: String?,
-        @JsonProperty("episode_id") val episodeId: Int?,
-        @JsonProperty("season_num") val seasonNum: Int?,
-        @JsonProperty("episode_num") val episodeNum: Int?,
-        @JsonProperty("score") val score: Int?,
-        @JsonProperty("model_type") val modelType: String?
+        @JsonProperty("runtime") val runtime: Int?
     )
 
     data class SimpleApiResponse(
@@ -65,12 +48,6 @@ class EgybestProvider : MainAPI() {
         "netflix" to "19"
     )
 
-    private val pageOrders = mapOf(
-        "movies" to "created_at.desc",
-        "series" to "budget.desc",
-        "netflix" to "created_at.desc"
-    )
-
     override val mainPage = mainPageOf(
         "movies" to "أفلام",
         "series" to "مسلسلات",
@@ -81,68 +58,28 @@ class EgybestProvider : MainAPI() {
         val pageName = request.name
         val pageType = request.data
         val channelId = channelIds[pageType] ?: "2"
-        val order = pageOrders[pageType] ?: "created_at.desc"
 
-        try {
-            // Step 1: Get initial cookies by visiting the main page
-            val mainResponse = app.get(mainUrl, headers = mapOf("User-Agent" to mobileUserAgent))
-            val cookies = mainResponse.cookies
+        return try {
+            // Get cookies and session data by simulating browser navigation
+            val sessionData = establishSession()
             
-            println("Egybest Debug: Initial cookies: ${cookies.keys}")
-
-            // Step 2: Extract XSRF token from cookies
-            val xsrfToken = cookies["XSRF-TOKEN"]?.let { 
-                URLDecoder.decode(it, "UTF-8") 
-            }
-
-            if (xsrfToken == null) {
-                println("Egybest Error: XSRF-TOKEN not found in cookies")
-                return newHomePageResponse(pageName, emptyList())
-            }
-
-            // Step 3: Build API URL
-            val apiUrl = "$mainUrl/api/v1/channel/$channelId?restriction=&order=$order&page=$page&paginate=lengthAware&returnContentOnly=true"
-            println("Egybest Debug: API URL: $apiUrl")
-
-            // Step 4: Prepare headers exactly as in the browser
-            val headers = mapOf(
-                "User-Agent" to mobileUserAgent,
-                "Accept" to "application/json, text/plain, */*",
-                "Accept-Encoding" to "gzip, deflate, br",
-                "Accept-Language" to "en-US,en;q=0.9",
-                "X-Requested-With" to "XMLHttpRequest",
-                "X-Xsrf-Token" to xsrfToken,
-                "Referer" to "$mainUrl/${getPageSlug(pageType)}",
-                "Sec-Fetch-Dest" to "empty",
-                "Sec-Fetch-Mode" to "cors",
-                "Sec-Fetch-Site" to "same-origin",
-                "Cookie" to cookies.map { (key, value) -> "$key=$value" }.joinToString("; ")
+            // Use the API endpoint that we know works
+            val apiUrl = "$mainUrl/api/v1/channel/$channelId?restriction=&order=created_at.desc&page=$page&paginate=lengthAware&returnContentOnly=true"
+            
+            val response = app.get(
+                apiUrl,
+                headers = getApiHeaders(apiUrl, sessionData)
             )
 
-            // Step 5: Make API request
-            val response = app.get(apiUrl, headers = headers)
-            
-            println("Egybest Debug: Response status: ${response.code}")
-            
             if (!response.isSuccessful) {
-                println("Egybest Error: API request failed with status ${response.code}")
-                println("Egybest Error: Response body: ${response.text.take(500)}")
+                println("Egybest API failed: ${response.code} - ${response.text}")
                 return newHomePageResponse(pageName, emptyList())
             }
 
-            // Step 6: Parse the response
             val apiResponse = response.parsedSafe<SimpleApiResponse>()
-            
-            if (apiResponse == null || apiResponse.data == null) {
-                println("Egybest Error: Failed to parse API response or no data found")
-                println("Egybest Debug: Full response: ${response.text}")
-                return newHomePageResponse(pageName, emptyList())
-            }
+            val items = apiResponse?.data ?: emptyList()
 
-            val contentData = apiResponse.data!!
-            println("Egybest Debug: Found ${contentData.size} items in response")
-
-            val home = contentData.mapNotNull { item ->
+            val home = items.mapNotNull { item ->
                 val title = item.name ?: return@mapNotNull null
                 val slug = item.slug ?: return@mapNotNull null
                 val posterUrl = item.poster
@@ -158,24 +95,53 @@ class EgybestProvider : MainAPI() {
                     }
                 }
             }
-            
-            println("Egybest Debug: Successfully loaded ${home.size} items for $pageName")
-            return newHomePageResponse(pageName, home)
-            
+
+            newHomePageResponse(pageName, home)
+
         } catch (e: Exception) {
-            println("Egybest Error: Exception in getMainPage: ${e.message}")
-            e.printStackTrace()
-            return newHomePageResponse(pageName, emptyList())
+            println("Egybest error: ${e.message}")
+            newHomePageResponse(pageName, emptyList())
         }
     }
 
-    private fun getPageSlug(pageType: String): String {
-        return when (pageType) {
-            "movies" -> "movies"
-            "series" -> "series-Movies"
-            "netflix" -> "Netflix"
-            else -> "movies"
-        }
+    private suspend fun establishSession(): Map<String, String> {
+        // First request to get initial cookies
+        val initialResponse = app.get(mainUrl, headers = mapOf("User-Agent" to mobileUserAgent))
+        val cookies = initialResponse.cookies
+
+        // Visit a section page to get proper session cookies
+        val sectionResponse = app.get(
+            "$mainUrl/movies",
+            headers = mapOf(
+                "User-Agent" to mobileUserAgent,
+                "Cookie" to cookies.map { (k, v) -> "$k=$v" }.joinToString("; ")
+            )
+        )
+
+        val finalCookies = sectionResponse.cookies
+        val xsrfToken = finalCookies["XSRF-TOKEN"]?.let { URLDecoder.decode(it, "UTF-8") } ?: ""
+
+        return mapOf(
+            "cookies" to finalCookies.map { (k, v) -> "$k=$v" }.joinToString("; "),
+            "xsrfToken" to xsrfToken,
+            "cfClearance" to finalCookies["cf_clearance"] ?: ""
+        )
+    }
+
+    private fun getApiHeaders(apiUrl: String, sessionData: Map<String, String>): Map<String, String> {
+        return mapOf(
+            "User-Agent" to mobileUserAgent,
+            "Accept" to "application/json, text/plain, */*",
+            "Accept-Language" to "en-US,en;q=0.9",
+            "X-Requested-With" to "XMLHttpRequest",
+            "X-Xsrf-Token" to sessionData["xsrfToken"] ?: "",
+            "Referer" to "$mainUrl/movies",
+            "Origin" to mainUrl,
+            "Sec-Fetch-Dest" to "empty",
+            "Sec-Fetch-Mode" to "cors",
+            "Sec-Fetch-Site" to "same-origin",
+            "Cookie" to sessionData["cookies"] ?: ""
+        )
     }
     
     override suspend fun search(query: String): List<SearchResponse> {
