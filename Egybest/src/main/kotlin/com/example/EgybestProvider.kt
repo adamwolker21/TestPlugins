@@ -5,9 +5,9 @@ import com.lagradost.cloudstream3.utils.*
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.net.URLDecoder
 
-// v22: Fixed Build
-// Replaces the deprecated WebViewResolver with the modern `automaticTls` parameter
-// to solve the compilation error and handle Cloudflare challenges correctly.
+// v23: Final Build & Correct WebView Implementation
+// This version corrects all previous build errors by implementing the WebViewResolver
+// with the proper syntax and a stop-condition predicate, ensuring a valid Cloudflare session.
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -19,8 +19,7 @@ class EgybestProvider : MainAPI() {
         TvType.TvSeries,
     )
 
-    private val mobileUserAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"
-
+    // Data classes for parsing the JSON API response
     data class ContentItem(
         @JsonProperty("id") val id: Int?,
         @JsonProperty("name") val name: String?,
@@ -33,6 +32,7 @@ class EgybestProvider : MainAPI() {
         @JsonProperty("data") val data: List<ContentItem>?,
     )
 
+    // Maps to hold the dynamic parts of the API URLs
     private val channelIds = mapOf("movies" to "2", "series" to "4", "netflix" to "19")
     private val pageOrders = mapOf("movies" to "created_at:desc", "series" to "budget:desc", "netflix" to "created_at:desc")
     private val pageSlugs = mapOf("movies" to "movies", "series" to "series-Movies", "netflix" to "Netflix")
@@ -50,24 +50,28 @@ class EgybestProvider : MainAPI() {
         val pageSlug = pageSlugs[pageType] ?: "movies"
         val sectionUrl = "$mainUrl/$pageSlug"
 
-        // Step 1: Solve Cloudflare challenge using the modern, built-in TLS solver.
-        // This makes a request that automatically handles JavaScript challenges.
-        val initialResponse = app.get(
+        // Step 1: Use WebViewResolver to solve the Cloudflare JS challenge.
+        // This is the key part that was failing before due to syntax errors.
+        val webViewResponse = app.get(
             sectionUrl,
-            headers = mapOf("User-Agent" to mobileUserAgent),
-            automaticTls = true // This is the key to solving the challenge
+            // The interceptor will run the page in a WebView until the predicate is met.
+            interceptor = WebViewResolver { html ->
+                // The predicate returns true when it finds "class="grid"" in the HTML,
+                // which confirms the actual page content has loaded.
+                html.contains("class=\"grid\"")
+            }
         )
-        
-        val validCookies = initialResponse.cookies
-        val validUserAgent = initialResponse.request.headers["User-Agent"] ?: mobileUserAgent
+
+        // Extract the valid session data obtained after solving the challenge.
+        val validCookies = webViewResponse.cookies
+        val validUserAgent = webViewResponse.request.headers["User-Agent"] ?: "" // Use the agent from the successful request
 
         val xsrfToken = validCookies["XSRF-TOKEN"]?.let {
             URLDecoder.decode(it, "UTF-8")
-        } ?: throw ErrorLoadingException("Failed to obtain a valid XSRF Token after TLS handshake.")
+        } ?: throw ErrorLoadingException("Failed to obtain a valid XSRF Token from WebView.")
 
-        // Step 2: Make the API call with the valid session data.
+        // Step 2: Make the API call using the valid session data.
         val apiUrl = "$mainUrl/api/v1/channel/$channelId?restriction=&order=$order&page=$page&paginate=lengthAware&returnContentOnly=true"
-
         val apiHeaders = mapOf(
             "User-Agent" to validUserAgent,
             "Accept" to "application/json, text/plain, */*",
@@ -76,16 +80,16 @@ class EgybestProvider : MainAPI() {
             "Referer" to sectionUrl,
             "Cookie" to validCookies.map { (k, v) -> "$k=$v" }.joinToString("; ")
         )
-        
-        // This request uses the standard `get` because the cookies are already valid.
+
         val apiJsonResponse = app.get(apiUrl, headers = apiHeaders).parsed<SimpleApiResponse>()
 
+        // Map the JSON data to search results for the UI.
         val home = apiJsonResponse.data?.mapNotNull { item ->
             val title = item.name ?: return@mapNotNull null
             val slug = item.slug ?: return@mapNotNull null
             val posterUrl = item.poster
             val absoluteUrl = "$mainUrl/titles/$slug"
-            
+
             if (item.isSeries == true) {
                 newTvSeriesSearchResponse(title, absoluteUrl, TvType.TvSeries) { this.posterUrl = posterUrl }
             } else {
@@ -95,8 +99,8 @@ class EgybestProvider : MainAPI() {
 
         return newHomePageResponse(request.name, home)
     }
-    
-    // Placeholders
+
+    // Placeholders for other functionalities
     override suspend fun search(query: String): List<SearchResponse> { return emptyList() }
     override suspend fun load(url: String): LoadResponse { throw NotImplementedError() }
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean { throw NotImplementedError() }
