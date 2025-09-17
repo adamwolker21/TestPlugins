@@ -7,8 +7,10 @@ import org.jsoup.Jsoup
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 
-// v9: The final, correct version. The issue was not the import, but the call itself.
-// It must be `app.webView(...)` in modern CloudStream versions.
+// v10: Final version. Abandoned the problematic webView entirely.
+// Implemented the standard, more robust method of fetching iframe source,
+// finding the packed JS, and using JsUnpacker to extract the m3u8 link.
+// This is the correct approach used in advanced providers.
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -124,21 +126,21 @@ class EgybestProvider : MainAPI() {
         val iframeHtml = parseJson<EgybestApiResponse>(apiResponse).html
         val iframeSrc = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src") ?: return false
 
-        // v9: Corrected the function call to `app.webView`. No special import is needed.
-        val webViewResult = app.webView(
-            url = iframeSrc,
-            referer = videoPageUrl,
-            interceptorUrl = ".*\\.m3u8.*"
-        )
+        val iframeDoc = app.get(iframeSrc, referer = videoPageUrl).document
+        val packedScript = iframeDoc.select("script").firstOrNull { 
+            it.data().contains("eval(function(p,a,c,k,e,d)") 
+        }?.data() ?: return false
 
-        val m3u8Link = webViewResult?.url ?: return false
-
-        M3u8Helper.generateM3u8(
-            this.name,
-            m3u8Link,
-            iframeSrc,
-        ).forEach(callback)
+        val unpackedScript = JsUnpacker(packedScript).unpack()
+        if (unpackedScript != null) {
+            val m3u8Link = Regex("""file:\s*"(.*?.m3u8)"""").find(unpackedScript)?.groupValues?.get(1) ?: return false
+            M3u8Helper.generateM3u8(
+                this.name,
+                m3u8Link,
+                iframeSrc,
+            ).forEach(callback)
+        }
 
         return true
     }
-}
+                                 }
