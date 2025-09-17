@@ -6,9 +6,10 @@ import org.jsoup.nodes.Element
 import org.jsoup.Jsoup
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
-import com.lagradost.cloudstream3.utils.webView // v6: The correct import for the modern WebView helper function.
+// v7: Corrected the import path for the webView helper function.
+import com.lagradost.cloudstream3.utils.WebViewTools.webView
 
-// v6: This version uses the modern `webView` helper to fix all previous compilation issues.
+// v7: Final version with the correct WebViewTools import.
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -124,21 +125,18 @@ class EgybestProvider : MainAPI() {
         val iframeHtml = parseJson<EgybestApiResponse>(apiResponse).html
         val iframeSrc = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src") ?: return false
 
-        // v6: New implementation using the modern `webView` suspend function.
-        // This is the correct way to handle link interception in recent CloudStream versions.
         val webViewResult = webView(
             url = iframeSrc,
             referer = videoPageUrl,
-            interceptorUrl = ".*\\.m3u8.*" // A regex to capture the master m3u8 file
+            interceptorUrl = ".*\\.m3u8.*"
         )
 
-        // The result might be null if nothing is found or an error occurs.
         val m3u8Link = webViewResult?.url ?: return false
 
         M3u8Helper.generateM3u8(
             this.name,
             m3u8Link,
-            iframeSrc, // The referer for the m3u8 segments is the page that contains the player.
+            iframeSrc,
         ).forEach(callback)
 
         return true
