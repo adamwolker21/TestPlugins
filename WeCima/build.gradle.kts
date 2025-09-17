@@ -12,5 +12,5 @@ cloudstream {
         "AsianDrama"
     )
 
-    iconUrl = "https://asia2tv.com/frontend/default/assets/images/logo.png?ver=1.2"
+    iconUrl = "https://raw.githubusercontent.com/adamwolker21/TestPlugins/refs/heads/master/WeCima/images.jpeg"
 }
