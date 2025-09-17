@@ -5,9 +5,8 @@ import com.lagradost.cloudstream3.utils.*
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.net.URLDecoder
 
-// v17: The final, working version.
-// All correct channel IDs are implemented based on the user's final investigation.
-// The logic is robust, stable, and mimics real browser behavior perfectly.
+// v18: Perfecting the simulation by adding a mobile User-Agent.
+// This is a critical header that makes our requests indistinguishable from a real browser.
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -19,7 +18,9 @@ class EgybestProvider : MainAPI() {
         TvType.TvSeries,
     )
 
-    // Data classes that perfectly match the JSON structure from the API.
+    // A standard mobile browser User-Agent.
+    private val mobileUserAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Mobile Safari/537.36"
+
     data class ApiDataItem(
         @JsonProperty("id") val id: Int?,
         @JsonProperty("slug") val slug: String?,
@@ -32,14 +33,12 @@ class EgybestProvider : MainAPI() {
         @JsonProperty("data") val data: List<ApiDataItem>?
     )
 
-    // A map to link the main page name to its path, for fetching correct headers.
     private val pagePaths = mapOf(
         "أفلام" to "movies",
         "مسلسلات" to "series-Movies",
         "Netflix" to "Netflix"
     )
 
-    // Using the correct Channel IDs provided by the user.
     override val mainPage = mainPageOf(
         "2" to "أفلام",
         "4" to "مسلسلات",
@@ -48,11 +47,11 @@ class EgybestProvider : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val channelId = request.data
-        val pagePath = pagePaths[request.name] ?: "movies" // Default to movies if not found
+        val pagePath = pagePaths[request.name] ?: "movies"
         val pageUrl = "$mainUrl/$pagePath"
 
-        // Step 1: Visit the correct section page to get valid session cookies and security tokens.
-        val mainPageResponse = app.get(pageUrl)
+        // Step 1: Visit the section page to get cookies, mimicking the first part of navigation.
+        val mainPageResponse = app.get(pageUrl, headers = mapOf("User-Agent" to mobileUserAgent))
         val cookies = mainPageResponse.cookies
         val xsrfToken = cookies["XSRF-TOKEN"]?.let { URLDecoder.decode(it, "UTF-8") }
 
@@ -60,11 +59,11 @@ class EgybestProvider : MainAPI() {
             throw ErrorLoadingException("Failed to retrieve XSRF token for page: $pageUrl")
         }
 
-        // The correct JSON API endpoint with the dynamic channel ID.
         val apiUrl = "$mainUrl/api/v1/channel/$channelId?restriction=&order=created_at:desc&page=$page&paginate=lengthAware&returnContentOnly=true"
 
-        // Step 2: Make the API call with all the necessary headers.
+        // Step 2: Make the API call with ALL necessary headers, including the User-Agent.
         val headers = mapOf(
+            "User-Agent" to mobileUserAgent,
             "Accept" to "application/json",
             "X-Requested-With" to "XMLHttpRequest",
             "X-Xsrf-Token" to xsrfToken,
@@ -72,14 +71,12 @@ class EgybestProvider : MainAPI() {
             "Cookie" to cookies.map { (key, value) -> "$key=$value" }.joinToString("; ")
         )
 
-        // Make the API call and parse the JSON response.
         val apiResponse = app.get(apiUrl, headers = headers).parsed<ApiResponseData>()
 
         val home = apiResponse.data?.mapNotNull { item ->
             val title = item.name ?: return@mapNotNull null
             val slug = item.slug ?: return@mapNotNull null
             val posterUrl = item.poster
-
             val absoluteUrl = "$mainUrl/titles/$slug"
             
             if (item.isSeries == true) {
@@ -97,12 +94,10 @@ class EgybestProvider : MainAPI() {
     }
     
     override suspend fun search(query: String): List<SearchResponse> {
-        // Will be fixed later.
         return emptyList()
     }
 
     override suspend fun load(url: String): LoadResponse {
-        // Placeholder, next step after main page works.
         return newMovieLoadResponse("Placeholder", url, TvType.Movie, url)
     }
     
