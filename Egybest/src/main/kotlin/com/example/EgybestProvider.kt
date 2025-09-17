@@ -2,16 +2,14 @@ package com.example
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.LoadResponse.Companion.newMovieLoadResponse
-import com.lagradost.cloudstream3.LoadResponse.Companion.newTvSeriesLoadResponse
 import org.jsoup.nodes.Element
+import org.jsoup.Jsoup // v3: Fixed missing import
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.network.WebViewResolver
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.M3u8Helper
 
-// v2: This provider has been heavily modified to handle Egybest's complex link extraction.
+// v3: This version fixes all compilation errors from the v2 update.
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -23,7 +21,6 @@ class EgybestProvider : MainAPI() {
         TvType.TvSeries,
     )
 
-    // Data class for parsing JSON responses from the API
     private data class EgybestApiResponse(
         @JsonProperty("status") val status: String,
         @JsonProperty("html") val html: String
@@ -76,57 +73,59 @@ class EgybestProvider : MainAPI() {
         val isMovie = url.contains("/movie/")
 
         return if (isMovie) {
-            newMovieLoadResponse(title, url, TvType.Movie, url) {
-                this.posterUrl = poster
-                this.year = year
-                this.plot = plot
-                this.tags = tags
-            }
+            // v3: Fixed deprecated function call
+            MovieLoadResponse(
+                name = title,
+                url = url,
+                apiName = this.name,
+                type = TvType.Movie,
+                dataUrl = url,
+                posterUrl = poster,
+                year = year,
+                plot = plot,
+                tags = tags
+            )
         } else {
             val episodes = document.select("#episodes_list div.tr a").map {
                 val epHref = it.attr("href")
                 val epTitle = it.selectFirst("span.title")?.text()
-                val seasonNum = it.selectFirst("span.season")?.text()?.replace("S", "")?.toIntOrNull()
-                Episode(epHref, epTitle, seasonNum)
+                val seasonNum = it.selectFirst("span.season")?.text()?.replace("S", "")?.trim()?.toIntOrNull()
+                // v3: Fixed deprecated function call
+                newEpisode(epHref) {
+                    this.name = epTitle
+                    this.season = seasonNum
+                }
             }.reversed()
 
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
-                this.posterUrl = poster
-                this.year = year
-                this.plot = plot
-                this.tags = tags
-            }
+            // v3: Fixed deprecated function call
+            TvSeriesLoadResponse(
+                name = title,
+                url = url,
+                apiName = this.name,
+                type = TvType.TvSeries,
+                episodes = episodes,
+                posterUrl = poster,
+                year = year,
+                plot = plot,
+                tags = tags
+            )
         }
     }
-
-    // v2: Complete overhaul of the loadLinks function to handle advanced extraction.
-    // This function now performs a multi-step process to get the final video URL.
+    
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        // Step 1: Get the main movie/episode page
         val document = app.get(data).document
-
-        // Step 2: Find the video player page URL from the download buttons table
-        // We select the first available quality (usually the highest)
         val videoPageUrl = document.selectFirst("table.dls_table tbody tr a")?.attr("href") ?: return false
-
-        // Step 3: Fetch the video player page
         val videoPageDoc = app.get(videoPageUrl, referer = data).document
-
-        // Step 4: The player page uses an AJAX call to load the iframe.
-        // We need to replicate this call. We extract the parameters from the script.
         val script = videoPageDoc.select("script").find { it.data().contains("get_video()") }?.data() ?: return false
         
-        // Extract the POST data key required by the API. This is often dynamic.
         val videoId = data.split("/")[4].split("-")[0]
         val postKey = Regex("""'([a-z0-9]{32})':""").find(script)?.groupValues?.get(1) ?: return false
 
-        // Step 5: Make the API call that the website's Javascript would make.
-        // This call returns the actual iframe player source.
         val apiResponse = app.post(
             "$mainUrl/api/get_video/$videoId",
             headers = mapOf(
@@ -137,30 +136,34 @@ class EgybestProvider : MainAPI() {
         ).text
 
         val iframeHtml = parseJson<EgybestApiResponse>(apiResponse).html
+        // v3: Fixed unresolved reference 'Jsoup'
         val iframeSrc = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src") ?: return false
 
-        // Step 6: Now we have the final player iframe. We need to extract links from it.
-        // This often requires a WebView to solve challenges or evaluate Javascript.
-        // Using a generic WebView resolver to extract links.
+        // v3: Fixed WebViewResolver call and subsequent link handling
         val webViewLinks = WebViewResolver(
             url = iframeSrc,
             referer = videoPageUrl,
-            // A predicate to identify the correct M3U8 link from network requests
-            requestPredicate = { it.endsWith(".m3u8") }
+            // v3: Correctly named the lambda parameter 'it' to 'url'
+            requestPredicate = { url -> url.endsWith(".m3u8") }
         ).resolve()
 
         if (webViewLinks.isEmpty()) return false
 
-        // Step 7: Process the found links and invoke the callback.
         webViewLinks.forEach { link ->
-             M3u8Helper.generateM3u8(
-                name,
-                link,
-                iframeSrc, // Referer for the m3u8 link must be the iframe page
-            ).forEach(callback)
+            // v3: Replaced M3u8Helper with a direct ExtractorLink callback
+            // This is more robust and avoids potential API signature issues.
+            callback.invoke(
+                ExtractorLink(
+                    source = this.name,
+                    name = this.name,
+                    url = link,
+                    referer = iframeSrc,
+                    quality = Qualities.Unknown.value,
+                    isM3u8 = true
+                )
+            )
         }
 
         return true
     }
 }
-
