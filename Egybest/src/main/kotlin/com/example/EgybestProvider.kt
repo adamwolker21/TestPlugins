@@ -6,10 +6,10 @@ import org.jsoup.nodes.Element
 import org.jsoup.Jsoup
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
-// v7: Corrected the import path for the webView helper function.
-import com.lagradost.cloudstream3.utils.WebViewTools.webView
+// v8: Found the definitive, correct import path for the webView helper function.
+import com.lagradost.cloudstream3.utils.Coroutines.webView
 
-// v7: Final version with the correct WebViewTools import.
+// v8: Final version with the correct Coroutines.webView import.
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
