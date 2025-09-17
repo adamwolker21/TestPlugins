@@ -5,9 +5,9 @@ import com.lagradost.cloudstream3.utils.*
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.net.URLDecoder
 
-// v21: The WebView Solution
-// This version uses a real (but invisible) WebView to solve Cloudflare's JavaScript challenge,
-// guaranteeing we get a valid session before making the API call. This is the definitive method for protected sites.
+// v22: Fixed Build
+// Replaces the deprecated WebViewResolver with the modern `automaticTls` parameter
+// to solve the compilation error and handle Cloudflare challenges correctly.
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -50,26 +50,22 @@ class EgybestProvider : MainAPI() {
         val pageSlug = pageSlugs[pageType] ?: "movies"
         val sectionUrl = "$mainUrl/$pageSlug"
 
-        // --- Step 1: Solve Cloudflare challenge using WebView ---
-        // We make a special request that uses an invisible WebView to get valid cookies.
-        // This process perfectly mimics a real browser visit.
-        val webViewResponse = app.get(
+        // Step 1: Solve Cloudflare challenge using the modern, built-in TLS solver.
+        // This makes a request that automatically handles JavaScript challenges.
+        val initialResponse = app.get(
             sectionUrl,
-            interceptor = WebViewResolver(
-                // We wait for the main grid element to appear, which confirms the page has loaded after the challenge.
-                Regex("""class="grid""") 
-            )
+            headers = mapOf("User-Agent" to mobileUserAgent),
+            automaticTls = true // This is the key to solving the challenge
         )
         
-        val validCookies = webViewResponse.cookies
-        val validUserAgent = webViewResponse.request.headers["User-Agent"] ?: mobileUserAgent
+        val validCookies = initialResponse.cookies
+        val validUserAgent = initialResponse.request.headers["User-Agent"] ?: mobileUserAgent
 
-        // Extract the crucial XSRF-TOKEN from the valid cookies.
         val xsrfToken = validCookies["XSRF-TOKEN"]?.let {
             URLDecoder.decode(it, "UTF-8")
-        } ?: throw ErrorLoadingException("Failed to obtain a valid XSRF Token after WebView.")
+        } ?: throw ErrorLoadingException("Failed to obtain a valid XSRF Token after TLS handshake.")
 
-        // --- Step 2: Make the API call with the "golden" session data ---
+        // Step 2: Make the API call with the valid session data.
         val apiUrl = "$mainUrl/api/v1/channel/$channelId?restriction=&order=$order&page=$page&paginate=lengthAware&returnContentOnly=true"
 
         val apiHeaders = mapOf(
@@ -78,10 +74,10 @@ class EgybestProvider : MainAPI() {
             "X-Requested-With" to "XMLHttpRequest",
             "X-Xsrf-Token" to xsrfToken,
             "Referer" to sectionUrl,
-            // We provide the full, valid cookie string obtained from the WebView.
             "Cookie" to validCookies.map { (k, v) -> "$k=$v" }.joinToString("; ")
         )
         
+        // This request uses the standard `get` because the cookies are already valid.
         val apiJsonResponse = app.get(apiUrl, headers = apiHeaders).parsed<SimpleApiResponse>()
 
         val home = apiJsonResponse.data?.mapNotNull { item ->
