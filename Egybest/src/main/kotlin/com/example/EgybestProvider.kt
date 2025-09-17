@@ -6,10 +6,9 @@ import org.jsoup.nodes.Element
 import org.jsoup.Jsoup
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
-// v8: Found the definitive, correct import path for the webView helper function.
-import com.lagradost.cloudstream3.utils.Coroutines.webView
 
-// v8: Final version with the correct Coroutines.webView import.
+// v9: The final, correct version. The issue was not the import, but the call itself.
+// It must be `app.webView(...)` in modern CloudStream versions.
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -125,7 +124,8 @@ class EgybestProvider : MainAPI() {
         val iframeHtml = parseJson<EgybestApiResponse>(apiResponse).html
         val iframeSrc = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src") ?: return false
 
-        val webViewResult = webView(
+        // v9: Corrected the function call to `app.webView`. No special import is needed.
+        val webViewResult = app.webView(
             url = iframeSrc,
             referer = videoPageUrl,
             interceptorUrl = ".*\\.m3u8.*"
