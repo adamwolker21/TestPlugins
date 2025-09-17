@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.utils.*
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.net.URLDecoder
 
-// v11: Using advanced techniques inspired by reference project
+// v12: Fixed type issues in mapOf functions
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -124,7 +124,7 @@ class EgybestProvider : MainAPI() {
         return mapOf(
             "cookies" to finalCookies.map { (k, v) -> "$k=$v" }.joinToString("; "),
             "xsrfToken" to xsrfToken,
-            "cfClearance" to finalCookies["cf_clearance"] ?: ""
+            "cfClearance" to (finalCookies["cf_clearance"] ?: "")
         )
     }
 
@@ -134,13 +134,13 @@ class EgybestProvider : MainAPI() {
             "Accept" to "application/json, text/plain, */*",
             "Accept-Language" to "en-US,en;q=0.9",
             "X-Requested-With" to "XMLHttpRequest",
-            "X-Xsrf-Token" to sessionData["xsrfToken"] ?: "",
+            "X-Xsrf-Token" to (sessionData["xsrfToken"] ?: ""),
             "Referer" to "$mainUrl/movies",
             "Origin" to mainUrl,
             "Sec-Fetch-Dest" to "empty",
             "Sec-Fetch-Mode" to "cors",
             "Sec-Fetch-Site" to "same-origin",
-            "Cookie" to sessionData["cookies"] ?: ""
+            "Cookie" to (sessionData["cookies"] ?: "")
         )
     }
     
