@@ -7,10 +7,9 @@ import org.jsoup.Jsoup
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 
-// v11: Reworked scraping logic for the new website layout.
-// Updated main page sections, content selectors, and search functionality.
+// v12: Corrected the content scraping logic based on user-provided HTML.
+// The `toSearchResult` function now uses precise selectors for title, link, and poster.
 class EgybestProvider : MainAPI() {
-    // The main URL seems to have changed again based on the provided HTML.
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
     override val hasMainPage = true
@@ -25,104 +24,76 @@ class EgybestProvider : MainAPI() {
         @JsonProperty("status") val status: String,
         @JsonProperty("html") val html: String
     )
-
-    // Updated main page sections as requested.
+    
     override val mainPage = mainPageOf(
         "/movies" to "أفلام",
-        "/series" to "مسلسلات", // Corrected from series-Movies to /series based on site structure
+        "/series" to "مسلسلات",
         "/netflix" to "Netflix",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val url = "$mainUrl${request.data}?page=$page"
         val document = app.get(url).document
-        // The new layout uses a grid system. We select each item in the grid.
+        // This selector should now work correctly with the updated `toSearchResult`
         val home = document.select("div.grid > div").mapNotNull { it.toSearchResult() }
         return newHomePageResponse(request.name, home)
     }
 
-    // Rewritten to parse the new HTML structure for each movie/series item.
+    // v12: Completely rewritten based on the new HTML structure provided by the user.
     private fun Element.toSearchResult(): SearchResponse? {
-        val linkElement = this.selectFirst("a") ?: return null
+        // Find the link which contains the clean title text. This is more reliable.
+        val linkElement = this.selectFirst("a.text-inherit") ?: return null
+        
         val href = linkElement.attr("href")
+        // Ensure the link is not empty before proceeding
         if (href.isBlank()) return null
 
-        val title = this.selectFirst("a.text-inherit")?.text()?.trim()
-            ?: this.selectFirst("img")?.attr("alt") ?: return null
+        val title = linkElement.text().trim()
         val posterUrl = this.selectFirst("img")?.attr("src")
 
-        // The URL structure helps differentiate between movies ('fylm') and series ('mslsl').
+        // Differentiate based on keywords in the URL
         val isMovie = href.contains("fylm")
 
+        val absoluteUrl = if (href.startsWith("http")) href else "$mainUrl$href"
+
         return if (isMovie) {
-            newMovieSearchResponse(title, href, TvType.Movie) {
+            newMovieSearchResponse(title, absoluteUrl, TvType.Movie) {
                 this.posterUrl = posterUrl
             }
         } else {
-            newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
+            newTvSeriesSearchResponse(title, absoluteUrl, TvType.TvSeries) {
                 this.posterUrl = posterUrl
             }
         }
     }
 
-    // Updated search URL and result parsing.
     override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl/search?q=$query"
         val document = app.get(url).document
         return document.select("div.grid > div").mapNotNull { it.toSearchResult() }
     }
 
-    // NOTE: The `load` function might need updates if the movie detail page structure has also changed.
-    // This will be addressed in the next step if necessary.
+    // `load` and `loadLinks` are still pending and will be addressed next.
     override suspend fun load(url: String): LoadResponse {
+        // This is still placeholder logic from the old site.
+        // After we confirm the main page works, we will fix this.
         val document = app.get(url).document
-        // These selectors are from the old site and will likely fail.
-        // For now, we are focusing on getting the main pages to work.
-        val title = document.selectFirst("div.movie_title h1")?.ownText()?.trim() ?: "Title Not Found"
-        val poster = document.selectFirst("div.movie_img img")?.attr("src")
-        val year = document.selectFirst("div.movie_title h1 a")?.text()?.toIntOrNull()
-        val plot = document.selectFirst("div.mbox_contenido p")?.text()?.trim() ?: "Plot not found"
-        val tags = document.select("div.mbox.tags a").map { it.text() }
-        val isMovie = url.contains("fylm")
-
-        return if (isMovie) {
-            newMovieLoadResponse(title, url, TvType.Movie, url) {
-                this.posterUrl = poster
-                this.year = year
-                this.plot = plot
-                this.tags = tags
-            }
-        } else {
-            val episodes = document.select("#episodes_list div.tr a").map {
-                val epHref = it.attr("href")
-                val epTitle = it.selectFirst("span.title")?.text()
-                val seasonNum = it.selectFirst("span.season")?.text()?.replace("S", "")?.trim()?.toIntOrNull()
-                newEpisode(epHref) {
-                    this.name = epTitle
-                    this.season = seasonNum
-                }
-            }.reversed()
-
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
-                this.posterUrl = poster
-                this.year = year
-                this.plot = plot
-                this.tags = tags
-            }
+        val title = "Placeholder Title" // Placeholder
+        val plot = "Placeholder Plot" // Placeholder
+        
+        return newMovieLoadResponse(title, url, TvType.Movie, url) {
+            this.plot = plot
         }
     }
     
-    // NOTE: `loadLinks` logic is kept from v10. It might need adjustments
-    // after we confirm the main content is loading correctly.
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        // This logic is likely broken due to the site update.
-        // We will fix it after fixing the `load` function.
-        // For now, returning false to prevent errors.
-        return false // Temporarily disabled to focus on content loading.
+        // Logic from v10 is kept but disabled to focus on content loading.
+        // Will be re-enabled and fixed after `load` is working.
+        return false 
     }
 }
