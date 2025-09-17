@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.utils.*
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.net.URLDecoder
 
-// v6: Using alternative API endpoints based on network analysis
+// v7: Enhanced debugging and alternative approach
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -31,124 +31,93 @@ class EgybestProvider : MainAPI() {
         @JsonProperty("data") val data: List<ApiDataItem>?
     )
 
-    private val pageApiEndpoints = mapOf(
-        "movies" to "movies",
-        "series-Movies" to "series-Movies", 
-        "Netflix" to "Netflix"
-    )
-
     override val mainPage = mainPageOf(
         "movies" to "أفلام",
-        "series-Movies" to "مسلسلات",
-        "Netflix" to "نتفليكس"
+        "series" to "مسلسلات",
+        "netflix" to "نتفليكس"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val pageName = request.name
-        val pagePath = pageApiEndpoints[request.data] ?: "movies"
-        val pageUrl = "$mainUrl/$pagePath"
+        val pageType = request.data
 
         try {
-            // Step 1: Get initial cookies by visiting the main page first
-            val mainPageResponse = app.get(mainUrl, headers = mapOf("User-Agent" to mobileUserAgent))
-            val cookies = mainPageResponse.cookies
+            // Step 1: Get initial page to simulate browser behavior
+            val mainResponse = app.get(mainUrl, headers = mapOf("User-Agent" to mobileUserAgent))
+            val cookies = mainResponse.cookies
             
-            // Step 2: Now visit the specific section page to get proper cookies
-            val sectionPageResponse = app.get(pageUrl, headers = mapOf(
-                "User-Agent" to mobileUserAgent,
-                "Cookie" to cookies.map { (key, value) -> "$key=$value" }.joinToString("; ")
-            ))
-            
-            val finalCookies = sectionPageResponse.cookies
+            println("Egybest Debug: Initial cookies: ${cookies.keys}")
 
-            // Extract XSRF token from cookies
-            val xsrfToken = finalCookies["XSRF-TOKEN"]?.let { 
-                URLDecoder.decode(it, "UTF-8") 
-            }
-
-            if (xsrfToken == null) {
-                println("Egybest Error: XSRF-TOKEN not found in cookies")
-                return newHomePageResponse(pageName, emptyList())
-            }
-
-            // Use the alternative API endpoint discovered in network analysis
-            val apiUrl = "$mainUrl/api/v1/channel/$pagePath?channelType=channel&restriction=&loader=channelPage&page=$page"
-            println("Egybest Debug: API URL: $apiUrl")
-
-            // Prepare cookies string
-            val cookieString = finalCookies.map { (key, value) -> 
-                "$key=${URLDecoder.decode(value, "UTF-8")}" 
-            }.joinToString("; ")
-
-            // Get cf_clearance cookie if available
-            val cfClearance = finalCookies["cf_clearance"] ?: ""
-
-            // Prepare headers exactly as in the browser
-            val headers = mapOf(
-                "User-Agent" to mobileUserAgent,
-                "Accept" to "application/json, text/plain, */*",
-                "Accept-Encoding" to "gzip, deflate, br",
-                "Accept-Language" to "en-US,en;q=0.9",
-                "X-Requested-With" to "XMLHttpRequest",
-                "X-Xsrf-Token" to xsrfToken,
-                "Referer" to pageUrl,
-                "Sec-Fetch-Dest" to "empty",
-                "Sec-Fetch-Mode" to "cors",
-                "Sec-Fetch-Site" to "same-origin",
-                "Cookie" to "$cookieString${if (cfClearance.isNotEmpty()) "; cf_clearance=$cfClearance" else ""}"
+            // Step 2: Try different API endpoints discovered in network analysis
+            val apiUrls = listOf(
+                "$mainUrl/api/v1/channel/$pageType?channelType=channel&restriction=&loader=channelPage&page=$page",
+                "$mainUrl/api/v1/channel/$pageType?restriction=&order=created_at.desc&page=$page&paginate=lengthAware&returnContentOnly=true"
             )
 
-            // Make API request
-            val response = app.get(apiUrl, headers = headers)
-            
-            // Debug: Print response status
-            println("Egybest Debug: Response Status: ${response.code}")
-            
-            // Check if response is successful
-            if (response.code != 200) {
-                println("Egybest Error: API request failed with status ${response.code}")
-                println("Egybest Error: Response body: ${response.text.take(500)}")
-                
-                // Fallback to numeric channel IDs if the new endpoint fails
-                return getMainPageFallback(page, request, finalCookies, pageUrl, xsrfToken)
-            }
+            for ((index, apiUrl) in apiUrls.withIndex()) {
+                try {
+                    println("Egybest Debug: Trying API URL ${index + 1}: $apiUrl")
+                    
+                    val headers = mapOf(
+                        "User-Agent" to mobileUserAgent,
+                        "Accept" to "application/json, text/plain, */*",
+                        "Accept-Language" to "en-US,en;q=0.9",
+                        "X-Requested-With" to "XMLHttpRequest",
+                        "Referer" to "$mainUrl/$pageType",
+                        "Sec-Fetch-Dest" to "empty",
+                        "Sec-Fetch-Mode" to "cors",
+                        "Sec-Fetch-Site" to "same-origin",
+                        "Cookie" to cookies.map { (key, value) -> "$key=$value" }.joinToString("; ")
+                    )
 
-            // Get response body as text
-            val responseText = response.text
-            println("Egybest Debug: Response length: ${responseText.length}")
-            
-            // Parse response
-            val apiResponse = response.parsedSafe<ApiResponseData>()
-            
-            if (apiResponse == null) {
-                println("Egybest Error: Failed to parse API response")
-                println("Egybest Debug: First 500 chars: ${responseText.take(500)}")
-                return newHomePageResponse(pageName, emptyList())
-            }
+                    val response = app.get(apiUrl, headers = headers)
+                    
+                    println("Egybest Debug: Response status for URL ${index + 1}: ${response.code}")
+                    println("Egybest Debug: Response headers: ${response.headers}")
 
-            // Debug: Print API response data
-            println("Egybest Debug: API Response data count: ${apiResponse.data?.size}")
+                    if (response.isSuccessful) {
+                        val responseText = response.text
+                        println("Egybest Debug: Response length: ${responseText.length}")
+                        
+                        if (responseText.length > 100) {
+                            println("Egybest Debug: First 200 chars: ${responseText.take(200)}")
+                        }
 
-            val home = apiResponse.data?.mapNotNull { item ->
-                val title = item.name ?: return@mapNotNull null
-                val slug = item.slug ?: return@mapNotNull null
-                val posterUrl = item.poster
-                val absoluteUrl = "$mainUrl/titles/$slug"
-                
-                if (item.isSeries == true) {
-                    newTvSeriesSearchResponse(title, absoluteUrl, TvType.TvSeries) {
-                        this.posterUrl = posterUrl
+                        val apiResponse = response.parsedSafe<ApiResponseData>()
+                        if (apiResponse != null && apiResponse.data != null) {
+                            val home = apiResponse.data!!.mapNotNull { item ->
+                                val title = item.name ?: return@mapNotNull null
+                                val slug = item.slug ?: return@mapNotNull null
+                                val posterUrl = item.poster
+                                val absoluteUrl = "$mainUrl/titles/$slug"
+                                
+                                if (item.isSeries == true) {
+                                    newTvSeriesSearchResponse(title, absoluteUrl, TvType.TvSeries) {
+                                        this.posterUrl = posterUrl
+                                    }
+                                } else {
+                                    newMovieSearchResponse(title, absoluteUrl, TvType.Movie) {
+                                        this.posterUrl = posterUrl
+                                    }
+                                }
+                            }
+                            
+                            println("Egybest Debug: Successfully loaded ${home.size} items from URL ${index + 1}")
+                            return newHomePageResponse(pageName, home)
+                        }
+                    } else {
+                        println("Egybest Debug: Failed to load from URL ${index + 1}, status: ${response.code}")
+                        println("Egybest Debug: Response error: ${response.text.take(200)}")
                     }
-                } else {
-                    newMovieSearchResponse(title, absoluteUrl, TvType.Movie) {
-                        this.posterUrl = posterUrl
-                    }
+                } catch (e: Exception) {
+                    println("Egybest Debug: Error with URL ${index + 1}: ${e.message}")
                 }
-            } ?: listOf()
-            
-            println("Egybest Debug: Successfully loaded ${home.size} items for $pageName")
-            return newHomePageResponse(pageName, home)
-            
+            }
+
+            // Fallback: Try to scrape the HTML page directly
+            println("Egybest Debug: Trying HTML scraping fallback")
+            return tryHtmlScrapingFallback(pageType, pageName)
+
         } catch (e: Exception) {
             println("Egybest Error: Exception in getMainPage: ${e.message}")
             e.printStackTrace()
@@ -156,77 +125,41 @@ class EgybestProvider : MainAPI() {
         }
     }
 
-    // Fallback method using numeric channel IDs
-    private suspend fun getMainPageFallback(
-        page: Int, 
-        request: MainPageRequest, 
-        cookies: Map<String, String>,
-        pageUrl: String,
-        xsrfToken: String
-    ): HomePageResponse {
-        val channelIds = mapOf(
-            "movies" to "2",
-            "series-Movies" to "4", 
-            "Netflix" to "19"
-        )
-        
-        val channelId = channelIds[request.data] ?: "2"
-        val order = when (channelId) {
-            "2" -> "budget.desc"
-            "4" -> "budget.desc"
-            "19" -> "created_at.desc"
-            else -> "created_at.desc"
-        }
-
-        val apiUrl = "$mainUrl/api/v1/channel/$channelId?restriction=&order=$order&page=$page&paginate=lengthAware&returnContentOnly=true"
-        println("Egybest Debug: Fallback API URL: $apiUrl")
-
-        // Prepare cookies string
-        val cookieString = cookies.map { (key, value) -> 
-            "$key=${URLDecoder.decode(value, "UTF-8")}" 
-        }.joinToString("; ")
-
-        // Prepare headers
-        val headers = mapOf(
-            "User-Agent" to mobileUserAgent,
-            "Accept" to "application/json, text/plain, */*",
-            "Accept-Encoding" to "gzip, deflate, br",
-            "Accept-Language" to "en-US,en;q=0.9",
-            "X-Requested-With" to "XMLHttpRequest",
-            "X-Xsrf-Token" to xsrfToken,
-            "Referer" to pageUrl,
-            "Sec-Fetch-Dest" to "empty",
-            "Sec-Fetch-Mode" to "cors",
-            "Sec-Fetch-Site" to "same-origin",
-            "Cookie" to cookieString
-        )
-
+    private suspend fun tryHtmlScrapingFallback(pageType: String, pageName: String): HomePageResponse {
         try {
-            val response = app.get(apiUrl, headers = headers)
-            val apiResponse = response.parsedSafe<ApiResponseData>()
+            val pageUrl = "$mainUrl/$pageType"
+            val response = app.get(pageUrl, headers = mapOf("User-Agent" to mobileUserAgent))
             
-            val home = apiResponse?.data?.mapNotNull { item ->
-                val title = item.name ?: return@mapNotNull null
-                val slug = item.slug ?: return@mapNotNull null
-                val posterUrl = item.poster
-                val absoluteUrl = "$mainUrl/titles/$slug"
+            if (!response.isSuccessful) {
+                return newHomePageResponse(pageName, emptyList())
+            }
+
+            // Parse HTML to extract content (this is a basic example)
+            val document = response.document
+            val items = document.select("div.movie") // Adjust selector based on actual HTML
+            
+            val home = items.mapNotNull { item ->
+                val titleElement = item.selectFirst("h2.title, a.title, [class*='title']")
+                val title = titleElement?.text() ?: return@mapNotNull null
                 
-                if (item.isSeries == true) {
-                    newTvSeriesSearchResponse(title, absoluteUrl, TvType.TvSeries) {
-                        this.posterUrl = posterUrl
-                    }
-                } else {
-                    newMovieSearchResponse(title, absoluteUrl, TvType.Movie) {
-                        this.posterUrl = posterUrl
-                    }
+                val linkElement = item.selectFirst("a[href]")
+                val href = linkElement?.attr("href") ?: return@mapNotNull null
+                val absoluteUrl = if (href.startsWith("http")) href else "$mainUrl$href"
+                
+                val posterElement = item.selectFirst("img[src]")
+                val posterUrl = posterElement?.attr("src")
+                
+                newMovieSearchResponse(title, absoluteUrl, TvType.Movie) {
+                    this.posterUrl = posterUrl
                 }
-            } ?: listOf()
+            }
             
-            println("Egybest Debug: Fallback loaded ${home.size} items")
-            return newHomePageResponse(request.name, home)
+            println("Egybest Debug: HTML scraping found ${home.size} items")
+            return newHomePageResponse(pageName, home)
+            
         } catch (e: Exception) {
-            println("Egybest Error: Fallback also failed: ${e.message}")
-            return newHomePageResponse(request.name, emptyList())
+            println("Egybest Error: HTML scraping failed: ${e.message}")
+            return newHomePageResponse(pageName, emptyList())
         }
     }
     
