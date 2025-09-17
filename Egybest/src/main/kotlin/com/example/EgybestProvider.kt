@@ -3,12 +3,9 @@ package com.example
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.module.kotlin.readValue
 import java.net.URLDecoder
-import java.util.zip.GZIPInputStream
-import java.io.ByteArrayInputStream
 
-// v3: Added response decompression and better JSON handling
+// v5: Fixed API endpoints and order parameters based on network analysis
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -21,7 +18,6 @@ class EgybestProvider : MainAPI() {
     )
 
     private val mobileUserAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"
-    private val mapper = jsonMapper
 
     data class ApiDataItem(
         @JsonProperty("id") val id: Int?,
@@ -41,49 +37,45 @@ class EgybestProvider : MainAPI() {
         "Netflix" to "Netflix"
     )
 
+    // Different order parameters for each channel based on network analysis
+    private val channelOrders = mapOf(
+        "2" to "budget.desc",  // movies
+        "4" to "budget.desc",  // series-Movies
+        "19" to "created_at.desc"  // Netflix
+    )
+
     override val mainPage = mainPageOf(
         "2" to "movies",
         "4" to "series-Movies",
         "19" to "Netflix",
     )
 
-    private fun decompressGzip(compressed: ByteArray): String {
-        return GZIPInputStream(ByteArrayInputStream(compressed)).bufferedReader().use { it.readText() }
-    }
-
-    private fun parseJsonResponse(responseText: String): ApiResponseData {
-        return try {
-            mapper.readValue(responseText)
-        } catch (e: Exception) {
-            // حاول إصلاح JSON إذا كان هناك مشاكل في الترميز
-            val cleanedText = responseText.replace(Regex("[^\\x00-\\x7F]"), "").trim()
-            if (cleanedText.isNotEmpty()) {
-                mapper.readValue(cleanedText)
-            } else {
-                throw e
-            }
-        }
-    }
-
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val channelId = request.data
         val pageName = request.name
         val pagePath = pagePaths[pageName] ?: "movies"
         val pageUrl = "$mainUrl/$pagePath"
+        val order = channelOrders[channelId] ?: "created_at.desc"
 
         try {
-            // Step 1: Get initial cookies by visiting the page
-            val mainPageResponse = app.get(pageUrl, headers = mapOf("User-Agent" to mobileUserAgent))
+            // Step 1: Get initial cookies by visiting the main page first
+            val mainPageResponse = app.get(mainUrl, headers = mapOf("User-Agent" to mobileUserAgent))
             val cookies = mainPageResponse.cookies
             
-            // Debug: Print all cookies
-            println("Egybest Debug: Cookies from $pageUrl")
-            cookies.forEach { (key, value) ->
+            // Step 2: Now visit the specific section page to get proper cookies
+            val sectionPageResponse = app.get(pageUrl, headers = mapOf(
+                "User-Agent" to mobileUserAgent,
+                "Cookie" to cookies.map { (key, value) -> "$key=$value" }.joinToString("; ")
+            ))
+            
+            val finalCookies = sectionPageResponse.cookies
+            println("Egybest Debug: Final cookies from $pageUrl")
+            finalCookies.forEach { (key, value) ->
                 println("$key: $value")
             }
 
             // Extract XSRF token from cookies
-            val xsrfToken = cookies["XSRF-TOKEN"]?.let { 
+            val xsrfToken = finalCookies["XSRF-TOKEN"]?.let { 
                 URLDecoder.decode(it, "UTF-8") 
             }
 
@@ -92,19 +84,20 @@ class EgybestProvider : MainAPI() {
                 return newHomePageResponse(pageName, emptyList())
             }
 
-            // Build API URL
-            val apiUrl = "$mainUrl/api/v1/channel/$channelId?restriction=&order=created_at:desc&page=$page&paginate=lengthAware&returnContentOnly=true"
+            // Build API URL with correct order parameter
+            val apiUrl = "$mainUrl/api/v1/channel/$channelId?restriction=&order=$order&page=$page&paginate=lengthAware&returnContentOnly=true"
             println("Egybest Debug: API URL: $apiUrl")
 
             // Prepare cookies string
-            val cookieString = cookies.map { (key, value) -> 
+            val cookieString = finalCookies.map { (key, value) -> 
                 "$key=${URLDecoder.decode(value, "UTF-8")}" 
             }.joinToString("; ")
 
-            // Prepare headers without compression to handle it manually
+            // Prepare headers exactly as in the browser
             val headers = mapOf(
                 "User-Agent" to mobileUserAgent,
                 "Accept" to "application/json, text/plain, */*",
+                "Accept-Encoding" to "gzip, deflate, br",
                 "Accept-Language" to "en-US,en;q=0.9",
                 "X-Requested-With" to "XMLHttpRequest",
                 "X-Xsrf-Token" to xsrfToken,
@@ -112,31 +105,35 @@ class EgybestProvider : MainAPI() {
                 "Sec-Fetch-Dest" to "empty",
                 "Sec-Fetch-Mode" to "cors",
                 "Sec-Fetch-Site" to "same-origin",
-                "Cookie" to cookieString,
-                "Accept-Encoding" to "identity" // طلب عدم ضغط الاستجابة
+                "Cookie" to cookieString
             )
 
             // Make API request
             val response = app.get(apiUrl, headers = headers)
             
-            // Debug: Print response status and headers
-            println("Egybest Debug: Response Status: ${response.statusCode}")
-            println("Egybest Debug: Response Headers: ${response.headers}")
+            // Debug: Print response status
+            println("Egybest Debug: Response Status: ${response.code}")
             
             // Check if response is successful
-            if (!response.isSuccessful) {
-                println("Egybest Error: API request failed with status ${response.statusCode}")
+            if (response.code != 200) {
+                println("Egybest Error: API request failed with status ${response.code}")
+                println("Egybest Error: Response body: ${response.text.take(500)}")
                 return newHomePageResponse(pageName, emptyList())
             }
 
             // Get response body as text
             val responseText = response.text
             println("Egybest Debug: Response length: ${responseText.length}")
-            println("Egybest Debug: First 200 chars: ${responseText.take(200)}")
-
-            // Parse response
-            val apiResponse = parseJsonResponse(responseText)
             
+            // Parse response
+            val apiResponse = response.parsedSafe<ApiResponseData>()
+            
+            if (apiResponse == null) {
+                println("Egybest Error: Failed to parse API response")
+                println("Egybest Debug: First 500 chars: ${responseText.take(500)}")
+                return newHomePageResponse(pageName, emptyList())
+            }
+
             // Debug: Print API response data
             println("Egybest Debug: API Response data count: ${apiResponse.data?.size}")
 
