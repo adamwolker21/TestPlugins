@@ -6,10 +6,9 @@ import org.jsoup.nodes.Element
 import org.jsoup.Jsoup
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.network.WebViewResolver
-import com.lagradost.cloudstream3.network.WebViewResolver.Companion.WebViewResolveResponse // v4: Import needed for new WebViewResolver result
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 
-// v4: This version fixes API compatibility issues from v3.
+// v5: This version adapts to the modern CloudStream API for WebViewResolver and coroutines.
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -73,7 +72,6 @@ class EgybestProvider : MainAPI() {
         val isMovie = url.contains("/movie/")
 
         return if (isMovie) {
-            // v4: Reverted to builder functions to fix deprecation errors.
             newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = poster
                 this.year = year
@@ -91,7 +89,6 @@ class EgybestProvider : MainAPI() {
                 }
             }.reversed()
 
-            // v4: Reverted to builder functions to fix deprecation errors.
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                 this.posterUrl = poster
                 this.year = year
@@ -127,23 +124,31 @@ class EgybestProvider : MainAPI() {
         val iframeHtml = parseJson<EgybestApiResponse>(apiResponse).html
         val iframeSrc = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src") ?: return false
 
-        // v4: Corrected WebViewResolver usage.
-        // The new API returns a result object. We get all requests and filter them ourselves.
-        val resolved: WebViewResolveResponse? = WebViewResolver(
+        // v5: Updated WebViewResolver logic to use the new request interceptor API.
+        val m3u8Links = mutableListOf<String>()
+        val resolver = WebViewResolver(
+            // We can add a regex to pre-filter, but intercepting all and checking is more reliable.
+            // Let's keep it simple and check in the interceptor.
+            anyRequest = true,
+            interceptor = { request ->
+                // This lambda is called for each network request inside the WebView.
+                if (request.url.endsWith(".m3u8")) {
+                    m3u8Links.add(request.url)
+                }
+                // Return true to allow the request to continue.
+                true
+            }
+        )
+        // The `resolve` function now takes the parameters directly.
+        resolver.resolve(
             url = iframeSrc,
-            referer = videoPageUrl,
-        ).resolve()
-
-        val m3u8Links = resolved?.requests
-            ?.filter { it.url.endsWith(".m3u8") }
-            ?.map { it.url } ?: emptyList()
-
+            referer = videoPageUrl
+        )
 
         if (m3u8Links.isEmpty()) return false
 
-        m3u8Links.forEach { link ->
-            // v4: Reinstated M3u8Helper to correctly generate ExtractorLinks.
-            // This is the proper way to handle this and avoids deprecated constructor calls.
+        // v5: Use a 'for' loop to correctly handle suspend function calls within a coroutine.
+        for (link in m3u8Links) {
             M3u8Helper.generateM3u8(
                 this.name,
                 link,
