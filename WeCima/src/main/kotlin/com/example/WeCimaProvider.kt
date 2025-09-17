@@ -196,7 +196,7 @@ class WeCimaProvider : MainAPI() {
                             val m3u8Link = Regex("""(https?://[^'"]+\.m3u8)""").find(unpackedJs)?.groupValues?.get(1)
                             if (m3u8Link != null) {
                                 M3u8Helper.generateM3u8(
-                                    name = "$name - $serverName",
+                                    source = "$name - $serverName", // FIX: name -> source
                                     streamUrl = m3u8Link,
                                     referer = embedUrl
                                 ).forEach(callback)
@@ -207,7 +207,7 @@ class WeCimaProvider : MainAPI() {
                         val m3u8Link = Regex("""(https?://[^'"]+\.m3u8)""").find(embedContent)?.groupValues?.get(1)
                         if (m3u8Link != null) {
                             M3u8Helper.generateM3u8(
-                                name = "$name - $serverName",
+                                source = "$name - $serverName", // FIX: name -> source
                                 streamUrl = m3u8Link,
                                 referer = embedUrl
                             ).forEach(callback)
@@ -222,4 +222,3 @@ class WeCimaProvider : MainAPI() {
         return true
     }
 }
-
