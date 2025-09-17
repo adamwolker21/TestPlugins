@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.utils.*
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.net.URLDecoder
 
-// v8: Using the correct API endpoint based on network analysis
+// v9: Trying both API endpoints that were found in network analysis
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -19,17 +19,6 @@ class EgybestProvider : MainAPI() {
 
     private val mobileUserAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"
 
-    data class ChannelContent(
-        @JsonProperty("current_page") val currentPage: Int?,
-        @JsonProperty("data") val data: List<ContentItem>?,
-        @JsonProperty("from") val from: Int?,
-        @JsonProperty("next_page") val nextPage: Int?,
-        @JsonProperty("per_page") val perPage: Int?,
-        @JsonProperty("prev_page") val prevPage: Int?,
-        @JsonProperty("to") val to: Int?,
-        @JsonProperty("total") val total: Int?
-    )
-
     data class ContentItem(
         @JsonProperty("id") val id: Int?,
         @JsonProperty("name") val name: String?,
@@ -39,7 +28,7 @@ class EgybestProvider : MainAPI() {
         @JsonProperty("is_series") val isSeries: Boolean?,
         @JsonProperty("release_date") val releaseDate: String?,
         @JsonProperty("rating") val rating: Double?,
-        @JsonProperty("runTime") val runTime: Int?,
+        @JsonProperty("runtime") val runtime: Int?,
         @JsonProperty("model_type") val modelType: String?,
         @JsonProperty("status") val status: String?,
         @JsonProperty("certification") val certification: String?,
@@ -60,37 +49,36 @@ class EgybestProvider : MainAPI() {
     )
 
     data class ChannelResponse(
-        @JsonProperty("channel") val channel: Channel?,
+        @JsonProperty("channel") val channel: Any?,
         @JsonProperty("content") val content: ChannelContent?
     )
 
-    data class Channel(
-        @JsonProperty("id") val id: Int?,
-        @JsonProperty("name") val name: String?,
-        @JsonProperty("slug") val slug: String?,
-        @JsonProperty("public") val public: Boolean?,
-        @JsonProperty("description") val description: String?,
-        @JsonProperty("internal") val internal: Boolean?,
-        @JsonProperty("config") val config: Config?,
-        @JsonProperty("model_type") val modelType: String?,
-        @JsonProperty("restriction") val restriction: String?,
-        @JsonProperty("type") val type: String?,
-        @JsonProperty("updated_at") val updatedAt: String?,
-        @JsonProperty("user_id") val userId: Int?,
-        @JsonProperty("user") val user: String?
+    data class ChannelContent(
+        @JsonProperty("current_page") val currentPage: Int?,
+        @JsonProperty("data") val data: List<ContentItem>?,
+        @JsonProperty("from") val from: Int?,
+        @JsonProperty("next_page") val nextPage: Int?,
+        @JsonProperty("per_page") val perPage: Int?,
+        @JsonProperty("prev_page") val prevPage: Int?,
+        @JsonProperty("to") val to: Int?,
+        @JsonProperty("total") val total: Int?
     )
 
-    data class Config(
-        @JsonProperty("contentType") val contentType: String?,
-        @JsonProperty("contentOrder") val contentOrder: String?,
-        @JsonProperty("nestendEvent") val nestendEvent: String?,
-        @JsonProperty("contentModel") val contentModel: String?,
-        @JsonProperty("layout") val layout: String?,
-        @JsonProperty("preventDeletion") val preventDeletion: Boolean?,
-        @JsonProperty("autopldersMethod") val autopldersMethod: String?,
-        @JsonProperty("restriction") val restriction: String?,
-        @JsonProperty("paginationType") val paginationType: String?,
-        @JsonProperty("selectedLayout") val selectedLayout: Boolean?
+    data class SimpleApiResponse(
+        @JsonProperty("current_page") val currentPage: Int?,
+        @JsonProperty("data") val data: List<ContentItem>?,
+        @JsonProperty("from") val from: Int?,
+        @JsonProperty("next_page") val nextPage: Int?,
+        @JsonProperty("per_page") val perPage: Int?,
+        @JsonProperty("prev_page") val prevPage: Int?,
+        @JsonProperty("to") val to: Int?,
+        @JsonProperty("total") val total: Int?
+    )
+
+    private val channelIds = mapOf(
+        "movies" to "2",
+        "series" to "4",
+        "netflix" to "19"
     )
 
     private val pageApiEndpoints = mapOf(
@@ -101,7 +89,7 @@ class EgybestProvider : MainAPI() {
 
     override val mainPage = mainPageOf(
         "movies" to "أفلام",
-        "series" to "مسلسلات", 
+        "series" to "مسلسلات",
         "netflix" to "نتفليكس"
     )
 
@@ -109,6 +97,7 @@ class EgybestProvider : MainAPI() {
         val pageName = request.name
         val pageType = request.data
         val pageSlug = pageApiEndpoints[pageType] ?: "movies"
+        val channelId = channelIds[pageType] ?: "2"
 
         try {
             // Step 1: Get initial cookies by visiting the main page
@@ -117,72 +106,95 @@ class EgybestProvider : MainAPI() {
             
             println("Egybest Debug: Initial cookies: ${cookies.keys}")
 
-            // Step 2: Use the correct API endpoint that works
-            val apiUrl = "$mainUrl/api/v1/channel/$pageSlug?channelType=channel&restriction=&loader=channelPage&page=$page"
-            println("Egybest Debug: API URL: $apiUrl")
-
-            // Prepare headers exactly as in the browser
-            val headers = mapOf(
-                "User-Agent" to mobileUserAgent,
-                "Accept" to "application/json, text/plain, */*",
-                "Accept-Encoding" to "gzip, deflate, br",
-                "Accept-Language" to "en-US,en;q=0.9",
-                "X-Requested-With" to "XMLHttpRequest",
-                "Referer" to "$mainUrl/$pageSlug",
-                "Sec-Fetch-Dest" to "empty",
-                "Sec-Fetch-Mode" to "cors",
-                "Sec-Fetch-Site" to "same-origin",
-                "Cookie" to cookies.map { (key, value) -> "$key=$value" }.joinToString("; ")
+            // Try both API endpoints
+            val apiUrls = listOf(
+                // First endpoint: channel slug with loader
+                "$mainUrl/api/v1/channel/$pageSlug?channelType=channel&restriction=&loader=channelPage&page=$page",
+                // Second endpoint: channel ID with order and pagination
+                "$mainUrl/api/v1/channel/$channelId?restriction=&order=created_at.desc&page=$page&paginate=lengthAware&returnContentOnly=true"
             )
 
-            // Make API request
-            val response = app.get(apiUrl, headers = headers)
-            
-            println("Egybest Debug: Response status: ${response.code}")
-            
-            if (!response.isSuccessful) {
-                println("Egybest Error: API request failed with status ${response.code}")
-                println("Egybest Error: Response body: ${response.text.take(500)}")
-                return newHomePageResponse(pageName, emptyList())
-            }
+            for ((index, apiUrl) in apiUrls.withIndex()) {
+                try {
+                    println("Egybest Debug: Trying API URL ${index + 1}: $apiUrl")
+                    
+                    // Prepare headers exactly as in the browser
+                    val headers = mapOf(
+                        "User-Agent" to mobileUserAgent,
+                        "Accept" to "application/json, text/plain, */*",
+                        "Accept-Encoding" to "gzip, deflate, br",
+                        "Accept-Language" to "en-US,en;q=0.9",
+                        "X-Requested-With" to "XMLHttpRequest",
+                        "Referer" to "$mainUrl/$pageSlug",
+                        "Sec-Fetch-Dest" to "empty",
+                        "Sec-Fetch-Mode" to "cors",
+                        "Sec-Fetch-Site" to "same-origin",
+                        "Cookie" to cookies.map { (key, value) -> "$key=$value" }.joinToString("; ")
+                    )
 
-            // Parse the response
-            val channelResponse = response.parsedSafe<ChannelResponse>()
-            
-            if (channelResponse == null || channelResponse.content == null || channelResponse.content?.data == null) {
-                println("Egybest Error: Failed to parse API response or no data found")
-                println("Egybest Debug: Response: ${response.text.take(500)}")
-                return newHomePageResponse(pageName, emptyList())
-            }
-
-            val contentData = channelResponse.content!!.data!!
-            println("Egybest Debug: Found ${contentData.size} items in response")
-
-            val home = contentData.mapNotNull { item ->
-                val title = item.name ?: return@mapNotNull null
-                val slug = item.slug ?: return@mapNotNull null
-                val posterUrl = item.poster
-                val absoluteUrl = "$mainUrl/titles/$slug"
-                
-                if (item.isSeries == true) {
-                    newTvSeriesSearchResponse(title, absoluteUrl, TvType.TvSeries) {
-                        this.posterUrl = posterUrl
+                    val response = app.get(apiUrl, headers = headers)
+                    
+                    println("Egybest Debug: Response status for URL ${index + 1}: ${response.code}")
+                    
+                    if (response.isSuccessful) {
+                        val responseText = response.text
+                        println("Egybest Debug: Response length: ${responseText.length}")
+                        
+                        // Try to parse as ChannelResponse (first endpoint)
+                        val channelResponse = response.parsedSafe<ChannelResponse>()
+                        if (channelResponse != null && channelResponse.content != null && channelResponse.content?.data != null) {
+                            val contentData = channelResponse.content!!.data!!
+                            println("Egybest Debug: Found ${contentData.size} items from endpoint 1")
+                            return createHomePageResponse(contentData, pageName)
+                        }
+                        
+                        // Try to parse as SimpleApiResponse (second endpoint)
+                        val simpleResponse = response.parsedSafe<SimpleApiResponse>()
+                        if (simpleResponse != null && simpleResponse.data != null) {
+                            val contentData = simpleResponse.data!!
+                            println("Egybest Debug: Found ${contentData.size} items from endpoint 2")
+                            return createHomePageResponse(contentData, pageName)
+                        }
+                        
+                        println("Egybest Debug: Failed to parse response from URL ${index + 1}")
+                    } else {
+                        println("Egybest Debug: Failed to load from URL ${index + 1}, status: ${response.code}")
                     }
-                } else {
-                    newMovieSearchResponse(title, absoluteUrl, TvType.Movie) {
-                        this.posterUrl = posterUrl
-                    }
+                } catch (e: Exception) {
+                    println("Egybest Debug: Error with URL ${index + 1}: ${e.message}")
                 }
             }
-            
-            println("Egybest Debug: Successfully loaded ${home.size} items for $pageName")
-            return newHomePageResponse(pageName, home)
+
+            println("Egybest Error: All API endpoints failed")
+            return newHomePageResponse(pageName, emptyList())
             
         } catch (e: Exception) {
             println("Egybest Error: Exception in getMainPage: ${e.message}")
             e.printStackTrace()
             return newHomePageResponse(pageName, emptyList())
         }
+    }
+
+    private fun createHomePageResponse(data: List<ContentItem>, pageName: String): HomePageResponse {
+        val home = data.mapNotNull { item ->
+            val title = item.name ?: return@mapNotNull null
+            val slug = item.slug ?: return@mapNotNull null
+            val posterUrl = item.poster
+            val absoluteUrl = "$mainUrl/titles/$slug"
+            
+            if (item.isSeries == true) {
+                newTvSeriesSearchResponse(title, absoluteUrl, TvType.TvSeries) {
+                    this.posterUrl = posterUrl
+                }
+            } else {
+                newMovieSearchResponse(title, absoluteUrl, TvType.Movie) {
+                    this.posterUrl = posterUrl
+                }
+            }
+        }
+        
+        println("Egybest Debug: Successfully loaded ${home.size} items for $pageName")
+        return newHomePageResponse(pageName, home)
     }
     
     override suspend fun search(query: String): List<SearchResponse> {
