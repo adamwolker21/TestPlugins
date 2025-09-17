@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.utils.JsUnpacker
 
 class WeCimaProvider : MainAPI() {
+    // The main URL for the site
     override var mainUrl = "https://wecima.video"
     override var name = "WeCima"
     override val hasMainPage = true
@@ -21,50 +22,48 @@ class WeCimaProvider : MainAPI() {
         TvType.AsianDrama,
     )
 
-    // Interceptor to handle Cloudflare
+    // Cloudflare interceptor
     private val interceptor = CloudflareKiller()
 
+    // v3 Update: Updated main page sections
     override val mainPage = mainPageOf(
-        "/movies/arabic-movies/" to "أفلام عربية",
-        "/movies/foreign-movies/" to "أفلام أجنبي",
-        "/movies/indian-movies/" to "أفلام هندية",
-        "/movies/asian-movies/" to "أفلام اسيوية",
-        "/movies/turkish-movies/" to "أفلام تركية",
-        "/series/arabic-series/" to "مسلسلات عربية",
-        "/series/foreign-series/" to "مسلسلات اجنبى",
-        "/series/turkish-series/" to "مسلسلات تركية",
-        "/series/asian-series/" to "مسلسلات اسيوية",
-        "/series/indian-series/" to "مسلسلات هندية",
-        "/ramadan-2025/" to "مسلسلات رمضان 2025",
-        "/category/netflix/" to "حصريات Netflix"
+        "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/list/" to "مسلسلات آسيوية",
+        "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "آخر حلقات المسلسلات الآسيوية",
+        "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/7-series-english-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "مسلسلات أجنبي",
+        "/category/%d8%a3%d9%81%d9%84%d8%a7%d9%85/10-movies-english-%d8%a7%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "أفلام أجنبي",
     )
 
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
+        // v3 Update: Updated pagination logic
         val url = if (page == 1) {
             "$mainUrl${request.data}"
         } else {
-            "$mainUrl${request.data}page/$page/"
+            "$mainUrl${request.data}?page=$page"
         }
         val document = app.get(url, interceptor = interceptor).document
-        val home = document.select("div.GridItem").mapNotNull {
+        // v3 Update: Changed selector to "div.media-card"
+        val home = document.select("div.media-card").mapNotNull {
             it.toSearchResult()
         }
         return newHomePageResponse(request.name, home)
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
+        // v3 Update: Logic adapted for "div.media-card" structure
         val linkElement = this.selectFirst("a") ?: return null
         val href = linkElement.attr("href")
-        val title = this.selectFirst("div.Title")?.text() ?: return null
-        val posterUrl = this.selectFirst("img")?.attr("data-src")
+        val title = this.selectFirst("h2[itemprop=name]")?.text() ?: return null
+        
+        // Extract poster URL from style attribute
+        val style = this.selectFirst("span.media-card__bg")?.attr("style")
+        val posterUrl = style?.let {
+            Regex("""url\((.*?)\)""").find(it)?.groupValues?.get(1)
+        }
 
-        // Distinguish between movies and series
-        val isSeries = href.contains("/series/") ||
-                this.selectFirst("span.year:contains(موسم)") != null ||
-                title.contains("مسلسل") || title.contains("برنامج")
+        val isSeries = title.contains("مسلسل") || title.contains("برنامج") || title.contains("موسم")
 
         return if (isSeries) {
             newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
@@ -78,9 +77,11 @@ class WeCimaProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val url = "$mainUrl/search/$query/"
+        // v3 Update: Changed search URL format
+        val url = "$mainUrl/?s=$query"
         val document = app.get(url, interceptor = interceptor).document
-        return document.select("div.GridItem").mapNotNull {
+        // v3 Update: Changed selector to "div.media-card"
+        return document.select("div.media-card").mapNotNull {
             it.toSearchResult()
         }
     }
@@ -144,7 +145,6 @@ class WeCimaProvider : MainAPI() {
         }
     }
 
-    // Data class for parsing the AJAX JSON response
     private data class ServerResponse(
         @JsonProperty("embed_url") val embedUrl: String?,
         @JsonProperty("success") val success: Boolean
@@ -158,14 +158,12 @@ class WeCimaProvider : MainAPI() {
     ): Boolean {
         val document = app.get(data, interceptor = interceptor).document
 
-        // Extract the post ID required for the AJAX call
         val postId = document.body().className().let {
             Regex("""postid-(\d+)""").find(it)?.groupValues?.get(1)
         } ?: return false
 
         val ajaxUrl = "$mainUrl/wp-content/themes/Elshaikh/Ajaxat/Single/Server.php"
 
-        // Iterate over server tabs
         document.select("ul#servers-list li").apmap { serverElement ->
             val serverId = serverElement.attr("data-id")
             val serverName = serverElement.text().trim()
@@ -186,28 +184,25 @@ class WeCimaProvider : MainAPI() {
 
                 if (response.success && response.embedUrl != null) {
                     val embedUrl = response.embedUrl
-                    // The embed URL might need a referer
                     val embedContent = app.get(embedUrl, referer = data, interceptor = interceptor).text
 
-                    // Check for packed JavaScript
                     if (embedContent.contains("eval(function(p,a,c,k,e,d)")) {
                         val unpackedJs = JsUnpacker(embedContent).unpack()
                         if (unpackedJs != null) {
                             val m3u8Link = Regex("""(https?://[^'"]+\.m3u8)""").find(unpackedJs)?.groupValues?.get(1)
                             if (m3u8Link != null) {
                                 M3u8Helper.generateM3u8(
-                                    source = "$name - $serverName", // FIX: name -> source
+                                    source = "$name - $serverName",
                                     streamUrl = m3u8Link,
                                     referer = embedUrl
                                 ).forEach(callback)
                             }
                         }
                     } else {
-                         // Simple regex for non-packed links
                         val m3u8Link = Regex("""(https?://[^'"]+\.m3u8)""").find(embedContent)?.groupValues?.get(1)
                         if (m3u8Link != null) {
                             M3u8Helper.generateM3u8(
-                                source = "$name - $serverName", // FIX: name -> source
+                                source = "$name - $serverName",
                                 streamUrl = m3u8Link,
                                 referer = embedUrl
                             ).forEach(callback)
@@ -215,7 +210,7 @@ class WeCimaProvider : MainAPI() {
                     }
                 }
             } catch (e: Exception) {
-                // Ignore errors and continue to the next server
+                // Ignore errors
             }
         }
 
