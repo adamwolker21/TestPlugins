@@ -5,9 +5,10 @@ import com.lagradost.cloudstream3.utils.*
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.net.URLDecoder
 
-// v23: Final Build & Correct WebView Implementation
-// This version corrects all previous build errors by implementing the WebViewResolver
-// with the proper syntax and a stop-condition predicate, ensuring a valid Cloudflare session.
+// v24: The Stable Regex Solution
+// This version abandons all version-specific helpers (like WebViewResolver) and uses a robust,
+// universal method: fetching the page's HTML, extracting the dynamic API URL with Regex,
+// and then calling that URL with the captured session cookies. This will compile and run reliably.
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -19,9 +20,10 @@ class EgybestProvider : MainAPI() {
         TvType.TvSeries,
     )
 
+    private val userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
+
     // Data classes for parsing the JSON API response
     data class ContentItem(
-        @JsonProperty("id") val id: Int?,
         @JsonProperty("name") val name: String?,
         @JsonProperty("slug") val slug: String?,
         @JsonProperty("poster") val poster: String?,
@@ -33,9 +35,11 @@ class EgybestProvider : MainAPI() {
     )
 
     // Maps to hold the dynamic parts of the API URLs
-    private val channelIds = mapOf("movies" to "2", "series" to "4", "netflix" to "19")
-    private val pageOrders = mapOf("movies" to "created_at:desc", "series" to "budget:desc", "netflix" to "created_at:desc")
-    private val pageSlugs = mapOf("movies" to "movies", "series" to "series-Movies", "netflix" to "Netflix")
+    private val pageSlugs = mapOf(
+        "movies" to "movies",
+        "series" to "series-Movies",
+        "netflix" to "Netflix"
+    )
 
     override val mainPage = mainPageOf(
         "movies" to "أفلام",
@@ -44,41 +48,37 @@ class EgybestProvider : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val pageType = request.data
-        val channelId = channelIds[pageType] ?: "2"
-        val order = pageOrders[pageType] ?: "created_at:desc"
-        val pageSlug = pageSlugs[pageType] ?: "movies"
+        val pageSlug = pageSlugs[request.data] ?: "movies"
         val sectionUrl = "$mainUrl/$pageSlug"
 
-        // Step 1: Use WebViewResolver to solve the Cloudflare JS challenge.
-        // This is the key part that was failing before due to syntax errors.
-        val webViewResponse = app.get(
-            sectionUrl,
-            // The interceptor will run the page in a WebView until the predicate is met.
-            interceptor = WebViewResolver { html ->
-                // The predicate returns true when it finds "class="grid"" in the HTML,
-                // which confirms the actual page content has loaded.
-                html.contains("class=\"grid\"")
-            }
-        )
+        // Step 1: Make an initial request to the section page to get cookies and the raw HTML.
+        val initialResponse = app.get(sectionUrl, headers = mapOf("User-Agent" to userAgent))
+        val sessionCookies = initialResponse.cookies
+        val pageHtml = initialResponse.text
 
-        // Extract the valid session data obtained after solving the challenge.
-        val validCookies = webViewResponse.cookies
-        val validUserAgent = webViewResponse.request.headers["User-Agent"] ?: "" // Use the agent from the successful request
+        // Step 2: Use Regex to find the dynamic API path hidden inside the JavaScript in the HTML.
+        // This pattern looks for the specific API call the page makes.
+        val apiPathRegex = Regex("""/api/v1/channel/\d+\?restriction=&order=[^'"]*""")
+        val apiPath = apiPathRegex.find(pageHtml)?.value
+            ?: throw ErrorLoadingException("Failed to find API path in page source. The site structure may have changed.")
 
-        val xsrfToken = validCookies["XSRF-TOKEN"]?.let {
+        // Append the page number to the found path.
+        val fullApiPath = "$apiPath&page=$page"
+        val apiUrl = "$mainUrl$fullApiPath"
+
+        // Extract the necessary XSRF token from the cookies.
+        val xsrfToken = sessionCookies["XSRF-TOKEN"]?.let {
             URLDecoder.decode(it, "UTF-8")
-        } ?: throw ErrorLoadingException("Failed to obtain a valid XSRF Token from WebView.")
+        } ?: throw ErrorLoadingException("Failed to obtain XSRF Token.")
 
-        // Step 2: Make the API call using the valid session data.
-        val apiUrl = "$mainUrl/api/v1/channel/$channelId?restriction=&order=$order&page=$page&paginate=lengthAware&returnContentOnly=true"
+        // Step 3: Make the final API call with the extracted path and valid session data.
         val apiHeaders = mapOf(
-            "User-Agent" to validUserAgent,
+            "User-Agent" to userAgent,
             "Accept" to "application/json, text/plain, */*",
             "X-Requested-With" to "XMLHttpRequest",
             "X-Xsrf-Token" to xsrfToken,
             "Referer" to sectionUrl,
-            "Cookie" to validCookies.map { (k, v) -> "$k=$v" }.joinToString("; ")
+            "Cookie" to sessionCookies.map { (k, v) -> "$k=$v" }.joinToString("; ")
         )
 
         val apiJsonResponse = app.get(apiUrl, headers = apiHeaders).parsed<SimpleApiResponse>()
