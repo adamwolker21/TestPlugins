@@ -3,13 +3,13 @@ package com.example
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
-import org.jsoup.Jsoup // v3: Fixed missing import
+import org.jsoup.Jsoup
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.network.WebViewResolver
+import com.lagradost.cloudstream3.network.WebViewResolver.Companion.WebViewResolveResponse // v4: Import needed for new WebViewResolver result
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
-import com.lagradost.cloudstream3.utils.ExtractorLink
 
-// v3: This version fixes all compilation errors from the v2 update.
+// v4: This version fixes API compatibility issues from v3.
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -73,42 +73,31 @@ class EgybestProvider : MainAPI() {
         val isMovie = url.contains("/movie/")
 
         return if (isMovie) {
-            // v3: Fixed deprecated function call
-            MovieLoadResponse(
-                name = title,
-                url = url,
-                apiName = this.name,
-                type = TvType.Movie,
-                dataUrl = url,
-                posterUrl = poster,
-                year = year,
-                plot = plot,
-                tags = tags
-            )
+            // v4: Reverted to builder functions to fix deprecation errors.
+            newMovieLoadResponse(title, url, TvType.Movie, url) {
+                this.posterUrl = poster
+                this.year = year
+                this.plot = plot
+                this.tags = tags
+            }
         } else {
             val episodes = document.select("#episodes_list div.tr a").map {
                 val epHref = it.attr("href")
                 val epTitle = it.selectFirst("span.title")?.text()
                 val seasonNum = it.selectFirst("span.season")?.text()?.replace("S", "")?.trim()?.toIntOrNull()
-                // v3: Fixed deprecated function call
                 newEpisode(epHref) {
                     this.name = epTitle
                     this.season = seasonNum
                 }
             }.reversed()
 
-            // v3: Fixed deprecated function call
-            TvSeriesLoadResponse(
-                name = title,
-                url = url,
-                apiName = this.name,
-                type = TvType.TvSeries,
-                episodes = episodes,
-                posterUrl = poster,
-                year = year,
-                plot = plot,
-                tags = tags
-            )
+            // v4: Reverted to builder functions to fix deprecation errors.
+            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+                this.posterUrl = poster
+                this.year = year
+                this.plot = plot
+                this.tags = tags
+            }
         }
     }
     
@@ -136,32 +125,30 @@ class EgybestProvider : MainAPI() {
         ).text
 
         val iframeHtml = parseJson<EgybestApiResponse>(apiResponse).html
-        // v3: Fixed unresolved reference 'Jsoup'
         val iframeSrc = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src") ?: return false
 
-        // v3: Fixed WebViewResolver call and subsequent link handling
-        val webViewLinks = WebViewResolver(
+        // v4: Corrected WebViewResolver usage.
+        // The new API returns a result object. We get all requests and filter them ourselves.
+        val resolved: WebViewResolveResponse? = WebViewResolver(
             url = iframeSrc,
             referer = videoPageUrl,
-            // v3: Correctly named the lambda parameter 'it' to 'url'
-            requestPredicate = { url -> url.endsWith(".m3u8") }
         ).resolve()
 
-        if (webViewLinks.isEmpty()) return false
+        val m3u8Links = resolved?.requests
+            ?.filter { it.url.endsWith(".m3u8") }
+            ?.map { it.url } ?: emptyList()
 
-        webViewLinks.forEach { link ->
-            // v3: Replaced M3u8Helper with a direct ExtractorLink callback
-            // This is more robust and avoids potential API signature issues.
-            callback.invoke(
-                ExtractorLink(
-                    source = this.name,
-                    name = this.name,
-                    url = link,
-                    referer = iframeSrc,
-                    quality = Qualities.Unknown.value,
-                    isM3u8 = true
-                )
-            )
+
+        if (m3u8Links.isEmpty()) return false
+
+        m3u8Links.forEach { link ->
+            // v4: Reinstated M3u8Helper to correctly generate ExtractorLinks.
+            // This is the proper way to handle this and avoids deprecated constructor calls.
+            M3u8Helper.generateM3u8(
+                this.name,
+                link,
+                iframeSrc,
+            ).forEach(callback)
         }
 
         return true
