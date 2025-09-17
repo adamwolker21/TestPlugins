@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.utils.*
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.net.URLDecoder
 
-// v9: Trying both API endpoints that were found in network analysis
+// v10: Focus on numeric channel ID endpoint with improved token handling
 class EgybestProvider : MainAPI() {
     override var mainUrl = "https://egybest.la"
     override var name = "Egybest"
@@ -48,22 +48,6 @@ class EgybestProvider : MainAPI() {
         @JsonProperty("model_type") val modelType: String?
     )
 
-    data class ChannelResponse(
-        @JsonProperty("channel") val channel: Any?,
-        @JsonProperty("content") val content: ChannelContent?
-    )
-
-    data class ChannelContent(
-        @JsonProperty("current_page") val currentPage: Int?,
-        @JsonProperty("data") val data: List<ContentItem>?,
-        @JsonProperty("from") val from: Int?,
-        @JsonProperty("next_page") val nextPage: Int?,
-        @JsonProperty("per_page") val perPage: Int?,
-        @JsonProperty("prev_page") val prevPage: Int?,
-        @JsonProperty("to") val to: Int?,
-        @JsonProperty("total") val total: Int?
-    )
-
     data class SimpleApiResponse(
         @JsonProperty("current_page") val currentPage: Int?,
         @JsonProperty("data") val data: List<ContentItem>?,
@@ -81,10 +65,10 @@ class EgybestProvider : MainAPI() {
         "netflix" to "19"
     )
 
-    private val pageApiEndpoints = mapOf(
-        "movies" to "movies",
-        "series" to "series-Movies",
-        "netflix" to "Netflix"
+    private val pageOrders = mapOf(
+        "movies" to "created_at.desc",
+        "series" to "budget.desc",
+        "netflix" to "created_at.desc"
     )
 
     override val mainPage = mainPageOf(
@@ -96,8 +80,8 @@ class EgybestProvider : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val pageName = request.name
         val pageType = request.data
-        val pageSlug = pageApiEndpoints[pageType] ?: "movies"
         val channelId = channelIds[pageType] ?: "2"
+        val order = pageOrders[pageType] ?: "created_at.desc"
 
         try {
             // Step 1: Get initial cookies by visiting the main page
@@ -106,67 +90,77 @@ class EgybestProvider : MainAPI() {
             
             println("Egybest Debug: Initial cookies: ${cookies.keys}")
 
-            // Try both API endpoints
-            val apiUrls = listOf(
-                // First endpoint: channel slug with loader
-                "$mainUrl/api/v1/channel/$pageSlug?channelType=channel&restriction=&loader=channelPage&page=$page",
-                // Second endpoint: channel ID with order and pagination
-                "$mainUrl/api/v1/channel/$channelId?restriction=&order=created_at.desc&page=$page&paginate=lengthAware&returnContentOnly=true"
-            )
-
-            for ((index, apiUrl) in apiUrls.withIndex()) {
-                try {
-                    println("Egybest Debug: Trying API URL ${index + 1}: $apiUrl")
-                    
-                    // Prepare headers exactly as in the browser
-                    val headers = mapOf(
-                        "User-Agent" to mobileUserAgent,
-                        "Accept" to "application/json, text/plain, */*",
-                        "Accept-Encoding" to "gzip, deflate, br",
-                        "Accept-Language" to "en-US,en;q=0.9",
-                        "X-Requested-With" to "XMLHttpRequest",
-                        "Referer" to "$mainUrl/$pageSlug",
-                        "Sec-Fetch-Dest" to "empty",
-                        "Sec-Fetch-Mode" to "cors",
-                        "Sec-Fetch-Site" to "same-origin",
-                        "Cookie" to cookies.map { (key, value) -> "$key=$value" }.joinToString("; ")
-                    )
-
-                    val response = app.get(apiUrl, headers = headers)
-                    
-                    println("Egybest Debug: Response status for URL ${index + 1}: ${response.code}")
-                    
-                    if (response.isSuccessful) {
-                        val responseText = response.text
-                        println("Egybest Debug: Response length: ${responseText.length}")
-                        
-                        // Try to parse as ChannelResponse (first endpoint)
-                        val channelResponse = response.parsedSafe<ChannelResponse>()
-                        if (channelResponse != null && channelResponse.content != null && channelResponse.content?.data != null) {
-                            val contentData = channelResponse.content!!.data!!
-                            println("Egybest Debug: Found ${contentData.size} items from endpoint 1")
-                            return createHomePageResponse(contentData, pageName)
-                        }
-                        
-                        // Try to parse as SimpleApiResponse (second endpoint)
-                        val simpleResponse = response.parsedSafe<SimpleApiResponse>()
-                        if (simpleResponse != null && simpleResponse.data != null) {
-                            val contentData = simpleResponse.data!!
-                            println("Egybest Debug: Found ${contentData.size} items from endpoint 2")
-                            return createHomePageResponse(contentData, pageName)
-                        }
-                        
-                        println("Egybest Debug: Failed to parse response from URL ${index + 1}")
-                    } else {
-                        println("Egybest Debug: Failed to load from URL ${index + 1}, status: ${response.code}")
-                    }
-                } catch (e: Exception) {
-                    println("Egybest Debug: Error with URL ${index + 1}: ${e.message}")
-                }
+            // Step 2: Extract XSRF token from cookies
+            val xsrfToken = cookies["XSRF-TOKEN"]?.let { 
+                URLDecoder.decode(it, "UTF-8") 
             }
 
-            println("Egybest Error: All API endpoints failed")
-            return newHomePageResponse(pageName, emptyList())
+            if (xsrfToken == null) {
+                println("Egybest Error: XSRF-TOKEN not found in cookies")
+                return newHomePageResponse(pageName, emptyList())
+            }
+
+            // Step 3: Build API URL
+            val apiUrl = "$mainUrl/api/v1/channel/$channelId?restriction=&order=$order&page=$page&paginate=lengthAware&returnContentOnly=true"
+            println("Egybest Debug: API URL: $apiUrl")
+
+            // Step 4: Prepare headers exactly as in the browser
+            val headers = mapOf(
+                "User-Agent" to mobileUserAgent,
+                "Accept" to "application/json, text/plain, */*",
+                "Accept-Encoding" to "gzip, deflate, br",
+                "Accept-Language" to "en-US,en;q=0.9",
+                "X-Requested-With" to "XMLHttpRequest",
+                "X-Xsrf-Token" to xsrfToken,
+                "Referer" to "$mainUrl/${getPageSlug(pageType)}",
+                "Sec-Fetch-Dest" to "empty",
+                "Sec-Fetch-Mode" to "cors",
+                "Sec-Fetch-Site" to "same-origin",
+                "Cookie" to cookies.map { (key, value) -> "$key=$value" }.joinToString("; ")
+            )
+
+            // Step 5: Make API request
+            val response = app.get(apiUrl, headers = headers)
+            
+            println("Egybest Debug: Response status: ${response.code}")
+            
+            if (!response.isSuccessful) {
+                println("Egybest Error: API request failed with status ${response.code}")
+                println("Egybest Error: Response body: ${response.text.take(500)}")
+                return newHomePageResponse(pageName, emptyList())
+            }
+
+            // Step 6: Parse the response
+            val apiResponse = response.parsedSafe<SimpleApiResponse>()
+            
+            if (apiResponse == null || apiResponse.data == null) {
+                println("Egybest Error: Failed to parse API response or no data found")
+                println("Egybest Debug: Full response: ${response.text}")
+                return newHomePageResponse(pageName, emptyList())
+            }
+
+            val contentData = apiResponse.data!!
+            println("Egybest Debug: Found ${contentData.size} items in response")
+
+            val home = contentData.mapNotNull { item ->
+                val title = item.name ?: return@mapNotNull null
+                val slug = item.slug ?: return@mapNotNull null
+                val posterUrl = item.poster
+                val absoluteUrl = "$mainUrl/titles/$slug"
+                
+                if (item.isSeries == true) {
+                    newTvSeriesSearchResponse(title, absoluteUrl, TvType.TvSeries) {
+                        this.posterUrl = posterUrl
+                    }
+                } else {
+                    newMovieSearchResponse(title, absoluteUrl, TvType.Movie) {
+                        this.posterUrl = posterUrl
+                    }
+                }
+            }
+            
+            println("Egybest Debug: Successfully loaded ${home.size} items for $pageName")
+            return newHomePageResponse(pageName, home)
             
         } catch (e: Exception) {
             println("Egybest Error: Exception in getMainPage: ${e.message}")
@@ -175,26 +169,13 @@ class EgybestProvider : MainAPI() {
         }
     }
 
-    private fun createHomePageResponse(data: List<ContentItem>, pageName: String): HomePageResponse {
-        val home = data.mapNotNull { item ->
-            val title = item.name ?: return@mapNotNull null
-            val slug = item.slug ?: return@mapNotNull null
-            val posterUrl = item.poster
-            val absoluteUrl = "$mainUrl/titles/$slug"
-            
-            if (item.isSeries == true) {
-                newTvSeriesSearchResponse(title, absoluteUrl, TvType.TvSeries) {
-                    this.posterUrl = posterUrl
-                }
-            } else {
-                newMovieSearchResponse(title, absoluteUrl, TvType.Movie) {
-                    this.posterUrl = posterUrl
-                }
-            }
+    private fun getPageSlug(pageType: String): String {
+        return when (pageType) {
+            "movies" -> "movies"
+            "series" -> "series-Movies"
+            "netflix" -> "Netflix"
+            else -> "movies"
         }
-        
-        println("Egybest Debug: Successfully loaded ${home.size} items for $pageName")
-        return newHomePageResponse(pageName, home)
     }
     
     override suspend fun search(query: String): List<SearchResponse> {
