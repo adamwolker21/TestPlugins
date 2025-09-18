@@ -9,6 +9,7 @@ import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 class WeCimaProvider : MainAPI() {
     // The main URL for the site
@@ -171,7 +172,6 @@ class WeCimaProvider : MainAPI() {
         @JsonProperty("success") val success: Boolean
     )
 
-    // v8 Update: Complete rewrite of loadLinks
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -221,11 +221,13 @@ class WeCimaProvider : MainAPI() {
         document.select("div.Download--Mycima--Single a").forEach { dlElement ->
             val downloadUrl = dlElement.attr("href")
             if (downloadUrl.isNotBlank()) {
-                val quality = getQualityFromName(dlElement.selectFirst("span.quality")?.text())
+                val qualityText = dlElement.selectFirst("span.quality")?.text() ?: "SD"
+                val quality = getQualityFromName(qualityText)
+                // v9 Update: Using newExtractorLink to fix build error
                 callback(
-                    ExtractorLink(
-                        source = name,
-                        name = "رابط تحميل مباشر",
+                    newExtractorLink(
+                        source = this.name,
+                        name = "تحميل مباشر - $qualityText",
                         url = downloadUrl,
                         referer = data,
                         quality = quality,
