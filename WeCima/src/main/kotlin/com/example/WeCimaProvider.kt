@@ -85,11 +85,8 @@ class WeCimaProvider : MainAPI() {
     override suspend fun load(url: String): LoadResponse? {
         val document = app.get(url, interceptor = interceptor).document
 
-        // v6 Update: More robust title extraction with multiple fallbacks
-        val title = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim()
-            ?: document.selectFirst("h1[itemprop=name]")?.ownText()?.trim()
-            ?: document.selectFirst("meta[itemprop=name]")?.attr("content")?.trim()
-            ?: return null
+        // v7 Update: Simplified and fixed title extraction
+        val title = document.selectFirst("h1[itemprop=name]")?.ownText()?.trim() ?: return null
         
         val posterStyle = document.selectFirst("wecima.media-entry--hero")?.attr("style")
         val posterUrl = posterStyle?.let {
@@ -148,7 +145,7 @@ class WeCimaProvider : MainAPI() {
                 }
             }
 
-            return newTvSeriesLoadResponse(title.replace("مشاهدة ", "").replace("فيلم ", "").replace("مسلسل ", ""), url, TvType.TvSeries, episodes.distinctBy { it.data }.sortedBy { it.episode }.sortedBy { it.season }) {
+            return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.distinctBy { it.data }.sortedBy { it.episode }.sortedBy { it.season }) {
                 this.posterUrl = posterUrl
                 this.plot = plot
                 this.year = year
@@ -158,7 +155,7 @@ class WeCimaProvider : MainAPI() {
             }
         } else {
             // It's a Movie
-            return newMovieLoadResponse(title.replace("مشاهدة ", "").replace("فيلم ", "").replace("مسلسل ", ""), url, TvType.Movie, url) {
+            return newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = posterUrl
                 this.plot = plot
                 this.year = year
