@@ -25,7 +25,6 @@ class WeCimaProvider : MainAPI() {
     // Cloudflare interceptor
     private val interceptor = CloudflareKiller()
 
-    // v5 Update: Updated main page sections
     override val mainPage = mainPageOf(
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/7-series-english-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "مسلسلات أجنبي",
@@ -86,8 +85,11 @@ class WeCimaProvider : MainAPI() {
     override suspend fun load(url: String): LoadResponse? {
         val document = app.get(url, interceptor = interceptor).document
 
-        // v5 Update: Cleaner title extraction
-        val title = document.selectFirst("span[itemprop=title]")?.text()?.trim() ?: document.selectFirst("h1[itemprop=name]")?.ownText()?.trim() ?: return null
+        // v6 Update: More robust title extraction with multiple fallbacks
+        val title = document.selectFirst("meta[property=og:title]")?.attr("content")?.trim()
+            ?: document.selectFirst("h1[itemprop=name]")?.ownText()?.trim()
+            ?: document.selectFirst("meta[itemprop=name]")?.attr("content")?.trim()
+            ?: return null
         
         val posterStyle = document.selectFirst("wecima.media-entry--hero")?.attr("style")
         val posterUrl = posterStyle?.let {
@@ -104,14 +106,12 @@ class WeCimaProvider : MainAPI() {
             if (it.equals("N/A", true)) null else (it.toFloatOrNull()?.times(1000))?.toInt()
         }
         
-        // v5 Update: New logic for seasons and episodes
         val seasons = document.select("div.seasons__list li a")
         val isTvSeries = seasons.isNotEmpty() || document.select("div.episodes__list").isNotEmpty()
 
         if (isTvSeries) {
             val episodes = mutableListOf<Episode>()
             if (seasons.isNotEmpty()) {
-                // Multi-season show: fetch episodes for each season
                 seasons.apmap { seasonLink ->
                     val seasonUrl = seasonLink.attr("href")
                     val seasonName = seasonLink.text()
@@ -133,7 +133,6 @@ class WeCimaProvider : MainAPI() {
                     }
                 }
             } else {
-                // Single-season show: get episodes from the current page
                 document.select("div.episodes__list > a").forEach { epElement ->
                     val epHref = epElement.attr("href")
                     val epTitle = epElement.selectFirst("episodetitle.episode__title")?.text() ?: ""
@@ -149,7 +148,7 @@ class WeCimaProvider : MainAPI() {
                 }
             }
 
-            return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.distinctBy { it.data }.sortedBy { it.episode }.sortedBy { it.season }) {
+            return newTvSeriesLoadResponse(title.replace("مشاهدة ", "").replace("فيلم ", "").replace("مسلسل ", ""), url, TvType.TvSeries, episodes.distinctBy { it.data }.sortedBy { it.episode }.sortedBy { it.season }) {
                 this.posterUrl = posterUrl
                 this.plot = plot
                 this.year = year
@@ -159,7 +158,7 @@ class WeCimaProvider : MainAPI() {
             }
         } else {
             // It's a Movie
-            return newMovieLoadResponse(title, url, TvType.Movie, url) {
+            return newMovieLoadResponse(title.replace("مشاهدة ", "").replace("فيلم ", "").replace("مسلسل ", ""), url, TvType.Movie, url) {
                 this.posterUrl = posterUrl
                 this.plot = plot
                 this.year = year
@@ -183,17 +182,13 @@ class WeCimaProvider : MainAPI() {
     ): Boolean {
         val document = app.get(data, interceptor = interceptor).document
 
-        // The logic for loadLinks seems to be different now.
-        // The server list might be directly on the watch page.
-        // We will try to find a post ID first for the old AJAX method.
         val postId = document.body().className().let {
             Regex("""postid-(\d+)""").find(it)?.groupValues?.get(1)
         }
 
         if (postId != null) {
-            // Old AJAX method
-            val ajaxUrl = "$mainUrl/wp-content/themes/Elshaikh/Ajaxat/Single/Server.php"
-            document.select("ul#servers-list li, ul.servers-list li").apmap { serverElement ->
+            val ajaxUrl = "$mainUrl/wp-json/oewgr/v1/get"
+            document.select("ul.servers-list li").apmap { serverElement ->
                 val serverId = serverElement.attr("data-id")
                 val serverName = serverElement.text().trim()
 
@@ -211,8 +206,6 @@ class WeCimaProvider : MainAPI() {
                 } catch (e: Exception) { /* Ignore */ }
             }
         } else {
-            // New method: Servers might be loaded differently.
-            // Let's look for iframe or other embed clues on the page.
             val iframeSrc = document.selectFirst("iframe.embed-responsive-item")?.attr("src")
             if (iframeSrc != null) {
                 handleEmbed(iframeSrc, data, "Default Server", callback)
@@ -233,7 +226,7 @@ class WeCimaProvider : MainAPI() {
             if (embedContent.contains("eval(function(p,a,c,k,e,d)")) {
                 val unpackedJs = JsUnpacker(embedContent).unpack()
                 if (unpackedJs != null) {
-                    val m3u8Link = Regex("""(https?://[^'"]+\.m3u8)""").find(unpackedJs)?.groupValues?.get(1)
+                    val m3u8Link = Regex("""(https?://[^'"]+\.m3u8(?:[?&][^'"]*)?)""").find(unpackedJs)?.groupValues?.get(1)
                     if (m3u8Link != null) {
                         M3u8Helper.generateM3u8(
                             source = "$name - $serverName",
@@ -243,7 +236,7 @@ class WeCimaProvider : MainAPI() {
                     }
                 }
             } else {
-                val m3u8Link = Regex("""(https?://[^'"]+\.m3u8)""").find(embedContent)?.groupValues?.get(1)
+                val m3u8Link = Regex("""(https?://[^'"]+\.m3u8(?:[?&][^'"]*)?)""").find(embedContent)?.groupValues?.get(1)
                 if (m3u8Link != null) {
                     M3u8Helper.generateM3u8(
                         source = "$name - $serverName",
