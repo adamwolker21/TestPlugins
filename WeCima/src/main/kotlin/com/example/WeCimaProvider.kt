@@ -217,19 +217,17 @@ class WeCimaProvider : MainAPI() {
             val downloadUrl = dlElement.attr("href")
             if (downloadUrl.isNotBlank()) {
                 val qualityText = dlElement.selectFirst("span.quality")?.text() ?: "SD"
+                val quality = getQualityFromName(qualityText)
                 
-                // v10 Update: Fix build error by using .apply to set properties
+                // v11 Update: Final fix for newExtractorLink constructor
                 callback(
                     newExtractorLink(
                         source = this.name,
                         name = "تحميل مباشر - $qualityText",
                         url = downloadUrl,
-                        // Referer for direct links is usually not needed, but can be passed in headers if required.
-                        // For this site, it seems not to be needed.
-                    ).apply {
-                        this.quality = getQualityFromName(qualityText)
-                        this.isM3u8 = false
-                    }
+                        quality = quality,
+                        isM3u8 = false
+                    )
                 )
                 linksLoaded = true
             }
