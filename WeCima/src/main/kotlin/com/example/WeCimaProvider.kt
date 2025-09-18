@@ -25,7 +25,6 @@ class WeCimaProvider : MainAPI() {
     // Cloudflare interceptor
     private val interceptor = CloudflareKiller()
 
-    // v3 Update: Updated main page sections
     override val mainPage = mainPageOf(
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/list/" to "مسلسلات آسيوية",
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "آخر حلقات المسلسلات الآسيوية",
@@ -37,14 +36,12 @@ class WeCimaProvider : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
-        // v3 Update: Updated pagination logic
         val url = if (page == 1) {
             "$mainUrl${request.data}"
         } else {
             "$mainUrl${request.data}?page=$page"
         }
         val document = app.get(url, interceptor = interceptor).document
-        // v3 Update: Changed selector to "div.media-card"
         val home = document.select("div.media-card").mapNotNull {
             it.toSearchResult()
         }
@@ -52,15 +49,18 @@ class WeCimaProvider : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        // v3 Update: Logic adapted for "div.media-card" structure
         val linkElement = this.selectFirst("a") ?: return null
         val href = linkElement.attr("href")
         val title = this.selectFirst("h2[itemprop=name]")?.text() ?: return null
         
-        // Extract poster URL from style attribute
+        // v4 Update: Robust poster extraction with fallback
+        var posterUrl: String?
         val style = this.selectFirst("span.media-card__bg")?.attr("style")
-        val posterUrl = style?.let {
-            Regex("""url\((.*?)\)""").find(it)?.groupValues?.get(1)
+        posterUrl = style?.let {
+            Regex("""url\(['"]?(.*?)['"]?\)""").find(it)?.groupValues?.get(1)
+        }
+        if (posterUrl.isNullOrBlank()) {
+            posterUrl = this.selectFirst("meta[itemprop=thumbnailUrl]")?.attr("content")
         }
 
         val isSeries = title.contains("مسلسل") || title.contains("برنامج") || title.contains("موسم")
@@ -77,10 +77,8 @@ class WeCimaProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        // v3 Update: Changed search URL format
         val url = "$mainUrl/?s=$query"
         val document = app.get(url, interceptor = interceptor).document
-        // v3 Update: Changed selector to "div.media-card"
         return document.select("div.media-card").mapNotNull {
             it.toSearchResult()
         }
@@ -88,27 +86,37 @@ class WeCimaProvider : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse? {
         val document = app.get(url, interceptor = interceptor).document
-        val title = document.selectFirst("h1[itemprop=name], .Title--SEO")?.text()?.trim() ?: return null
-        val posterUrl = document.selectFirst("div.Poster--Single-begin img")?.attr("src")
-        val plot = document.selectFirst("div.StoryMovieContent")?.text()?.trim()
-        val tags = document.select("ul.Terms--Content--Single-begin li a[rel=tag]").map { it.text() }
-        val year = document.select("li:contains(السنة) a").firstOrNull()?.text()?.toIntOrNull()
+
+        // v4 Update: New selectors for loading details
+        val title = document.selectFirst("h1[itemprop=name]")?.ownText()?.trim() ?: return null
+        
+        val posterStyle = document.selectFirst("wecima.media-entry--hero")?.attr("style")
+        val posterUrl = posterStyle?.let {
+            Regex("""url\(['"]?(.*?)['"]?\)""").find(it)?.groupValues?.get(1)
+        }
+        
+        val plot = document.selectFirst("div.story__content")?.text()?.trim()
+        val tags = document.select("li:has(span:contains(النوع)) p a").map { it.text() }
+        val year = document.selectFirst("h1[itemprop=name] a.unline")?.text()?.toIntOrNull()
+        
+        // These selectors might need updating if the structure changed
         val duration = document.select("li:contains(المدة)").firstOrNull()?.ownText()?.filter { it.isDigit() }?.toIntOrNull()
         val ratingText = document.selectFirst("span.Rate--Vote")?.text()
         val rating = ratingText?.let {
             if (it.equals("N/A", true)) null else (it.toFloatOrNull()?.times(1000))?.toInt()
         }
 
-        // Check if it is a TV Series by looking for season tabs
-        val isTvSeries = document.select("div.Seasons--List").isNotEmpty()
+        // Check for episodes. This selector is an assumption and might need an update.
+        val isTvSeries = document.select("div.Seasons--List, .Episodes--single-watching-link").isNotEmpty()
 
         if (isTvSeries) {
             val episodes = mutableListOf<Episode>()
+            // This logic is from the old structure and might need updating
+            // if the new structure is different.
             document.select("div.Seasons--List div.Season--Item").forEach { seasonTab ->
                 val seasonNumText = seasonTab.text()
                 val seasonNum = Regex("""\d+""").find(seasonNumText)?.value?.toIntOrNull()
 
-                // Get episodes for this season
                 val seasonId = seasonTab.attr("data-season")
                 document.select("div.Episodes--List--All[data-season=$seasonId] a.Episode--single-watching-link").forEach { epElement ->
                     val epHref = epElement.attr("href")
@@ -124,7 +132,25 @@ class WeCimaProvider : MainAPI() {
                     )
                 }
             }
-            return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+            // Fallback for pages that list episodes directly without season tabs
+            if (episodes.isEmpty()) {
+                 document.select("a.Episodes--single-watching-link, a.Episode--single-watching-link").forEach { epElement ->
+                    val epHref = epElement.attr("href")
+                    val epTitle = epElement.selectFirst("span")?.text()?.ifBlank { epElement.text() } ?: ""
+                    val epNum = Regex("""\d+""").find(epTitle)?.value?.toIntOrNull()
+                    
+                    episodes.add(
+                        newEpisode(epHref) {
+                            name = epTitle.trim()
+                            // Assuming season 1 if not specified
+                            season = 1 
+                            episode = epNum
+                        }
+                    )
+                }
+            }
+
+            return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.distinctBy { it.data }.reversed()) {
                 this.posterUrl = posterUrl
                 this.plot = plot
                 this.year = year
@@ -164,7 +190,7 @@ class WeCimaProvider : MainAPI() {
 
         val ajaxUrl = "$mainUrl/wp-content/themes/Elshaikh/Ajaxat/Single/Server.php"
 
-        document.select("ul#servers-list li").apmap { serverElement ->
+        document.select("ul#servers-list li, ul.servers-list li").apmap { serverElement ->
             val serverId = serverElement.attr("data-id")
             val serverName = serverElement.text().trim()
 
