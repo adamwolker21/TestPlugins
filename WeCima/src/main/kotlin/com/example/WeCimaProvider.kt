@@ -182,25 +182,20 @@ class WeCimaProvider : MainAPI() {
         var linksLoaded = false
 
         // --- STREAMING SERVERS ---
-        // 1. Handle the main server from the iframe
         document.selectFirst("iframe#IframeEmbed")?.attr("src")?.let { iframeUrl ->
             handleEmbed(iframeUrl, data, "سيرفر وي سيما", callback)
             linksLoaded = true
         }
 
-        // 2. Handle other servers via AJAX
         val postId = document.body().className().let {
             Regex("""postid-(\d+)""").find(it)?.groupValues?.get(1)
         }
         if (postId != null) {
             val ajaxUrl = "$mainUrl/wp-json/oewgr/v1/get"
             document.select("ul.servers-list li").apmap { serverElement ->
-                // Skip the first one if we already loaded it via iframe to avoid duplicates
                 if (serverElement.hasClass("activeserver")) return@apmap
-
                 val serverId = serverElement.attr("data-id")
                 val serverName = serverElement.text().trim()
-
                 try {
                     val response = app.post(
                         ajaxUrl,
@@ -222,17 +217,19 @@ class WeCimaProvider : MainAPI() {
             val downloadUrl = dlElement.attr("href")
             if (downloadUrl.isNotBlank()) {
                 val qualityText = dlElement.selectFirst("span.quality")?.text() ?: "SD"
-                val quality = getQualityFromName(qualityText)
-                // v9 Update: Using newExtractorLink to fix build error
+                
+                // v10 Update: Fix build error by using .apply to set properties
                 callback(
                     newExtractorLink(
                         source = this.name,
                         name = "تحميل مباشر - $qualityText",
                         url = downloadUrl,
-                        referer = data,
-                        quality = quality,
-                        isM3u8 = false // It's a direct MP4
-                    )
+                        // Referer for direct links is usually not needed, but can be passed in headers if required.
+                        // For this site, it seems not to be needed.
+                    ).apply {
+                        this.quality = getQualityFromName(qualityText)
+                        this.isM3u8 = false
+                    }
                 )
                 linksLoaded = true
             }
@@ -248,7 +245,6 @@ class WeCimaProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ) {
         try {
-            // Important: We must pass the referer to bypass the protection
             val embedContent = app.get(embedUrl, referer = referer, interceptor = interceptor).text
             
             if (embedContent.contains("eval(function(p,a,c,k,e,d)")) {
@@ -259,7 +255,7 @@ class WeCimaProvider : MainAPI() {
                         M3u8Helper.generateM3u8(
                             source = "$name - $serverName",
                             streamUrl = m3u8Link,
-                            referer = embedUrl, // The player page is the new referer
+                            referer = embedUrl, 
                             headers = mapOf("Origin" to mainUrl)
                         ).forEach(callback)
                     }
