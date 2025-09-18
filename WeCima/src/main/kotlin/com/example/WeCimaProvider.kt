@@ -8,6 +8,7 @@ import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.utils.JsUnpacker
+import com.lagradost.cloudstream3.utils.getQualityFromName
 
 class WeCimaProvider : MainAPI() {
     // The main URL for the site
@@ -84,8 +85,7 @@ class WeCimaProvider : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse? {
         val document = app.get(url, interceptor = interceptor).document
-
-        // v7 Update: Simplified and fixed title extraction
+        
         val title = document.selectFirst("h1[itemprop=name]")?.ownText()?.trim() ?: return null
         
         val posterStyle = document.selectFirst("wecima.media-entry--hero")?.attr("style")
@@ -171,6 +171,7 @@ class WeCimaProvider : MainAPI() {
         @JsonProperty("success") val success: Boolean
     )
 
+    // v8 Update: Complete rewrite of loadLinks
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -178,14 +179,25 @@ class WeCimaProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data, interceptor = interceptor).document
+        var linksLoaded = false
 
+        // --- STREAMING SERVERS ---
+        // 1. Handle the main server from the iframe
+        document.selectFirst("iframe#IframeEmbed")?.attr("src")?.let { iframeUrl ->
+            handleEmbed(iframeUrl, data, "سيرفر وي سيما", callback)
+            linksLoaded = true
+        }
+
+        // 2. Handle other servers via AJAX
         val postId = document.body().className().let {
             Regex("""postid-(\d+)""").find(it)?.groupValues?.get(1)
         }
-
         if (postId != null) {
             val ajaxUrl = "$mainUrl/wp-json/oewgr/v1/get"
             document.select("ul.servers-list li").apmap { serverElement ->
+                // Skip the first one if we already loaded it via iframe to avoid duplicates
+                if (serverElement.hasClass("activeserver")) return@apmap
+
                 val serverId = serverElement.attr("data-id")
                 val serverName = serverElement.text().trim()
 
@@ -197,19 +209,34 @@ class WeCimaProvider : MainAPI() {
                         interceptor = interceptor
                     ).parsed<ServerResponse>()
 
-                    if (response.success && response.embedUrl != null) {
+                    if (response.success == true && response.embedUrl != null) {
                         handleEmbed(response.embedUrl, data, serverName, callback)
+                        linksLoaded = true
                     }
                 } catch (e: Exception) { /* Ignore */ }
             }
-        } else {
-            val iframeSrc = document.selectFirst("iframe.embed-responsive-item")?.attr("src")
-            if (iframeSrc != null) {
-                handleEmbed(iframeSrc, data, "Default Server", callback)
-            }
         }
 
-        return true
+        // --- DOWNLOAD LINKS ---
+        document.select("div.Download--Mycima--Single a").forEach { dlElement ->
+            val downloadUrl = dlElement.attr("href")
+            if (downloadUrl.isNotBlank()) {
+                val quality = getQualityFromName(dlElement.selectFirst("span.quality")?.text())
+                callback(
+                    ExtractorLink(
+                        source = name,
+                        name = "رابط تحميل مباشر",
+                        url = downloadUrl,
+                        referer = data,
+                        quality = quality,
+                        isM3u8 = false // It's a direct MP4
+                    )
+                )
+                linksLoaded = true
+            }
+        }
+        
+        return linksLoaded
     }
 
     private suspend fun handleEmbed(
@@ -219,7 +246,9 @@ class WeCimaProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ) {
         try {
+            // Important: We must pass the referer to bypass the protection
             val embedContent = app.get(embedUrl, referer = referer, interceptor = interceptor).text
+            
             if (embedContent.contains("eval(function(p,a,c,k,e,d)")) {
                 val unpackedJs = JsUnpacker(embedContent).unpack()
                 if (unpackedJs != null) {
@@ -228,7 +257,8 @@ class WeCimaProvider : MainAPI() {
                         M3u8Helper.generateM3u8(
                             source = "$name - $serverName",
                             streamUrl = m3u8Link,
-                            referer = embedUrl
+                            referer = embedUrl, // The player page is the new referer
+                            headers = mapOf("Origin" to mainUrl)
                         ).forEach(callback)
                     }
                 }
@@ -238,7 +268,8 @@ class WeCimaProvider : MainAPI() {
                     M3u8Helper.generateM3u8(
                         source = "$name - $serverName",
                         streamUrl = m3u8Link,
-                        referer = embedUrl
+                        referer = embedUrl,
+                        headers = mapOf("Origin" to mainUrl)
                     ).forEach(callback)
                 }
             }
