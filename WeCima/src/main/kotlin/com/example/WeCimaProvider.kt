@@ -3,7 +3,7 @@ package com.example
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
-import com.lagradost.cloudstream3.utils.Qualities
+// import com.lagradost.cloudstream3.utils.Qualities // Not needed anymore for downloads
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -217,16 +217,13 @@ class WeCimaProvider : MainAPI() {
             val downloadUrl = dlElement.attr("href")
             if (downloadUrl.isNotBlank()) {
                 val qualityText = dlElement.selectFirst("span.quality")?.text() ?: "SD"
-                val quality = getQualityFromName(qualityText)
                 
-                // v11 Update: Final fix for newExtractorLink constructor
+                // v12 Update: Final fix for constructor. Quality is inferred from the name.
                 callback(
                     newExtractorLink(
                         source = this.name,
                         name = "تحميل مباشر - $qualityText",
                         url = downloadUrl,
-                        quality = quality,
-                        isM3u8 = false
                     )
                 )
                 linksLoaded = true
