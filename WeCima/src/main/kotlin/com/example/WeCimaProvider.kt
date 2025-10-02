@@ -10,7 +10,7 @@ import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.newExtractorLink
 
 class WeCimaProvider : MainAPI() {
-    // v13: Update domain
+    // v14: Domain remains updated
     override var mainUrl = "https://wecima.now"
     override var name = "WeCima"
     override val hasMainPage = true
@@ -140,11 +140,9 @@ class WeCimaProvider : MainAPI() {
         }
     }
 
-    // v13: New helper function to extract direct .mp4 link from the intermediate download page
     private suspend fun extractDirectLink(url: String, referer: String): String? {
         return try {
             val doc = app.get(url, referer = referer, interceptor = interceptor).document
-            // Find a direct link to an mp4 file on the page
             Regex("""(https?://[^\s'"]+\.mp4[^\s'"]*)""").find(doc.html())?.groupValues?.get(1)
         } catch (e: Exception) {
             null
@@ -160,7 +158,6 @@ class WeCimaProvider : MainAPI() {
         val document = app.get(data, interceptor = interceptor).document
         var linksLoaded = false
 
-        // v13: New strategy - Use download links as they are more reliable for watching
         document.select("ul.downloads__list li a").apmap { dlElement ->
             val intermediateUrl = dlElement.attr("href")
             if (intermediateUrl.isNotBlank()) {
@@ -170,8 +167,10 @@ class WeCimaProvider : MainAPI() {
                     callback(
                         newExtractorLink(
                             source = this.name,
-                            name = "مشاهدة مباشرة - $qualityText", // Renamed to clarify purpose
+                            name = "مشاهدة مباشرة - $qualityText",
                             url = directLink,
+                            // v14: This is the crucial fix. The final video link requires a Referer.
+                            headers = mapOf("Referer" to mainUrl),
                         )
                     )
                     linksLoaded = true
