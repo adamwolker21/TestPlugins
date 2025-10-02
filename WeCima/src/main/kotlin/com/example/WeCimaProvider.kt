@@ -3,17 +3,15 @@ package com.example
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.M3u8Helper
-// import com.lagradost.cloudstream3.utils.Qualities // Not needed anymore for downloads
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.utils.JsUnpacker
-import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.newExtractorLink
 
 class WeCimaProvider : MainAPI() {
-    // The main URL for the site
-    override var mainUrl = "https://wecima.video"
+    // v13: Update domain
+    override var mainUrl = "https://wecima.now"
     override var name = "WeCima"
     override val hasMainPage = true
     override var lang = "ar"
@@ -24,7 +22,6 @@ class WeCimaProvider : MainAPI() {
         TvType.AsianDrama,
     )
 
-    // Cloudflare interceptor
     private val interceptor = CloudflareKiller()
 
     override val mainPage = mainPageOf(
@@ -98,12 +95,6 @@ class WeCimaProvider : MainAPI() {
         val tags = document.select("li:has(span:contains(النوع)) p a").map { it.text() }
         val year = document.selectFirst("h1[itemprop=name] a.unline")?.text()?.toIntOrNull()
         
-        val duration = document.select("li:contains(المدة)").firstOrNull()?.ownText()?.filter { it.isDigit() }?.toIntOrNull()
-        val ratingText = document.selectFirst("span.Rate--Vote")?.text()
-        val rating = ratingText?.let {
-            if (it.equals("N/A", true)) null else (it.toFloatOrNull()?.times(1000))?.toInt()
-        }
-        
         val seasons = document.select("div.seasons__list li a")
         val isTvSeries = seasons.isNotEmpty() || document.select("div.episodes__list").isNotEmpty()
 
@@ -135,42 +126,30 @@ class WeCimaProvider : MainAPI() {
                     val epHref = epElement.attr("href")
                     val epTitle = epElement.selectFirst("episodetitle.episode__title")?.text() ?: ""
                     val epNum = Regex("""\d+""").find(epTitle)?.value?.toIntOrNull()
-
-                    episodes.add(
-                        newEpisode(epHref) {
-                            name = epTitle
-                            season = 1 // Assume season 1
-                            episode = epNum
-                        }
-                    )
+                    episodes.add(newEpisode(epHref) { name = epTitle; season = 1; episode = epNum })
                 }
             }
 
-            return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.distinctBy { it.data }.sortedBy { it.episode }.sortedBy { it.season }) {
-                this.posterUrl = posterUrl
-                this.plot = plot
-                this.year = year
-                this.tags = tags
-                this.duration = duration
-                this.rating = rating
+            return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.distinctBy { it.data }.sortedWith(compareBy({ it.season }, { it.episode }))) {
+                this.posterUrl = posterUrl; this.plot = plot; this.year = year; this.tags = tags
             }
         } else {
-            // It's a Movie
             return newMovieLoadResponse(title, url, TvType.Movie, url) {
-                this.posterUrl = posterUrl
-                this.plot = plot
-                this.year = year
-                this.tags = tags
-                this.duration = duration
-                this.rating = rating
+                this.posterUrl = posterUrl; this.plot = plot; this.year = year; this.tags = tags
             }
         }
     }
 
-    private data class ServerResponse(
-        @JsonProperty("embed_url") val embedUrl: String?,
-        @JsonProperty("success") val success: Boolean
-    )
+    // v13: New helper function to extract direct .mp4 link from the intermediate download page
+    private suspend fun extractDirectLink(url: String, referer: String): String? {
+        return try {
+            val doc = app.get(url, referer = referer, interceptor = interceptor).document
+            // Find a direct link to an mp4 file on the page
+            Regex("""(https?://[^\s'"]+\.mp4[^\s'"]*)""").find(doc.html())?.groupValues?.get(1)
+        } catch (e: Exception) {
+            null
+        }
+    }
 
     override suspend fun loadLinks(
         data: String,
@@ -181,93 +160,25 @@ class WeCimaProvider : MainAPI() {
         val document = app.get(data, interceptor = interceptor).document
         var linksLoaded = false
 
-        // --- STREAMING SERVERS ---
-        document.selectFirst("iframe#IframeEmbed")?.attr("src")?.let { iframeUrl ->
-            handleEmbed(iframeUrl, data, "سيرفر وي سيما", callback)
-            linksLoaded = true
-        }
-
-        val postId = document.body().className().let {
-            Regex("""postid-(\d+)""").find(it)?.groupValues?.get(1)
-        }
-        if (postId != null) {
-            val ajaxUrl = "$mainUrl/wp-json/oewgr/v1/get"
-            document.select("ul.servers-list li").apmap { serverElement ->
-                if (serverElement.hasClass("activeserver")) return@apmap
-                val serverId = serverElement.attr("data-id")
-                val serverName = serverElement.text().trim()
-                try {
-                    val response = app.post(
-                        ajaxUrl,
-                        headers = mapOf("referer" to data, "x-requested-with" to "XMLHttpRequest"),
-                        data = mapOf("post_id" to postId, "server" to serverId),
-                        interceptor = interceptor
-                    ).parsed<ServerResponse>()
-
-                    if (response.success == true && response.embedUrl != null) {
-                        handleEmbed(response.embedUrl, data, serverName, callback)
-                        linksLoaded = true
-                    }
-                } catch (e: Exception) { /* Ignore */ }
-            }
-        }
-
-        // --- DOWNLOAD LINKS ---
-        document.select("div.Download--Mycima--Single a").forEach { dlElement ->
-            val downloadUrl = dlElement.attr("href")
-            if (downloadUrl.isNotBlank()) {
-                val qualityText = dlElement.selectFirst("span.quality")?.text() ?: "SD"
-                
-                // v12 Update: Final fix for constructor. Quality is inferred from the name.
-                callback(
-                    newExtractorLink(
-                        source = this.name,
-                        name = "تحميل مباشر - $qualityText",
-                        url = downloadUrl,
+        // v13: New strategy - Use download links as they are more reliable for watching
+        document.select("ul.downloads__list li a").apmap { dlElement ->
+            val intermediateUrl = dlElement.attr("href")
+            if (intermediateUrl.isNotBlank()) {
+                val directLink = extractDirectLink(intermediateUrl, data)
+                if (directLink != null) {
+                    val qualityText = dlElement.selectFirst("resolution")?.text()?.trim() ?: "HD"
+                    callback(
+                        newExtractorLink(
+                            source = this.name,
+                            name = "مشاهدة مباشرة - $qualityText", // Renamed to clarify purpose
+                            url = directLink,
+                        )
                     )
-                )
-                linksLoaded = true
+                    linksLoaded = true
+                }
             }
         }
         
         return linksLoaded
-    }
-
-    private suspend fun handleEmbed(
-        embedUrl: String,
-        referer: String,
-        serverName: String,
-        callback: (ExtractorLink) -> Unit
-    ) {
-        try {
-            val embedContent = app.get(embedUrl, referer = referer, interceptor = interceptor).text
-            
-            if (embedContent.contains("eval(function(p,a,c,k,e,d)")) {
-                val unpackedJs = JsUnpacker(embedContent).unpack()
-                if (unpackedJs != null) {
-                    val m3u8Link = Regex("""(https?://[^'"]+\.m3u8(?:[?&][^'"]*)?)""").find(unpackedJs)?.groupValues?.get(1)
-                    if (m3u8Link != null) {
-                        M3u8Helper.generateM3u8(
-                            source = "$name - $serverName",
-                            streamUrl = m3u8Link,
-                            referer = embedUrl, 
-                            headers = mapOf("Origin" to mainUrl)
-                        ).forEach(callback)
-                    }
-                }
-            } else {
-                val m3u8Link = Regex("""(https?://[^'"]+\.m3u8(?:[?&][^'"]*)?)""").find(embedContent)?.groupValues?.get(1)
-                if (m3u8Link != null) {
-                    M3u8Helper.generateM3u8(
-                        source = "$name - $serverName",
-                        streamUrl = m3u8Link,
-                        referer = embedUrl,
-                        headers = mapOf("Origin" to mainUrl)
-                    ).forEach(callback)
-                }
-            }
-        } catch (e: Exception) {
-            // Ignore errors
-        }
     }
 }
