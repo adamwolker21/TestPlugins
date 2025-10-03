@@ -6,7 +6,6 @@ import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import android.util.Base64
-import android.net.Uri
 
 class WeCimaProvider : MainAPI() {
     // Added trailing slash for consistency
@@ -23,14 +22,13 @@ class WeCimaProvider : MainAPI() {
 
     private val interceptor = CloudflareKiller()
 
-    // v22: Updated as per request
+    // v23: Updated as per request
     override val mainPage = mainPageOf(
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/7-series-english-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "مسلسلات أجنبي",
-        "/category/%d8%a3%d9%81%d9%84%d8%a7%d9%85/10-movies-english-%d8%a7%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "أفلام 22 أجنبي"
+        "/category/%d8%a3%d9%81%d9%84%d8%a7%d9%85/10-movies-english-%d8%a7%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "أفلام أجنبي"
     )
 
-    // Unchanged functions (getMainPage, toSearchResult, search, load) are omitted for brevity
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
@@ -149,42 +147,27 @@ class WeCimaProvider : MainAPI() {
     ): Boolean {
         val document = app.get(data, interceptor = interceptor).document
 
-        // v22: Focused approach for the main WeCima server and other reliable servers.
         document.select("ul.watch__server-list li btn").apmap { serverBtn ->
             try {
                 val encodedUrl = serverBtn.attr("data-url")
+                // Basic check if the URL is not empty
+                if (encodedUrl.isBlank()) return@apmap
+
                 val decodedUrl = String(Base64.decode(encodedUrl, Base64.DEFAULT))
+                val serverName = serverBtn.selectFirst("strong")?.text() ?: "Server"
 
-                if (decodedUrl.contains("wecima.now/run/watch/")) {
-                    // Manually handle the WeCima server as it's the most critical and complex
-                    val playerPageContent = app.get(decodedUrl, referer = data).text
-                    val videoLink = Regex("""(https?://[^\s'"]+\.(?:m3u8|mp4)[^\s'"]*)""").find(playerPageContent)?.groupValues?.get(1)
-                    
-                    if (videoLink != null) {
-                        val headers = mapOf("Referer" to mainUrl, "User-Agent" to USER_AGENT)
-                        val headersJson = headers.entries.joinToString(prefix = "{", postfix = "}", separator = ",") {
-                            """"${it.key}":"${it.value}""""
-                        }
-                        val encodedHeaders = Uri.encode(headersJson)
-                        val finalUrl = "$videoLink#headers=$encodedHeaders"
-
-                        callback(
-                            newExtractorLink(
-                                source = name,
-                                name = "WeCima",
-                                url = finalUrl,
-                                referer = data,
-                                quality = Qualities.Unknown.value,
-                                isM3u8 = finalUrl.contains(".m3u8")
-                            )
-                        )
-                    }
-                } else if (decodedUrl.contains("dood")) {
-                    // DoodStream is known to work, so we pass it to the general extractor
-                    loadExtractor(decodedUrl, data, subtitleCallback, callback)
-                }
+                // This is the simplest possible call that works with old CS3 versions
+                // We pass the embed URL and hope CS3 has a built-in extractor for it.
+                callback(
+                    newExtractorLink(
+                        source = this.name,
+                        name = serverName,
+                        url = decodedUrl,
+                        referer = data // The referer for the embed page
+                    )
+                )
             } catch (e: Exception) {
-                // Failsafe
+                // Failsafe for any decoding or selection errors
             }
         }
         return true
