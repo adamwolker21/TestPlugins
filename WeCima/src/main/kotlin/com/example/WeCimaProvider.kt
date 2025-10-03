@@ -4,13 +4,14 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.network.CloudflareKiller
-import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import android.util.Base64
+import android.net.Uri
 
 class WeCimaProvider : MainAPI() {
-    override var mainUrl = "https://wecima.now"
+    // Added trailing slash for consistency
+    override var mainUrl = "https://wecima.now/"
     override var name = "WeCima"
-    // ... (rest of the provider code is the same as v19) ...
     override val hasMainPage = true
     override var lang = "ar"
     override val hasDownloadSupport = true
@@ -22,20 +23,22 @@ class WeCimaProvider : MainAPI() {
 
     private val interceptor = CloudflareKiller()
 
+    // v22: Updated as per request
     override val mainPage = mainPageOf(
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/7-series-english-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "مسلسلات أجنبي",
-        "/category/%d8%a3%d9%81%d9%84%d8%a7%d9%85/10-movies-english-%d8%a7%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "أفلام 20 أجنبي",
+        "/category/%d8%a3%d9%81%d9%84%d8%a7%d9%85/10-movies-english-%d8%a7%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "أفلام 21 أجنبي"
     )
-    
+
+    // Unchanged functions (getMainPage, toSearchResult, search, load) are omitted for brevity
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
         val url = if (page == 1) {
-            "$mainUrl${request.data}"
+            "$mainUrl${request.data.removePrefix("/")}"
         } else {
-            "$mainUrl${request.data}?page=$page"
+            "$mainUrl${request.data.removePrefix("/")}?page=$page"
         }
         val document = app.get(url, interceptor = interceptor).document
         val home = document.select("div.media-card").mapNotNull {
@@ -48,7 +51,7 @@ class WeCimaProvider : MainAPI() {
         val linkElement = this.selectFirst("a") ?: return null
         val href = linkElement.attr("href")
         val title = this.selectFirst("h2[itemprop=name]")?.text() ?: return null
-        
+
         var posterUrl: String?
         val style = this.selectFirst("span.media-card__bg")?.attr("style")
         posterUrl = style?.let {
@@ -72,7 +75,7 @@ class WeCimaProvider : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val url = "$mainUrl/?s=$query"
+        val url = "$mainUrl?s=$query"
         val document = app.get(url, interceptor = interceptor).document
         return document.select("div.media-card").mapNotNull {
             it.toSearchResult()
@@ -81,18 +84,18 @@ class WeCimaProvider : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse? {
         val document = app.get(url, interceptor = interceptor).document
-        
+
         val title = document.selectFirst("h1[itemprop=name]")?.ownText()?.trim() ?: return null
-        
+
         val posterStyle = document.selectFirst("wecima.media-entry--hero")?.attr("style")
         val posterUrl = posterStyle?.let {
             Regex("""url\(['"]?(.*?)['"]?\)""").find(it)?.groupValues?.get(1)
         }
-        
+
         val plot = document.selectFirst("div.story__content")?.text()?.trim()
         val tags = document.select("li:has(span:contains(النوع)) p a").map { it.text() }
         val year = document.selectFirst("h1[itemprop=name] a.unline")?.text()?.toIntOrNull()
-        
+
         val seasons = document.select("div.seasons__list li a")
         val isTvSeries = seasons.isNotEmpty() || document.select("div.episodes__list").isNotEmpty()
 
@@ -137,7 +140,7 @@ class WeCimaProvider : MainAPI() {
             }
         }
     }
-    
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -146,27 +149,44 @@ class WeCimaProvider : MainAPI() {
     ): Boolean {
         val document = app.get(data, interceptor = interceptor).document
 
+        // v22: Focused approach for the main WeCima server and other reliable servers.
         document.select("ul.watch__server-list li btn").apmap { serverBtn ->
             try {
                 val encodedUrl = serverBtn.attr("data-url")
                 val decodedUrl = String(Base64.decode(encodedUrl, Base64.DEFAULT))
-                
-                if (decodedUrl.isNotBlank()) {
-                    // Smart dispatcher: if it's a wecima server, use our special extractor.
-                    // Otherwise, use the general-purpose extractor.
-                    if (decodedUrl.contains("wecima.now/run/watch/")) {
-                        // This is our special server, let WeCimaExtractor handle it
-                        com.example.extractors.WeCimaExtractor().getUrl(decodedUrl, data)?.forEach(callback)
-                    } else {
-                        // For all other servers (Vidbom, Dood, etc.), use the built-in handlers
-                        loadExtractor(decodedUrl, data, subtitleCallback, callback)
+
+                if (decodedUrl.contains("wecima.now/run/watch/")) {
+                    // Manually handle the WeCima server as it's the most critical and complex
+                    val playerPageContent = app.get(decodedUrl, referer = data).text
+                    val videoLink = Regex("""(https?://[^\s'"]+\.(?:m3u8|mp4)[^\s'"]*)""").find(playerPageContent)?.groupValues?.get(1)
+                    
+                    if (videoLink != null) {
+                        val headers = mapOf("Referer" to mainUrl, "User-Agent" to USER_AGENT)
+                        val headersJson = headers.entries.joinToString(prefix = "{", postfix = "}", separator = ",") {
+                            """"${it.key}":"${it.value}""""
+                        }
+                        val encodedHeaders = Uri.encode(headersJson)
+                        val finalUrl = "$videoLink#headers=$encodedHeaders"
+
+                        callback(
+                            newExtractorLink(
+                                source = name,
+                                name = "WeCima",
+                                url = finalUrl,
+                                referer = data,
+                                quality = Qualities.Unknown.value,
+                                isM3u8 = finalUrl.contains(".m3u8")
+                            )
+                        )
                     }
+                } else if (decodedUrl.contains("dood")) {
+                    // DoodStream is known to work, so we pass it to the general extractor
+                    loadExtractor(decodedUrl, data, subtitleCallback, callback)
                 }
             } catch (e: Exception) {
-                // Ignore and continue
+                // Failsafe
             }
         }
-        
         return true
     }
 }
