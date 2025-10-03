@@ -1,17 +1,15 @@
 package com.example.extractors
 
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.utils.ExtractorApi
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.getAndUnpack
-import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.*
 
 // This extractor handles the GoVID server which uses packed JavaScript.
-open class GovidExtractor : ExtractorApi() {
+class GovidExtractor : ExtractorApi() { // To match VidbomExtractor style
     override val name = "GoVID"
-    override val mainUrl = "goveed1.space" // The primary domain for this extractor
+    override val mainUrl = "goveed1.space"
     override val requiresReferer = false
 
+    @Suppress("DEPRECATION") // V5 Fix: Suppress the deprecation warning to prevent build failure.
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         // Fetch the embed page content
         val doc = app.get(url, referer = referer).document
@@ -26,20 +24,18 @@ open class GovidExtractor : ExtractorApi() {
             val unpacked = getAndUnpack(packedScript)
 
             // Regex to find the source URL from the unpacked JavaScript.
-            // The pattern commonly looks for something like: sources:[{file:"..."}]
             val videoUrl = Regex("""sources:\s*\[\{file:\s*"(.*?)"\}\]""").find(unpacked)?.groupValues?.getOrNull(1)
 
             if (videoUrl != null) {
-                // V4 Fix: Revert to the deprecated ExtractorLink constructor as newExtractorLink is not available.
-                // This will resolve the build error, although a deprecation warning may appear.
-                // Also, keep the fix for quality handling.
+                // Using the deprecated constructor because the build environment requires it,
+                // and suppressing the associated warning.
                 return listOf(
                     ExtractorLink(
                         source = this.name,
-                        name = "GoVID", // Server name to be displayed
+                        name = "GoVID",
                         url = videoUrl,
-                        referer = url, // Important to pass the embed URL as referer
-                        quality = getQualityFromName("Unknown"), // Correct way to handle unknown quality
+                        referer = url, // The embed URL is the correct referer
+                        quality = getQualityFromName("Unknown"),
                         isM3u8 = videoUrl.contains(".m3u8")
                     )
                 )
