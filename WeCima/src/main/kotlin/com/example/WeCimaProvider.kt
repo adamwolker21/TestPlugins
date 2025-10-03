@@ -166,14 +166,17 @@ class WeCimaProvider : MainAPI() {
                 
                 // Manually route to the correct extractor
                 when {
+                    // We keep WeCimaExtractor separate as it's very site-specific
                     decodedUrl.contains("wecima.now/run/watch/") -> {
-                        WeCimaExtractor().getUrl(decodedUrl, data)?.forEach(callback)
+                        WeCimaExtractor().getUrl(decodedUrl, data, subtitleCallback, callback)
                     }
+                    // Vidbom seems to have its own logic
                     decodedUrl.contains("vdbtm.shop") -> {
-                        VidbomExtractor().getUrl(decodedUrl, data)?.forEach(callback)
+                        VidbomExtractor().getUrl(decodedUrl, data, subtitleCallback, callback)
                     }
-                    decodedUrl.contains("1vid1shar.space") || decodedUrl.contains("dingtezuni.com") -> {
-                        GeneralPackedExtractor().getUrl(decodedUrl, data)?.forEach(callback)
+                    // These servers all use a similar "packed JS" method
+                    decodedUrl.contains("1vid1shar.space") || decodedUrl.contains("dingtezuni.com") || decodedUrl.contains("zfghrew10.shop") -> {
+                        GeneralPackedExtractor().getUrl(decodedUrl, data, subtitleCallback, callback)
                     }
                     // Fallback for other known servers like DoodStream
                     else -> {
@@ -181,7 +184,7 @@ class WeCimaProvider : MainAPI() {
                     }
                 }
             } catch (e: Exception) {
-                // Silently ignore errors to not break the whole process
+                // Silently ignore errors
             }
         }
         return true
