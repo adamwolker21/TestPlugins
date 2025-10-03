@@ -27,6 +27,7 @@ class WeCimaProvider : MainAPI() {
         "/category/%d8%a3%d9%81%d9%84%d8%a7%d9%85/10-movies-english-%d8%a7%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "أفلام أجنبي"
     )
 
+    // ... (getMainPage, toSearchResult, search, load functions remain the same as v27)
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
@@ -137,6 +138,7 @@ class WeCimaProvider : MainAPI() {
         }
     }
 
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -152,8 +154,9 @@ class WeCimaProvider : MainAPI() {
 
                 val decodedUrl = String(Base64.decode(encodedUrl, Base64.DEFAULT))
                 
-                // Use the modern loadExtractor function. It will automatically find the
-                // correct extractor for the URL, including our custom WeCimaExtractor.
+                // This is the correct way. `loadExtractor` will automatically find the
+                // correct extractor, whether it's a built-in one (like DoodStream)
+                // or our custom one (WeCimaExtractor).
                 loadExtractor(decodedUrl, data, subtitleCallback, callback)
                 
             } catch (e: Exception) {
