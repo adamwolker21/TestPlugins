@@ -7,11 +7,9 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.example.extractors.GeneralPackedExtractor
 import com.example.extractors.VidbomExtractor
-import com.example.extractors.WeCimaExtractor
 import org.jsoup.nodes.Element
 
 class WeCimaProvider : MainAPI() {
-    // Basic provider information
     override var mainUrl = "https://wecima.now/"
     override var name = "WeCima"
     override val hasMainPage = true
@@ -23,17 +21,14 @@ class WeCimaProvider : MainAPI() {
         TvType.AsianDrama,
     )
 
-    // Cloudflare interceptor
     private val interceptor = CloudflareKiller()
 
-    // Main page sections
     override val mainPage = mainPageOf(
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/7-series-english-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "مسلسلات أجنبي",
         "/category/%d8%a3%d9%81%d9%84%d8%a7%d9%85/10-movies-english-%d8%a7%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "أفلام أجنبي"
     )
 
-    // Fetch main page content
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
@@ -50,7 +45,6 @@ class WeCimaProvider : MainAPI() {
         return newHomePageResponse(request.name, home)
     }
     
-    // Helper function to parse search results from HTML elements
     private fun Element.toSearchResult(): SearchResponse? {
         val linkElement = this.selectFirst("a") ?: return null
         val href = linkElement.attr("href")
@@ -74,7 +68,6 @@ class WeCimaProvider : MainAPI() {
         }
     }
     
-    // Search function
     override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl?s=$query"
         val document = app.get(url, interceptor = interceptor).document
@@ -83,7 +76,6 @@ class WeCimaProvider : MainAPI() {
         }
     }
     
-    // Load movie/series details and episode list
     override suspend fun load(url: String): LoadResponse? {
         val document = app.get(url, interceptor = interceptor).document
 
@@ -104,7 +96,6 @@ class WeCimaProvider : MainAPI() {
         if (isTvSeries) {
             val episodes = mutableListOf<Episode>()
             if (seasons.isNotEmpty()) {
-                // Multi-season series: iterate through each season page
                 seasons.apmap { seasonLink ->
                     val seasonUrl = seasonLink.attr("href")
                     val seasonName = seasonLink.text()
@@ -126,7 +117,6 @@ class WeCimaProvider : MainAPI() {
                     }
                 }
             } else {
-                // Single-season series: get episodes from the current page
                 document.select("div.episodes__list > a").forEach { epElement ->
                     val epHref = epElement.attr("href")
                     val epTitle = epElement.selectFirst("episodetitle.episode__title")?.text() ?: ""
@@ -135,19 +125,16 @@ class WeCimaProvider : MainAPI() {
                 }
             }
             
-            // Return TV series response
             return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.distinctBy { it.data }.sortedWith(compareBy({ it.season }, { it.episode }))) {
                 this.posterUrl = posterUrl; this.plot = plot; this.year = year; this.tags = tags
             }
         } else {
-            // Return movie response
             return newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = posterUrl; this.plot = plot; this.year = year; this.tags = tags
             }
         }
     }
     
-    // Load video links from servers
     override suspend fun loadLinks(
         data: String, // Episode URL
         isCasting: Boolean,
@@ -156,7 +143,6 @@ class WeCimaProvider : MainAPI() {
     ): Boolean {
         val document = app.get(data, interceptor = interceptor).document
 
-        // Use apmap for parallel processing of servers
         document.select("ul.watch__server-list li btn").apmap { serverBtn ->
             try {
                 val encodedUrl = serverBtn.attr("data-url")
@@ -164,22 +150,9 @@ class WeCimaProvider : MainAPI() {
 
                 val decodedUrl = String(Base64.decode(encodedUrl, Base64.DEFAULT))
                 
-                // Manually route to the correct extractor
-                when {
-                    decodedUrl.contains("wecima.now/run/watch/") -> {
-                        WeCimaExtractor().getUrl(decodedUrl, data)?.forEach(callback)
-                    }
-                    decodedUrl.contains("vdbtm.shop") -> {
-                        VidbomExtractor().getUrl(decodedUrl, data)?.forEach(callback)
-                    }
-                    // Updated to include GoVID's domain
-                    decodedUrl.contains("1vid1shar.space") || decodedUrl.contains("dingtezuni.com") || decodedUrl.contains("zfghrew10.shop") -> {
-                        GeneralPackedExtractor().getUrl(decodedUrl, data)?.forEach(callback)
-                    }
-                    else -> {
-                        loadExtractor(decodedUrl, data, subtitleCallback, callback)
-                    }
-                }
+                // We let loadExtractor do the work. It will find our custom extractors by their mainUrl property.
+                loadExtractor(decodedUrl, data, subtitleCallback, callback)
+
             } catch (e: Exception) {
                 // Silently ignore errors
             }
