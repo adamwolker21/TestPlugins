@@ -6,6 +6,9 @@ import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.loadExtractor
 import android.util.Base64
+import com.example.extractors.GeneralPackedExtractor
+import com.example.extractors.VidbomExtractor
+import com.example.extractors.WeCimaExtractor
 
 class WeCimaProvider : MainAPI() {
     override var mainUrl = "https://wecima.now/"
@@ -152,8 +155,22 @@ class WeCimaProvider : MainAPI() {
 
                 val decodedUrl = String(Base64.decode(encodedUrl, Base64.DEFAULT))
                 
-                // This function will automatically find the correct extractor for each link
-                loadExtractor(decodedUrl, data, subtitleCallback, callback)
+                // Manual routing based on domain
+                when {
+                    decodedUrl.contains("wecima.now") -> {
+                        WeCimaExtractor().getUrl(decodedUrl, data)?.forEach(callback)
+                    }
+                    decodedUrl.contains("vdbtm.shop") -> {
+                        VidbomExtractor().getUrl(decodedUrl, data)?.forEach(callback)
+                    }
+                    decodedUrl.contains("1vid1shar.space") || decodedUrl.contains("dingtezuni.com") -> {
+                        GeneralPackedExtractor().getUrl(decodedUrl, data)?.forEach(callback)
+                    }
+                    // Fallback for other servers like DoodStream
+                    else -> {
+                        loadExtractor(decodedUrl, data, subtitleCallback, callback)
+                    }
+                }
                 
             } catch (e: Exception) {
                 // Failsafe
