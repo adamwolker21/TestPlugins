@@ -10,7 +10,6 @@ import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.newExtractorLink
 
 class WeCimaProvider : MainAPI() {
-    // v14: Domain remains updated
     override var mainUrl = "https://wecima.now"
     override var name = "WeCima"
     override val hasMainPage = true
@@ -168,9 +167,7 @@ class WeCimaProvider : MainAPI() {
                         newExtractorLink(
                             source = this.name,
                             name = "مشاهدة مباشرة - $qualityText",
-                            url = directLink,
-                            // v14: This is the crucial fix. The final video link requires a Referer.
-                            headers = mapOf("Referer" to mainUrl),
+                            url = "$directLink#Referer=$mainUrl", // v15: The Referer Hack
                         )
                     )
                     linksLoaded = true
