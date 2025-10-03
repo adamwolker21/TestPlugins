@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.USER_AGENT
+import com.lagradost.cloudstream3.utils.newExtractorLink
 
 open class WeCimaExtractor : ExtractorApi() {
     override var name = "WeCima"
@@ -24,8 +25,9 @@ open class WeCimaExtractor : ExtractorApi() {
             "User-Agent" to USER_AGENT
         )
         
+        // v25 Final Fix: Using newExtractorLink with all modern parameters
         return listOf(
-            ExtractorLink(
+            newExtractorLink(
                 source = this.name,
                 name = this.name,
                 url = videoLink,
