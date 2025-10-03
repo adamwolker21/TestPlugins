@@ -4,43 +4,36 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.*
 
 // This extractor handles the GoVID server which uses packed JavaScript.
-class GovidExtractor : ExtractorApi() { // To match VidbomExtractor style
-    override val name = "GoVID"
-    override val mainUrl = "goveed1.space"
+class GovidExtractor : ExtractorApi() {
+    override var name = "GoVID" // Changed to var to match VidbomExtractor
+    override var mainUrl = "goveed1.space" // Changed to var to match VidbomExtractor
     override val requiresReferer = false
 
-    @Suppress("DEPRECATION") // V5 Fix: Suppress the deprecation warning to prevent build failure.
-    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        // Fetch the embed page content
-        val doc = app.get(url, referer = referer).document
+    // V6 Fix: The function signature now returns a MutableList and uses the exact
+    // same ExtractorLink constructor overload as the user's working VidbomExtractor.
+    // This avoids the specific deprecation error that was causing the build to fail.
+    override suspend fun getUrl(url: String, referer: String?): MutableList<ExtractorLink>? {
+        val response = app.get(url, referer = referer).document
+        val script = response.selectFirst("script:containsData(eval(function(p,a,c,k,e,d))")?.data()
+            ?: return null
 
-        // Find the script tag containing the packed (obfuscated) JavaScript code.
-        val packedScript = doc.select("script").firstOrNull { script ->
-            script.data().contains("eval(function(p,a,c,k,e,d)")
-        }?.data()
+        // Unpack the JavaScript code to reveal the actual video source links.
+        val unpacked = getAndUnpack(script)
 
-        if (packedScript != null) {
-            // Unpack the JavaScript code to reveal the actual video source links.
-            val unpacked = getAndUnpack(packedScript)
+        // Regex to find the source URL from the unpacked JavaScript.
+        val videoUrl = Regex("""sources:\s*\[\{file:\s*"(.*?)"\}\]""").find(unpacked)?.groupValues?.getOrNull(1)
+            ?: return null
 
-            // Regex to find the source URL from the unpacked JavaScript.
-            val videoUrl = Regex("""sources:\s*\[\{file:\s*"(.*?)"\}\]""").find(unpacked)?.groupValues?.getOrNull(1)
-
-            if (videoUrl != null) {
-                // Using the deprecated constructor because the build environment requires it,
-                // and suppressing the associated warning.
-                return listOf(
-                    ExtractorLink(
-                        source = this.name,
-                        name = "GoVID",
-                        url = videoUrl,
-                        referer = url, // The embed URL is the correct referer
-                        quality = getQualityFromName("Unknown"),
-                        isM3u8 = videoUrl.contains(".m3u8")
-                    )
-                )
-            }
-        }
-        return null
+        // Using the exact same constructor as VidbomExtractor to ensure compatibility.
+        // It uses positional arguments and omits the 'isM3u8' parameter.
+        return mutableListOf(
+            ExtractorLink(
+                this.name,                             // source
+                this.name,                             // name
+                videoUrl,                              // url
+                url,                                   // referer
+                getQualityFromName("GoVID"),       // quality
+            )
+        )
     }
 }
