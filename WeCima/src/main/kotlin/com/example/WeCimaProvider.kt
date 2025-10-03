@@ -7,6 +7,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.example.extractors.GeneralPackedExtractor
 import com.example.extractors.VidbomExtractor
+import com.example.extractors.WeCimaExtractor
 import org.jsoup.nodes.Element
 
 class WeCimaProvider : MainAPI() {
@@ -136,7 +137,7 @@ class WeCimaProvider : MainAPI() {
     }
     
     override suspend fun loadLinks(
-        data: String, // Episode URL
+        data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
@@ -150,11 +151,24 @@ class WeCimaProvider : MainAPI() {
 
                 val decodedUrl = String(Base64.decode(encodedUrl, Base64.DEFAULT))
                 
-                // We let loadExtractor do the work. It will find our custom extractors by their mainUrl property.
-                loadExtractor(decodedUrl, data, subtitleCallback, callback)
-
+                // Manual routing based on domain
+                when {
+                    decodedUrl.contains("wecima.now/run/watch/") -> {
+                        WeCimaExtractor().getUrl(decodedUrl, data)?.forEach(callback)
+                    }
+                    decodedUrl.contains("vdbtm.shop") -> {
+                        VidbomExtractor().getUrl(decodedUrl, data)?.forEach(callback)
+                    }
+                    decodedUrl.contains("1vid1shar.space") || decodedUrl.contains("dingtezuni.com") -> {
+                        GeneralPackedExtractor().getUrl(decodedUrl, data)?.forEach(callback)
+                    }
+                    else -> {
+                        // Fallback for other servers like DoodStream
+                        loadExtractor(decodedUrl, data, subtitleCallback, callback)
+                    }
+                }
             } catch (e: Exception) {
-                // Silently ignore errors
+                // Ignore errors
             }
         }
         return true
