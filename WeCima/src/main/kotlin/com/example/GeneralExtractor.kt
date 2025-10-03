@@ -8,17 +8,20 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import org.json.JSONObject
 
+// This extractor will handle multiple domains that use the same packed JS protection
 open class GeneralPackedExtractor : ExtractorApi() {
     override var name = "GeneralPackedExtractor"
-    override var mainUrl = "https://1vid1shar.space"
-    override var directUrl = "https://dingtezuni.com"
+    // Primary domain for matching
+    override val mainUrl = "https://1vid1shar.space" 
+    // Add other domains this extractor should handle
+    override val otherUrlNames = setOf("dingtezuni.com") 
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val serverName = when {
             url.contains("1vid1shar") -> "Vidshare"
             url.contains("dingtezuni") -> "Earnvids"
-            else -> "Unknown Server"
+            else -> "General Extractor"
         }
 
         val playerPageContent = app.get(url, referer = referer, headers = mapOf("User-Agent" to USER_AGENT)).text
