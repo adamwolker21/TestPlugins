@@ -1,7 +1,9 @@
 package com.example.extractors
 
+import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.*
+import org.json.JSONObject
 
 class GovidExtractor : ExtractorApi() {
     override var name = "GoVID"
@@ -17,14 +19,19 @@ class GovidExtractor : ExtractorApi() {
         val videoUrl = Regex("""sources:\s*\[\{file:\s*"(.*?)"\}\]""").find(unpacked)?.groupValues?.getOrNull(1)
             ?: return null
 
-        // استخدام newExtractorLink بدلاً من Constructor المُهمَل
+        // إضافة الـ headers بنفس طريقة VidbomExtractor
+        val headers = mapOf(
+            "Referer" to url,
+            "User-Agent" to USER_AGENT
+        )
+        val headersJson = JSONObject(headers).toString()
+        val finalUrl = "$videoUrl#headers=$headersJson"
+
         return mutableListOf(
             newExtractorLink(
-                source = this.name,
-                name = this.name,
-                url = videoUrl,
-                referer = this.mainUrl,
-                quality = getQualityFromName("GoVID"),
+                this.name,
+                this.name,
+                finalUrl
             )
         )
     }
