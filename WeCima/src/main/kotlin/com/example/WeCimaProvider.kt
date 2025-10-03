@@ -2,12 +2,9 @@ package com.example
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.M3u8Helper
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.network.CloudflareKiller
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.cloudstream3.utils.JsUnpacker
-import com.lagradost.cloudstream3.utils.newExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
 
 class WeCimaProvider : MainAPI() {
     override var mainUrl = "https://wecima.now"
@@ -24,11 +21,13 @@ class WeCimaProvider : MainAPI() {
     private val interceptor = CloudflareKiller()
 
     override val mainPage = mainPageOf(
-        "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
+        "/category/%d9%85%ds%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/7-series-english-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "مسلسلات أجنبي",
-        "/category/%d8%a3%d9%81%d9%84%d8%a7%d9%85/10-movies-english-%d8%a7%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "أفلام أجنبي",
+        "/category/%d8%a3%d9%81%d9%84%d8%a7%d9%85/10-movies-english-%d8%a7%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to " 16 أفلام أجنبي",
     )
 
+    // Functions getMainPage, toSearchResult, search, and load remain the same as v15...
+    // To save space, they are not repeated here. Assume they are present and correct.
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
@@ -139,15 +138,6 @@ class WeCimaProvider : MainAPI() {
         }
     }
 
-    private suspend fun extractDirectLink(url: String, referer: String): String? {
-        return try {
-            val doc = app.get(url, referer = referer, interceptor = interceptor).document
-            Regex("""(https?://[^\s'"]+\.mp4[^\s'"]*)""").find(doc.html())?.groupValues?.get(1)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -157,21 +147,14 @@ class WeCimaProvider : MainAPI() {
         val document = app.get(data, interceptor = interceptor).document
         var linksLoaded = false
 
+        // v16: The new simplified logic.
+        // We find all download links and pass them to our new extractor.
         document.select("ul.downloads__list li a").apmap { dlElement ->
             val intermediateUrl = dlElement.attr("href")
             if (intermediateUrl.isNotBlank()) {
-                val directLink = extractDirectLink(intermediateUrl, data)
-                if (directLink != null) {
-                    val qualityText = dlElement.selectFirst("resolution")?.text()?.trim() ?: "HD"
-                    callback(
-                        newExtractorLink(
-                            source = this.name,
-                            name = "مشاهدة مباشرة - $qualityText",
-                            url = "$directLink#Referer=$mainUrl", // v15: The Referer Hack
-                        )
-                    )
-                    linksLoaded = true
-                }
+                // Let the extractor handle the rest
+                loadExtractor(intermediateUrl, data, subtitleCallback, callback)
+                linksLoaded = true
             }
         }
         
