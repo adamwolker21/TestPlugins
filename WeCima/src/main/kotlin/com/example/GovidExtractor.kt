@@ -5,7 +5,6 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getAndUnpack
 import com.lagradost.cloudstream3.utils.getQualityFromName
-import com.lagradost.cloudstream3.newExtractorLink
 
 // This extractor handles the GoVID server which uses packed JavaScript.
 open class GovidExtractor : ExtractorApi() {
@@ -31,9 +30,11 @@ open class GovidExtractor : ExtractorApi() {
             val videoUrl = Regex("""sources:\s*\[\{file:\s*"(.*?)"\}\]""").find(unpacked)?.groupValues?.getOrNull(1)
 
             if (videoUrl != null) {
-                // V3 Fix: Use the new 'newExtractorLink' factory function and 'getQualityFromName' utility.
+                // V4 Fix: Revert to the deprecated ExtractorLink constructor as newExtractorLink is not available.
+                // This will resolve the build error, although a deprecation warning may appear.
+                // Also, keep the fix for quality handling.
                 return listOf(
-                    newExtractorLink(
+                    ExtractorLink(
                         source = this.name,
                         name = "GoVID", // Server name to be displayed
                         url = videoUrl,
