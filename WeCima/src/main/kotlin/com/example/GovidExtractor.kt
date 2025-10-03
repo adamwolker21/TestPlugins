@@ -1,40 +1,44 @@
-package com.example
+package com.example.extractors
 
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.getAndUnpack
+import com.lagradost.cloudstream3.Qualities
 
+// This extractor handles the GoVID server which uses packed JavaScript.
 open class GovidExtractor : ExtractorApi() {
     override val name = "GoVID"
-    override val mainUrl = "goveed1.space" // استخدمنا النطاق الرئيسي هنا
+    override val mainUrl = "goveed1.space" // The primary domain for this extractor
     override val requiresReferer = false
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        // جلب محتوى صفحة الـ embed
-        val doc = app.get(url).document
+        // Fetch the embed page content
+        val doc = app.get(url, referer = referer).document
         
-        // البحث عن السكريبت الذي يحتوي على الكود المخفي (Packed)
+        // Find the script tag containing the packed (obfuscated) JavaScript code.
         val packedScript = doc.select("script").firstOrNull { script ->
             script.data().contains("eval(function(p,a,c,k,e,d)")
         }?.data()
 
         if (packedScript != null) {
-            // فك الكود المخفي باستخدام الدالة الجاهزة
+            // Unpack the JavaScript code to reveal the actual video source links.
             val unpacked = getAndUnpack(packedScript)
             
-            // بعد فك الشفرة، نبحث عن رابط المصدر بداخلها
-            // عادة ما يكون بهذا الشكل: sources:[{file:"https://.../v.mp4"}]
-            val videoUrl = Regex("""sources:\s*\[\{file:\s*"(.*?)"\}""").find(unpacked)?.groupValues?.get(1)
+            // Regex to find the source URL from the unpacked JavaScript.
+            // The pattern commonly looks for something like: sources:[{file:"..."}]
+            val videoUrl = Regex("""sources:\s*\[\{file:\s*"(.*?)"\}\]""").find(unpacked)?.groupValues?.getOrNull(1)
             
             if (videoUrl != null) {
+                // Return the found video link as an ExtractorLink.
                 return listOf(
                     ExtractorLink(
                         source = this.name,
-                        name = "GoVID", // يمكنك تعديل الاسم هنا
+                        name = "GoVID", // Server name to be displayed
                         url = videoUrl,
-                        referer = url, // نرسل رابط الـ embed كـ referer
-                        quality = Qualities.Unknown.value // الجودة غير معروفة من الرابط
+                        referer = url, // Important to pass the embed URL as referer
+                        quality = Qualities.Unknown.value, // Quality is usually not available in the link
+                        isM3u8 = videoUrl.contains(".m3u8")
                     )
                 )
             }
