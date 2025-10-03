@@ -9,7 +9,6 @@ import com.example.extractors.WeCimaExtractor
 class WeCimaPlugin: Plugin() {
     override fun load(context: Context) {
         registerMainAPI(WeCimaProvider())
-        // v16: Register the new extractor
         registerExtractorAPI(WeCimaExtractor())
     }
 }
