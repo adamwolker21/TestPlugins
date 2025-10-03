@@ -9,30 +9,26 @@ import android.net.Uri
 
 open class WeCimaExtractor : ExtractorApi() {
     override var name = "WeCima"
-    override var mainUrl = "https://wecima.now"
+    override var mainUrl = "https://wecima.now/" // Added trailing slash
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         // This extractor is specifically for wecima.now/run/watch/ links
         val playerPageContent = app.get(url, referer = referer).text
-        
-        // Find the m3u8 or mp4 link within the player page
+
         val videoLink = Regex("""(https?://[^\s'"]+\.(?:m3u8|mp4)[^\s'"]*)""").find(playerPageContent)?.groupValues?.get(1)
             ?: return null
 
-        // Build the headers map to bypass protection
         val headers = mapOf(
-            "Referer" to mainUrl,
+            "Referer" to mainUrl, // Use the corrected mainUrl
             "User-Agent" to USER_AGENT
         )
 
-        // Convert the map to a JSON string and URL-encode it for the #headers hack
         val headersJson = headers.entries.joinToString(prefix = "{", postfix = "}", separator = ",") {
             """"${it.key}":"${it.value}""""
         }
         val encodedHeaders = Uri.encode(headersJson)
         
-        // Append the encoded headers to the URL
         val finalUrl = "$videoLink#headers=$encodedHeaders"
         
         return listOf(
