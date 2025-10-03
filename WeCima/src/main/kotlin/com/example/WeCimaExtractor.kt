@@ -5,8 +5,8 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.JsUnpacker
-import org.json.JSONObject
 
 open class WeCimaExtractor : ExtractorApi() {
     override var name = "WeCima"
@@ -20,17 +20,18 @@ open class WeCimaExtractor : ExtractorApi() {
             Regex("""(https?://[^\s'"]+\.(?:m3u8|mp4)[^\s'"]*)""").find(unpackedJs)?.groupValues?.get(1)
         } ?: Regex("""(https?://[^\s'"]+\.(?:m3u8|mp4)[^\s'"]*)""").find(playerPageContent)?.groupValues?.get(1)
         ?: return null
-
-        // The correct way to pass headers for your environment
-        val headers = mapOf("Referer" to url, "User-Agent" to USER_AGENT)
-        val headersJson = JSONObject(headers).toString()
-        val finalUrlWithHeaders = "$videoLink#headers=$headersJson"
         
+        // Modern way to pass headers via extractorData
+        val extractorData = videoLink.plus("#$url") // Pass video link and referer
+
         return listOf(
             newExtractorLink(
                 this.name,
                 this.name,
-                finalUrlWithHeaders // Pass the URL with embedded headers
+                extractorData, // Use extractorData as the URL
+                url, // Referer
+                Qualities.Unknown.value,
+                isM3u8 = videoLink.contains(".m3u8")
             )
         )
     }
