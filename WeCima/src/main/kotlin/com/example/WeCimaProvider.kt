@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.loadExtractor
-import com.fasterxml.jackson.annotation.JsonProperty
+import android.util.Base64 // Required for Base64 decoding
 
 class WeCimaProvider : MainAPI() {
     override var mainUrl = "https://wecima.now"
@@ -24,7 +24,7 @@ class WeCimaProvider : MainAPI() {
     override val mainPage = mainPageOf(
         "/category/%d9%85%ds%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/7-series-english-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "مسلسلات أجنبي",
-        "/category/%d8%a3%d9%81%d9%84%d8%a7%d9%85/10-movies-english-%d8%a7%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "أفلام أجنبي",
+        "/category/%d8%a3%d9%81%d9%84%d8%a7%d9%85/10-movies-english-%d8%a7%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "أفلام 19 أجنبي",
     )
 
     // Functions getMainPage, toSearchResult, search, and load remain the same.
@@ -138,12 +138,6 @@ class WeCimaProvider : MainAPI() {
             }
         }
     }
-
-    // Data class for parsing the AJAX JSON response
-    private data class ServerResponse(
-        @JsonProperty("embed_url") val embedUrl: String?,
-        @JsonProperty("status") val status: String?
-    )
     
     override suspend fun loadLinks(
         data: String,
@@ -153,32 +147,19 @@ class WeCimaProvider : MainAPI() {
     ): Boolean {
         val document = app.get(data, interceptor = interceptor).document
 
-        val postId = document.selectFirst("div[data-id]")?.attr("data-id") ?: return false
-
-        document.select("ul.watch--servers__list li").apmap { serverElement ->
+        // v19: The final and correct logic.
+        document.select("ul.watch__server-list li btn").apmap { serverBtn ->
             try {
-                val serverId = serverElement.attr("data-id")
-                val ajaxUrl = "$mainUrl/wp-admin/admin-ajax.php"
+                val encodedUrl = serverBtn.attr("data-url")
+                // Decode the Base64 URL to get the real embed URL
+                val decodedUrl = String(Base64.decode(encodedUrl, Base64.DEFAULT))
                 
-                val response = app.post(
-                    ajaxUrl,
-                    headers = mapOf(
-                        "referer" to data,
-                        "x-requested-with" to "XMLHttpRequest"
-                    ),
-                    data = mapOf(
-                        "action" to "get_player_content",
-                        "post" to postId,
-                        "n" to serverId,
-                    ),
-                    interceptor = interceptor
-                ).parsed<ServerResponse>()
-
-                if (response.status == "ok" && response.embedUrl != null) {
-                    loadExtractor(response.embedUrl, data, subtitleCallback, callback)
+                // Pass the real URL to the appropriate extractor
+                if (decodedUrl.isNotBlank()) {
+                    loadExtractor(decodedUrl, data, subtitleCallback, callback)
                 }
             } catch (e: Exception) {
-                // Do nothing, just try the next server
+                // Ignore errors and continue to the next server
             }
         }
         
