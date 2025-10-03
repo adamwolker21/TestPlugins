@@ -29,7 +29,7 @@ open class WeCimaExtractor : ExtractorApi() {
             newExtractorLink(
                 this.name,
                 this.name,
-                finalUrlWithHeaders,
+                finalUrlWithHeaders
             )
         )
     }
