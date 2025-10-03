@@ -22,33 +22,30 @@ open class GeneralPackedExtractor : ExtractorApi() {
 
         val playerPageContent = app.get(url, referer = referer, headers = mapOf("User-Agent" to USER_AGENT)).text
         
-        // Unpack the JavaScript to find the hidden video link
+        // Unpack the JavaScript to find the hidden master playlist link
         val masterPlaylistUrl = JsUnpacker(playerPageContent).unpack()?.let { unpackedJs ->
             Regex("""(https?://[^\s'"]+\.m3u8[^\s'"]*)""").find(unpackedJs)?.groupValues?.get(1)
-        } ?: return null // If not an m3u8 link, we can't process it this way
+        } ?: return null // If not an m3u8 link, exit
 
-        // Now, we fetch the master playlist to get the actual video streams
         val headers = mapOf("Referer" to url, "User-Agent" to USER_AGENT)
+        
+        // Fetch the master playlist content to get the actual video streams
         val masterPlaylistContent = app.get(masterPlaylistUrl, headers = headers).text
 
-        val links = mutableListOf<ExtractorLink>()
-
         // Use a helper to parse M3U8 content and extract quality links
-        M3u8Helper.generateM3u8(serverName, masterPlaylistContent, masterPlaylistUrl).forEach { link ->
-            // Re-apply the headers to each quality link
+        // This gives us a list of simple links (e.g., 720p, 480p)
+        return M3u8Helper.generateM3u8(serverName, masterPlaylistContent, masterPlaylistUrl).map { link ->
+            // Re-apply the headers to each individual quality link using the #headers trick
             val headersJson = JSONObject(headers).toString()
             val finalUrlWithHeaders = "${link.url}#headers=$headersJson"
-            links.add(
-                newExtractorLink(
-                    serverName,
-                    "${link.name} - $serverName", // e.g., "720p - Vidshare"
-                    finalUrlWithHeaders,
-                ) {
-                    this.quality = link.quality
-                }
-            )
+            
+            newExtractorLink(
+                serverName,
+                "${link.name} - $serverName", // e.g., "720p - Vidshare"
+                finalUrlWithHeaders,
+            ).apply {
+                quality = link.quality
+            }
         }
-
-        return links
     }
 }
