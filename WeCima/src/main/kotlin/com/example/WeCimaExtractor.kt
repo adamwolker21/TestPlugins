@@ -19,22 +19,17 @@ open class WeCimaExtractor : ExtractorApi() {
         val videoLinkRegex = Regex("""(https?://[^\s'"]+\.(?:m3u8|mp4)[^\s'"]*)""")
         val videoLink = videoLinkRegex.find(playerPageContent)?.groupValues?.get(1)
             ?: return null
-
-        val headers = mapOf(
-            "Referer" to mainUrl,
-            "User-Agent" to USER_AGENT
-        )
         
-        // v25 Final Fix: Using newExtractorLink with all modern parameters
+        // v26 Final Fix: Using newExtractorLink with positional arguments as required by the user's environment
         return listOf(
             newExtractorLink(
-                source = this.name,
-                name = this.name,
-                url = videoLink,
-                referer = mainUrl, // The final video request needs the main site as referer
-                quality = getQualityFromName(""), // Let CloudStream determine quality
-                isM3u8 = videoLink.contains(".m3u8"),
-                headers = headers
+                this.name, // source
+                this.name, // name
+                videoLink, // url
+                mainUrl,   // referer
+                getQualityFromName(""), // quality
+                videoLink.contains(".m3u8") // isM3u8
+                // headers parameter is removed as it was causing build errors
             )
         )
     }
