@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.lagradost.cloudstream3.USER_AGENT
-import android.net.Uri // Required for encoding
+import android.net.Uri
 
 open class WeCimaExtractor : ExtractorApi() {
     override var name = "WeCima"
@@ -13,32 +13,28 @@ open class WeCimaExtractor : ExtractorApi() {
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        // Step 1: Visit the intermediate page with the correct User-Agent
-        val doc = app.get(
-            url, 
-            referer = referer, 
-            headers = mapOf("User-Agent" to USER_AGENT)
-        ).document
+        // This extractor is specifically for wecima.now/run/watch/ links
+        val playerPageContent = app.get(url, referer = referer).text
         
-        val directLink = Regex("""(https?://[^\s'"]+\.mp4[^\s'"]*)""").find(doc.html())?.groupValues?.get(1)
+        // Find the m3u8 or mp4 link within the player page
+        val videoLink = Regex("""(https?://[^\s'"]+\.(?:m3u8|mp4)[^\s'"]*)""").find(playerPageContent)?.groupValues?.get(1)
             ?: return null
 
-        // Step 2: Build the headers map
+        // Build the headers map to bypass protection
         val headers = mapOf(
             "Referer" to mainUrl,
             "User-Agent" to USER_AGENT
         )
 
-        // Step 3: Convert the map to a JSON string and URL-encode it
+        // Convert the map to a JSON string and URL-encode it for the #headers hack
         val headersJson = headers.entries.joinToString(prefix = "{", postfix = "}", separator = ",") {
             """"${it.key}":"${it.value}""""
         }
         val encodedHeaders = Uri.encode(headersJson)
         
-        // Step 4: Append the encoded headers to the URL using the #headers hack
-        val finalUrl = "$directLink#headers=$encodedHeaders"
+        // Append the encoded headers to the URL
+        val finalUrl = "$videoLink#headers=$encodedHeaders"
         
-        // Step 5: Use the simplest form of newExtractorLink which is compatible with your build
         return listOf(
             newExtractorLink(
                 source = this.name,
