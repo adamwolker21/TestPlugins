@@ -5,11 +5,12 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.loadExtractor
-import android.util.Base64 // Required for Base64 decoding
+import android.util.Base64
 
 class WeCimaProvider : MainAPI() {
     override var mainUrl = "https://wecima.now"
     override var name = "WeCima"
+    // ... (rest of the provider code is the same as v19) ...
     override val hasMainPage = true
     override var lang = "ar"
     override val hasDownloadSupport = true
@@ -22,13 +23,11 @@ class WeCimaProvider : MainAPI() {
     private val interceptor = CloudflareKiller()
 
     override val mainPage = mainPageOf(
-        "/category/%d9%85%ds%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
+        "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/7-series-english-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "مسلسلات أجنبي",
-        "/category/%d8%a3%d9%81%d9%84%d8%a7%d9%85/10-movies-english-%d8%a7%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "أفلام 19 أجنبي",
+        "/category/%d8%a3%d9%81%d9%84%d8%a7%d9%85/10-movies-english-%d8%a7%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "أفلام 20 أجنبي",
     )
-
-    // Functions getMainPage, toSearchResult, search, and load remain the same.
-    // To save space, they are not repeated here.
+    
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
@@ -147,19 +146,24 @@ class WeCimaProvider : MainAPI() {
     ): Boolean {
         val document = app.get(data, interceptor = interceptor).document
 
-        // v19: The final and correct logic.
         document.select("ul.watch__server-list li btn").apmap { serverBtn ->
             try {
                 val encodedUrl = serverBtn.attr("data-url")
-                // Decode the Base64 URL to get the real embed URL
                 val decodedUrl = String(Base64.decode(encodedUrl, Base64.DEFAULT))
                 
-                // Pass the real URL to the appropriate extractor
                 if (decodedUrl.isNotBlank()) {
-                    loadExtractor(decodedUrl, data, subtitleCallback, callback)
+                    // Smart dispatcher: if it's a wecima server, use our special extractor.
+                    // Otherwise, use the general-purpose extractor.
+                    if (decodedUrl.contains("wecima.now/run/watch/")) {
+                        // This is our special server, let WeCimaExtractor handle it
+                        com.example.extractors.WeCimaExtractor().getUrl(decodedUrl, data)?.forEach(callback)
+                    } else {
+                        // For all other servers (Vidbom, Dood, etc.), use the built-in handlers
+                        loadExtractor(decodedUrl, data, subtitleCallback, callback)
+                    }
                 }
             } catch (e: Exception) {
-                // Ignore errors and continue to the next server
+                // Ignore and continue
             }
         }
         
