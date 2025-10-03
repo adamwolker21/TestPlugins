@@ -4,11 +4,10 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.network.CloudflareKiller
-import com.lagradost.cloudstream3.utils.newExtractorLink
+import com.lagradost.cloudstream3.utils.loadExtractor
 import android.util.Base64
 
 class WeCimaProvider : MainAPI() {
-    // Added trailing slash for consistency
     override var mainUrl = "https://wecima.now/"
     override var name = "WeCima"
     override val hasMainPage = true
@@ -22,7 +21,6 @@ class WeCimaProvider : MainAPI() {
 
     private val interceptor = CloudflareKiller()
 
-    // v23: Updated as per request
     override val mainPage = mainPageOf(
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/7-series-english-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "مسلسلات أجنبي",
@@ -150,24 +148,16 @@ class WeCimaProvider : MainAPI() {
         document.select("ul.watch__server-list li btn").apmap { serverBtn ->
             try {
                 val encodedUrl = serverBtn.attr("data-url")
-                // Basic check if the URL is not empty
                 if (encodedUrl.isBlank()) return@apmap
 
                 val decodedUrl = String(Base64.decode(encodedUrl, Base64.DEFAULT))
-                val serverName = serverBtn.selectFirst("strong")?.text() ?: "Server"
-
-                // This is the simplest possible call that works with old CS3 versions
-                // We pass the embed URL and hope CS3 has a built-in extractor for it.
-                callback(
-                    newExtractorLink(
-                        source = this.name,
-                        name = serverName,
-                        url = decodedUrl,
-                        referer = data // The referer for the embed page
-                    )
-                )
+                
+                // Use the modern loadExtractor function. It will automatically find the
+                // correct extractor for the URL, including our custom WeCimaExtractor.
+                loadExtractor(decodedUrl, data, subtitleCallback, callback)
+                
             } catch (e: Exception) {
-                // Failsafe for any decoding or selection errors
+                // Failsafe
             }
         }
         return true
