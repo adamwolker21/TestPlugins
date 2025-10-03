@@ -5,6 +5,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import org.jsoup.nodes.Element
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.fasterxml.jackson.annotation.JsonProperty
 
 class WeCimaProvider : MainAPI() {
     override var mainUrl = "https://wecima.now"
@@ -21,13 +22,13 @@ class WeCimaProvider : MainAPI() {
     private val interceptor = CloudflareKiller()
 
     override val mainPage = mainPageOf(
-        "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
+        "/category/%d9%85%ds%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/7-series-english-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "مسلسلات أجنبي",
-        "/category/%d8%a3%d9%81%d9%84%d8%a7%d9%85/10-movies-english-%d8%a7%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "16 أفلام أجنبي",
+        "/category/%d8%a3%d9%81%d9%84%d8%a7%d9%85/10-movies-english-%d8%a7%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "أفلام أجنبي",
     )
 
-    // Functions getMainPage, toSearchResult, search, and load remain the same as v15...
-    // To save space, they are not repeated here. Assume they are present and correct.
+    // Functions getMainPage, toSearchResult, search, and load remain the same.
+    // To save space, they are not repeated here.
     override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
@@ -138,6 +139,12 @@ class WeCimaProvider : MainAPI() {
         }
     }
 
+    // Data class for parsing the AJAX JSON response
+    private data class ServerResponse(
+        @JsonProperty("embed_url") val embedUrl: String?,
+        @JsonProperty("status") val status: String?
+    )
+    
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -145,19 +152,36 @@ class WeCimaProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data, interceptor = interceptor).document
-        var linksLoaded = false
 
-        // v16: The new simplified logic.
-        // We find all download links and pass them to our new extractor.
-        document.select("ul.downloads__list li a").apmap { dlElement ->
-            val intermediateUrl = dlElement.attr("href")
-            if (intermediateUrl.isNotBlank()) {
-                // Let the extractor handle the rest
-                loadExtractor(intermediateUrl, data, subtitleCallback, callback)
-                linksLoaded = true
+        val postId = document.selectFirst("div[data-id]")?.attr("data-id") ?: return false
+
+        document.select("ul.watch--servers__list li").apmap { serverElement ->
+            try {
+                val serverId = serverElement.attr("data-id")
+                val ajaxUrl = "$mainUrl/wp-admin/admin-ajax.php"
+                
+                val response = app.post(
+                    ajaxUrl,
+                    headers = mapOf(
+                        "referer" to data,
+                        "x-requested-with" to "XMLHttpRequest"
+                    ),
+                    data = mapOf(
+                        "action" to "get_player_content",
+                        "post" to postId,
+                        "n" to serverId,
+                    ),
+                    interceptor = interceptor
+                ).parsed<ServerResponse>()
+
+                if (response.status == "ok" && response.embedUrl != null) {
+                    loadExtractor(response.embedUrl, data, subtitleCallback, callback)
+                }
+            } catch (e: Exception) {
+                // Do nothing, just try the next server
             }
         }
         
-        return linksLoaded
+        return true
     }
 }
