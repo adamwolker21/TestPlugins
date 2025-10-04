@@ -10,7 +10,7 @@ import com.example.extractors.VidbomExtractor
 import com.example.extractors.WeCimaExtractor
 import com.example.extractors.GovidExtractor
 import org.jsoup.nodes.Element
-import android.util.Log // V18: Import Log
+import android.util.Log
 
 class WeCimaProvider : MainAPI() {
     override var mainUrl = "https://wecima.now/"
@@ -28,66 +28,6 @@ class WeCimaProvider : MainAPI() {
 
     // ... (rest of the file remains the same) ...
     
-    override suspend fun load(url: String): LoadResponse? {
-        // ... (this function remains the same) ...
-        val document = app.get(url, interceptor = interceptor).document
-
-        val title = document.selectFirst("h1[itemprop=name]")?.ownText()?.trim() ?: return null
-
-        val posterStyle = document.selectFirst("wecima.media-entry--hero")?.attr("style")
-        val posterUrl = posterStyle?.let {
-            Regex("""url\(['"]?(.*?)['"]?\)""").find(it)?.groupValues?.get(1)
-        }
-
-        val plot = document.selectFirst("div.story__content")?.text()?.trim()
-        val tags = document.select("li:has(span:contains(النوع)) p a").map { it.text() }
-        val year = document.selectFirst("h1[itemprop=name] a.unline")?.text()?.toIntOrNull()
-
-        val seasons = document.select("div.seasons__list li a")
-        val isTvSeries = seasons.isNotEmpty() || document.select("div.episodes__list").isNotEmpty()
-
-        if (isTvSeries) {
-            val episodes = mutableListOf<Episode>()
-            if (seasons.isNotEmpty()) {
-                seasons.apmap { seasonLink ->
-                    val seasonUrl = seasonLink.attr("href")
-                    val seasonName = seasonLink.text()
-                    val seasonNum = Regex("""\d+""").find(seasonName)?.value?.toIntOrNull()
-
-                    val seasonDoc = app.get(seasonUrl, interceptor = interceptor).document
-                    seasonDoc.select("div.episodes__list > a").forEach { epElement ->
-                        val epHref = epElement.attr("href")
-                        val epTitle = epElement.selectFirst("episodetitle.episode__title")?.text() ?: ""
-                        val epNum = Regex("""\d+""").find(epTitle)?.value?.toIntOrNull()
-
-                        episodes.add(
-                            newEpisode(epHref) {
-                                name = epTitle
-                                season = seasonNum
-                                episode = epNum
-                            }
-                        )
-                    }
-                }
-            } else {
-                document.select("div.episodes__list > a").forEach { epElement ->
-                    val epHref = epElement.attr("href")
-                    val epTitle = epElement.selectFirst("episodetitle.episode__title")?.text() ?: ""
-                    val epNum = Regex("""\d+""").find(epTitle)?.value?.toIntOrNull()
-                    episodes.add(newEpisode(epHref) { name = epTitle; season = 1; episode = epNum })
-                }
-            }
-            
-            return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.distinctBy { it.data }.sortedWith(compareBy({ it.season }, { it.episode }))) {
-                this.posterUrl = posterUrl; this.plot = plot; this.year = year; this.tags = tags
-            }
-        } else {
-            return newMovieLoadResponse(title, url, TvType.Movie, url) {
-                this.posterUrl = posterUrl; this.plot = plot; this.year = year; this.tags = tags
-            }
-        }
-    }
-    
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -102,6 +42,9 @@ class WeCimaProvider : MainAPI() {
                                  ?: serverBtn.selectFirst("span.ServerName")?.text()
                                  ?: return@apmap
                 
+                // V20: THE MOST IMPORTANT LOG. This will show us the exact name being extracted.
+                Log.e("WeCimaProvider", "Found server button with raw name: '$serverName'")
+
                 val encodedUrl = serverBtn.attr("data-url")
                 if (encodedUrl.isBlank()) return@apmap
 
@@ -115,7 +58,6 @@ class WeCimaProvider : MainAPI() {
                         VidbomExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
                     serverName.contains("GoViD", true) -> {
-                        // V18: Add logging to confirm this block is being reached.
                         Log.e("WeCimaProvider", "GoViD server found. Calling extractor with URL: $decodedUrl")
                         GovidExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
@@ -178,6 +120,64 @@ class WeCimaProvider : MainAPI() {
         val document = app.get(url, interceptor = interceptor).document
         return document.select("div.media-card").mapNotNull {
             it.toSearchResult()
+        }
+    }
+     override suspend fun load(url: String): LoadResponse? {
+        val document = app.get(url, interceptor = interceptor).document
+
+        val title = document.selectFirst("h1[itemprop=name]")?.ownText()?.trim() ?: return null
+
+        val posterStyle = document.selectFirst("wecima.media-entry--hero")?.attr("style")
+        val posterUrl = posterStyle?.let {
+            Regex("""url\(['"]?(.*?)['"]?\)""").find(it)?.groupValues?.get(1)
+        }
+
+        val plot = document.selectFirst("div.story__content")?.text()?.trim()
+        val tags = document.select("li:has(span:contains(النوع)) p a").map { it.text() }
+        val year = document.selectFirst("h1[itemprop=name] a.unline")?.text()?.toIntOrNull()
+
+        val seasons = document.select("div.seasons__list li a")
+        val isTvSeries = seasons.isNotEmpty() || document.select("div.episodes__list").isNotEmpty()
+
+        if (isTvSeries) {
+            val episodes = mutableListOf<Episode>()
+            if (seasons.isNotEmpty()) {
+                seasons.apmap { seasonLink ->
+                    val seasonUrl = seasonLink.attr("href")
+                    val seasonName = seasonLink.text()
+                    val seasonNum = Regex("""\d+""").find(seasonName)?.value?.toIntOrNull()
+
+                    val seasonDoc = app.get(seasonUrl, interceptor = interceptor).document
+                    seasonDoc.select("div.episodes__list > a").forEach { epElement ->
+                        val epHref = epElement.attr("href")
+                        val epTitle = epElement.selectFirst("episodetitle.episode__title")?.text() ?: ""
+                        val epNum = Regex("""\d+""").find(epTitle)?.value?.toIntOrNull()
+
+                        episodes.add(
+                            newEpisode(epHref) {
+                                name = epTitle
+                                season = seasonNum
+                                episode = epNum
+                            }
+                        )
+                    }
+                }
+            } else {
+                document.select("div.episodes__list > a").forEach { epElement ->
+                    val epHref = epElement.attr("href")
+                    val epTitle = epElement.selectFirst("episodetitle.episode__title")?.text() ?: ""
+                    val epNum = Regex("""\d+""").find(epTitle)?.value?.toIntOrNull()
+                    episodes.add(newEpisode(epHref) { name = epTitle; season = 1; episode = epNum })
+                }
+            }
+            
+            return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.distinctBy { it.data }.sortedWith(compareBy({ it.season }, { it.episode }))) {
+                this.posterUrl = posterUrl; this.plot = plot; this.year = year; this.tags = tags
+            }
+        } else {
+            return newMovieLoadResponse(title, url, TvType.Movie, url) {
+                this.posterUrl = posterUrl; this.plot = plot; this.year = year; this.tags = tags
+            }
         }
     }
 }
