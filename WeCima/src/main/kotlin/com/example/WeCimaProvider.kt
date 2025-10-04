@@ -26,8 +26,6 @@ class WeCimaProvider : MainAPI() {
 
     private val interceptor = CloudflareKiller()
 
-    // ... (rest of the file remains the same) ...
-    
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -38,44 +36,38 @@ class WeCimaProvider : MainAPI() {
 
         document.select("ul.watch__server-list li btn, div.Watch--Servers--Single").apmap { serverBtn ->
             try {
-                val serverName = serverBtn.selectFirst("strong")?.text()
-                                 ?: serverBtn.selectFirst("span.ServerName")?.text()
-                                 ?: return@apmap
-                
-                // V20: THE MOST IMPORTANT LOG. This will show us the exact name being extracted.
-                Log.e("WeCimaProvider", "Found server button with raw name: '$serverName'")
-
                 val encodedUrl = serverBtn.attr("data-url")
                 if (encodedUrl.isBlank()) return@apmap
 
                 val decodedUrl = String(Base64.decode(encodedUrl, Base64.DEFAULT))
                 
+                // V21: Rely on the decoded URL for server identification, which is more reliable.
                 when {
-                    serverName.contains("وي سيما", true) -> {
+                    decodedUrl.contains("wecima.now/run/watch/", true) -> {
                         WeCimaExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
-                    serverName.contains("VIDBOM", true) -> {
+                    decodedUrl.contains("vdbtm.shop", true) -> {
                         VidbomExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
-                    serverName.contains("GoViD", true) -> {
-                        Log.e("WeCimaProvider", "GoViD server found. Calling extractor with URL: $decodedUrl")
+                    decodedUrl.contains("goveed", true) -> {
                         GovidExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
-                    serverName.contains("vidshare", true) || serverName.contains("EarnvidS", true) -> {
+                    decodedUrl.contains("1vid1shar.space", true) || decodedUrl.contains("dingtezuni.com", true) -> {
                         GeneralPackedExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
                     else -> {
+                        // Fallback for any other server
                         loadExtractor(decodedUrl, data, subtitleCallback, callback)
                     }
                 }
             } catch (e: Exception) {
-                // Ignore errors
+                // Ignore errors to prevent crashing
             }
         }
         return true
     }
     
-    // ... (rest of the file remains the same) ...
+    // ... (The rest of the file remains unchanged and correct) ...
      override suspend fun getMainPage(
         page: Int,
         request: MainPageRequest
