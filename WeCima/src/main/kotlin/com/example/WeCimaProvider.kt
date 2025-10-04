@@ -23,6 +23,7 @@ class WeCimaProvider : MainAPI() {
 
     private val interceptor = CloudflareKiller()
 
+    // ... (No changes in main page, search, or load functions)
     override val mainPage = mainPageOf(
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/7-series-english-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "مسلسلات أجنبي",
@@ -134,7 +135,7 @@ class WeCimaProvider : MainAPI() {
             }
         }
     }
-
+    
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -142,48 +143,39 @@ class WeCimaProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data, interceptor = interceptor).document
-
-        // Unified selector for both HTML structures
         val serverElements = document.select("ul.watch__server-list li btn, div.Watch--Servers--Single")
-
-        Log.e("WeCimaProvider", "Found ${serverElements.size} server elements.")
 
         serverElements.apmap { serverElement ->
             try {
                 val encodedUrl = serverElement.attr("data-url")
                 if (encodedUrl.isBlank()) return@apmap
 
-                // Extract server name from either <strong> or <span>
                 val serverName = (serverElement.selectFirst("strong")?.text() ?: serverElement.selectFirst("span")?.text())?.trim()?.lowercase()
-                Log.e("WeCimaProvider", "Found server button with raw name: '$serverName'")
-
                 val decodedUrl = String(Base64.decode(encodedUrl, Base64.DEFAULT))
 
+                // The final, logical approach
                 when {
+                    // For GoViD, let the app's master key handle it
                     serverName?.contains("govid") == true -> {
-                        // This is our systematic attack
-                        Log.e("WeCimaProvider", "GoViD server found, trying all methods...")
-                        GovidExtractor_Base().getUrl(decodedUrl, data)?.forEach(callback)
-                        GovidExtractor_CF().getUrl(decodedUrl, data)?.forEach(callback)
-                        GovidExtractor_Headers().getUrl(decodedUrl, data)?.forEach(callback)
-                        GovidExtractor_Full().getUrl(decodedUrl, data)?.forEach(callback)
+                        loadExtractor(decodedUrl, data, subtitleCallback, callback)
                     }
+                    // For other servers, use our trusted custom extractors
                     decodedUrl.contains("wecima.now/run/watch/") -> {
                         WeCimaExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
-
                     decodedUrl.contains("vdbtm.shop") -> {
                         VidbomExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
                     decodedUrl.contains("1vid1shar.space") || decodedUrl.contains("dingtezuni.com") -> {
                         GeneralPackedExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
+                    // Fallback for any other new servers
                     else -> {
                         loadExtractor(decodedUrl, data, subtitleCallback, callback)
                     }
                 }
             } catch (e: Exception) {
-                Log.e("WeCimaProvider", "Error processing server: ${e.message}")
+                // Fails silently
             }
         }
         return true
