@@ -8,7 +8,7 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import com.example.extractors.GeneralPackedExtractor
 import com.example.extractors.VidbomExtractor
 import com.example.extractors.WeCimaExtractor
-import com.example.extractors.GovidExtractor // V8 Change: Import GovidExtractor
+import com.example.extractors.GovidExtractor
 
 import org.jsoup.nodes.Element
 
@@ -26,6 +26,7 @@ class WeCimaProvider : MainAPI() {
 
     private val interceptor = CloudflareKiller()
 
+    // ... (MainPage and other functions remain the same)
     override val mainPage = mainPageOf(
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/7-series-english-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "مسلسلات أجنبي",
@@ -146,22 +147,26 @@ class WeCimaProvider : MainAPI() {
     ): Boolean {
         val document = app.get(data, interceptor = interceptor).document
 
-        document.select("ul.watch__server-list li btn").apmap { serverBtn ->
+        // ================== V9 Change Start ==================
+        // Corrected CSS selector to match the actual HTML structure from the user's provided file.
+        // This will now correctly find all server "buttons".
+        document.select("div.Watch--Servers--Single").apmap { serverBtn ->
+        // ================== V9 Change End ==================
             try {
                 val encodedUrl = serverBtn.attr("data-url")
                 if (encodedUrl.isBlank()) return@apmap
 
                 val decodedUrl = String(Base64.decode(encodedUrl, Base64.DEFAULT))
                 
-                // ================== V8 Change Start ==================
-                // We will check the server name from the button text, which is more reliable than the URL.
+                // The logic to check the server name from the button text is correct.
+                // The problem was that the button itself was not being found.
                 val serverName = serverBtn.text()
 
                 when {
                     serverName.contains("GoVID", ignoreCase = true) -> {
                         GovidExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
-                    // Keep the old URL-based checks for other servers
+                    // Keep the old URL-based checks as a fallback.
                     decodedUrl.contains("wecima.now/run/watch/") -> {
                         WeCimaExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
@@ -172,11 +177,9 @@ class WeCimaProvider : MainAPI() {
                         GeneralPackedExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
                     else -> {
-                        // Fallback for other servers like DoodStream
                         loadExtractor(decodedUrl, data, subtitleCallback, callback)
                     }
                 }
-                // ================== V8 Change End ==================
             } catch (e: Exception) {
                 // Ignore errors
             }
