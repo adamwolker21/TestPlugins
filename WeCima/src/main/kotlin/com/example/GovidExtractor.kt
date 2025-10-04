@@ -2,7 +2,6 @@ package com.example.extractors
 
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.*
 
 import org.json.JSONObject
@@ -12,31 +11,30 @@ class GovidExtractor : ExtractorApi() {
     override var mainUrl = "goveed1.space"
     override val requiresReferer = true
 
-    private val interceptor = CloudflareKiller()
+    // NO CloudflareKiller interceptor in this version.
 
     override suspend fun getUrl(url: String, referer: String?): MutableList<ExtractorLink>? {
-        // ================== V13 Change Start ==================
-        // Create a complete set of headers to fully mimic a real browser request.
-        // This includes the User-Agent, which was the missing piece.
-        val headers = mapOf(
+        // ================== V14 Change Start ==================
+        // We are removing the Cloudflare interceptor and relying ONLY on the correct headers.
+        // This is a more direct approach that mimics a standard browser.
+        val browserHeaders = mapOf(
             "User-Agent" to USER_AGENT,
-            "Referer" to referer!! // Referer must be the WeCima episode page
+            "Referer" to referer!!
         )
 
-        // Make the request using BOTH the Cloudflare interceptor AND the complete headers.
-        val response = app.get(url, interceptor = interceptor, headers = headers).document
-        // ================== V13 Change End ==================
+        // Make the request WITHOUT the interceptor.
+        val response = app.get(url, headers = browserHeaders).document
+        // ================== V14 Change End ==================
 
         val script = response.selectFirst("script:containsData(eval(function(p,a,c,k,e,d))")?.data()
-            ?: return null // If script is not found, exit.
+            ?: return null
 
         val unpacked = getAndUnpack(script)
         val videoUrl = Regex("""sources:\s*\[\{file:\s*"(.*?)"\}\]""").find(unpacked)?.groupValues?.getOrNull(1)
-            ?: return null // If video URL is not found, exit.
+            ?: return null
         
-        // This part correctly adds the headers needed by the video player itself.
         val playerHeaders = mapOf(
-            "Referer" to url, // The player's referer is the embed page URL
+            "Referer" to url,
             "User-Agent" to USER_AGENT
         )
         val headersJson = JSONObject(playerHeaders).toString()
