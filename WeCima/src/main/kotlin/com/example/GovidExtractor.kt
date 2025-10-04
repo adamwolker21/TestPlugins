@@ -11,20 +11,15 @@ class GovidExtractor : ExtractorApi() {
     override var mainUrl = "goveed1.space"
     override val requiresReferer = true
 
-    // NO CloudflareKiller interceptor in this version.
-
     override suspend fun getUrl(url: String, referer: String?): MutableList<ExtractorLink>? {
-        // ================== V14 Change Start ==================
-        // We are removing the Cloudflare interceptor and relying ONLY on the correct headers.
-        // This is a more direct approach that mimics a standard browser.
-        val browserHeaders = mapOf(
-            "User-Agent" to USER_AGENT,
-            "Referer" to referer!!
-        )
-
-        // Make the request WITHOUT the interceptor.
-        val response = app.get(url, headers = browserHeaders).document
-        // ================== V14 Change End ==================
+        // ================== V15 Change Start ==================
+        // The key is allowWebView = true.
+        // This tells CloudStream: "Try a normal request first. If you get blocked by
+        // something like a Cloudflare JavaScript challenge, open the page in a hidden
+        // WebView to solve it, and then give me the final HTML."
+        // This simulates a real browser visit perfectly.
+        val response = app.get(url, referer = referer, allowWebView = true).document
+        // ================== V15 Change End ==================
 
         val script = response.selectFirst("script:containsData(eval(function(p,a,c,k,e,d))")?.data()
             ?: return null
