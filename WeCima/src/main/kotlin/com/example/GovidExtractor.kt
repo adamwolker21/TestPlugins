@@ -2,6 +2,7 @@ package com.example.extractors
 
 import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.*
 
 import org.json.JSONObject
@@ -9,14 +10,16 @@ import org.json.JSONObject
 class GovidExtractor : ExtractorApi() {
     override var name = "GoVID"
     override var mainUrl = "goveed1.space"
-    override val requiresReferer = false // We will handle the referer manually
+    override val requiresReferer = true // The provider will pass the referer
+
+    // ================== V12 Change Start ==================
+    // Add the Cloudflare interceptor to bypass Cloudflare protection on the embed page.
+    private val interceptor = CloudflareKiller()
+    // ================== V12 Change End ==================
 
     override suspend fun getUrl(url: String, referer: String?): MutableList<ExtractorLink>? {
-        // ================== V11 Change Start ==================
-        // The server requires the correct Referer header to prevent redirection.
-        // We will explicitly add the episode page URL as the Referer.
-        val response = app.get(url, headers = mapOf("Referer" to referer!!)).document
-        // ================== V11 Change End ==================
+        // Use both the interceptor for Cloudflare and the referer for server-side protection.
+        val response = app.get(url, interceptor = interceptor, referer = referer).document
 
         val script = response.selectFirst("script:containsData(eval(function(p,a,c,k,e,d))")?.data()
             ?: return null
@@ -25,9 +28,8 @@ class GovidExtractor : ExtractorApi() {
         val videoUrl = Regex("""sources:\s*\[\{file:\s*"(.*?)"\}\]""").find(unpacked)?.groupValues?.getOrNull(1)
             ?: return null
         
-        // This part is correct for adding headers to the final video URL for playback.
         val headers = mapOf(
-            "Referer" to url, // The player needs the embed URL as a referer
+            "Referer" to url,
             "User-Agent" to USER_AGENT
         )
         val headersJson = JSONObject(headers).toString()
