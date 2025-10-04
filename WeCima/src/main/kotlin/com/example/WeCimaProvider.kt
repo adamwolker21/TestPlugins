@@ -147,26 +147,23 @@ class WeCimaProvider : MainAPI() {
     ): Boolean {
         val document = app.get(data, interceptor = interceptor).document
 
-        // ================== V9 Change Start ==================
-        // Corrected CSS selector to match the actual HTML structure from the user's provided file.
-        // This will now correctly find all server "buttons".
-        document.select("div.Watch--Servers--Single").apmap { serverBtn ->
-        // ================== V9 Change End ==================
+        // ================== V10 Change Start ==================
+        // Combined selector to handle BOTH HTML structures.
+        // The comma acts as an "OR", finding elements that match either the first selector OR the second.
+        document.select("ul.watch__server-list li btn, div.Watch--Servers--Single").apmap { serverBtn ->
+        // ================== V10 Change End ==================
             try {
                 val encodedUrl = serverBtn.attr("data-url")
                 if (encodedUrl.isBlank()) return@apmap
 
                 val decodedUrl = String(Base64.decode(encodedUrl, Base64.DEFAULT))
                 
-                // The logic to check the server name from the button text is correct.
-                // The problem was that the button itself was not being found.
                 val serverName = serverBtn.text()
 
                 when {
                     serverName.contains("GoVID", ignoreCase = true) -> {
                         GovidExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
-                    // Keep the old URL-based checks as a fallback.
                     decodedUrl.contains("wecima.now/run/watch/") -> {
                         WeCimaExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
