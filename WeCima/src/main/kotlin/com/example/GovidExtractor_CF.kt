@@ -6,7 +6,7 @@ import com.lagradost.cloudstream3.utils.*
 import org.json.JSONObject
 import android.util.Log
 
-// v30_CF: The Cloudflare-focused approach.
+// v31_CF: Build fix applied.
 class GovidExtractor_CF : ExtractorApi() {
     override var name = "GoVID_CF"
     override var mainUrl = "goveed1.space"
@@ -33,13 +33,13 @@ class GovidExtractor_CF : ExtractorApi() {
 
             Log.e(name, "SUCCESS! Extracted video URL: $videoUrl")
             val playerHeaders = mapOf("Referer" to url)
+            val finalUrl = "$videoUrl#headers=${JSONObject(playerHeaders)}"
+
             return mutableListOf(
                 newExtractorLink(
                     this.name,
                     this.name,
-                    "$videoUrl#headers=${JSONObject(playerHeaders)}",
-                    referer = referer ?: "",
-                    quality = Qualities.Unknown.value
+                    finalUrl
                 )
             )
         } catch (e: Exception) {
