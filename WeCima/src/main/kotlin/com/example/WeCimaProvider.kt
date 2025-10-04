@@ -8,7 +8,8 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import com.example.extractors.GeneralPackedExtractor
 import com.example.extractors.VidbomExtractor
 import com.example.extractors.WeCimaExtractor
-import com.example.extractors.GovidExtractor // V2 Addition: Import the new extractor
+import com.example.extractors.GovidExtractor // V8 Change: Import GovidExtractor
+
 import org.jsoup.nodes.Element
 
 class WeCimaProvider : MainAPI() {
@@ -152,19 +153,21 @@ class WeCimaProvider : MainAPI() {
 
                 val decodedUrl = String(Base64.decode(encodedUrl, Base64.DEFAULT))
                 
-                // Manual routing based on domain
+                // ================== V8 Change Start ==================
+                // We will check the server name from the button text, which is more reliable than the URL.
+                val serverName = serverBtn.text()
+
                 when {
+                    serverName.contains("GoVID", ignoreCase = true) -> {
+                        GovidExtractor().getUrl(decodedUrl, data)?.forEach(callback)
+                    }
+                    // Keep the old URL-based checks for other servers
                     decodedUrl.contains("wecima.now/run/watch/") -> {
                         WeCimaExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
                     decodedUrl.contains("vdbtm.shop") -> {
                         VidbomExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
-                    // ================== V2 Addition Start ==================
-                    decodedUrl.contains("goveed") -> { // Check for GoVID domain
-                        GovidExtractor().getUrl(decodedUrl, data)?.forEach(callback)
-                    }
-                    // =================== V2 Addition End ===================
                     decodedUrl.contains("1vid1shar.space") || decodedUrl.contains("dingtezuni.com") -> {
                         GeneralPackedExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
@@ -173,6 +176,7 @@ class WeCimaProvider : MainAPI() {
                         loadExtractor(decodedUrl, data, subtitleCallback, callback)
                     }
                 }
+                // ================== V8 Change End ==================
             } catch (e: Exception) {
                 // Ignore errors
             }
