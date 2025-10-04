@@ -6,7 +6,7 @@ import com.lagradost.cloudstream3.utils.*
 import org.json.JSONObject
 import android.util.Log
 
-// v30_Full: The combined, full-force approach.
+// v31_Full: Build fix applied.
 class GovidExtractor_Full : ExtractorApi() {
     override var name = "GoVID_Full"
     override var mainUrl = "goveed1.space"
@@ -43,13 +43,13 @@ class GovidExtractor_Full : ExtractorApi() {
 
             Log.e(name, "SUCCESS! Extracted video URL: $videoUrl")
             val playerHeaders = mapOf("Referer" to url)
+            val finalUrl = "$videoUrl#headers=${JSONObject(playerHeaders)}"
+
             return mutableListOf(
                 newExtractorLink(
                     this.name,
                     this.name,
-                    "$videoUrl#headers=${JSONObject(playerHeaders)}",
-                    referer = referer ?: "",
-                    quality = Qualities.Unknown.value
+                    finalUrl
                 )
             )
         } catch (e: Exception) {
