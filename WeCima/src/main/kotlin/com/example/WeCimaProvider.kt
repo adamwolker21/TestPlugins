@@ -7,7 +7,6 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.example.extractors.*
 import org.jsoup.nodes.Element
-import android.util.Log
 
 class WeCimaProvider : MainAPI() {
     override var mainUrl = "https://wecima.now/"
@@ -22,7 +21,7 @@ class WeCimaProvider : MainAPI() {
     )
 
     private val interceptor = CloudflareKiller()
-
+    
     // ... (No changes in main page, search, or load functions)
     override val mainPage = mainPageOf(
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
@@ -135,7 +134,7 @@ class WeCimaProvider : MainAPI() {
             }
         }
     }
-    
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -153,11 +152,10 @@ class WeCimaProvider : MainAPI() {
                 val serverName = (serverElement.selectFirst("strong")?.text() ?: serverElement.selectFirst("span")?.text())?.trim()?.lowercase()
                 val decodedUrl = String(Base64.decode(encodedUrl, Base64.DEFAULT))
 
-                // The final, logical approach
                 when {
-                    // For GoViD, let the app's master key handle it
+                    // Use our new powerful extractor for GoViD
                     serverName?.contains("govid") == true -> {
-                        loadExtractor(decodedUrl, data, subtitleCallback, callback)
+                        GovidExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
                     // For other servers, use our trusted custom extractors
                     decodedUrl.contains("wecima.now/run/watch/") -> {
