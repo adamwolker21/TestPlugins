@@ -8,8 +8,7 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import com.example.extractors.GeneralPackedExtractor
 import com.example.extractors.VidbomExtractor
 import com.example.extractors.WeCimaExtractor
-import com.example.extractors.GovidExtractor
-
+import com.example.extractors.GovidExtractor // V16: Import GovidExtractor
 import org.jsoup.nodes.Element
 
 class WeCimaProvider : MainAPI() {
@@ -26,7 +25,6 @@ class WeCimaProvider : MainAPI() {
 
     private val interceptor = CloudflareKiller()
 
-    // ... (MainPage and other functions remain the same)
     override val mainPage = mainPageOf(
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/7-series-english-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "مسلسلات أجنبي",
@@ -147,40 +145,50 @@ class WeCimaProvider : MainAPI() {
     ): Boolean {
         val document = app.get(data, interceptor = interceptor).document
 
-        // ================== V10 Change Start ==================
-        // Combined selector to handle BOTH HTML structures.
-        // The comma acts as an "OR", finding elements that match either the first selector OR the second.
+        // ================== V16 Change Start ==================
+        // This selector now correctly finds the server buttons in BOTH HTML layouts.
         document.select("ul.watch__server-list li btn, div.Watch--Servers--Single").apmap { serverBtn ->
-        // ================== V10 Change End ==================
             try {
+                // This logic robustly extracts server name and URL from either layout.
+                val serverName = serverBtn.selectFirst("strong")?.text() // Layout 1
+                                 ?: serverBtn.selectFirst("span.ServerName")?.text() // Layout 2
+                                 ?: return@apmap
+                
+                // Layout 1 uses 'data-url', which is a full Base64 encoded URL.
+                // We assume Layout 2 would have a similar attribute if it's for streaming.
+                // If it's a 'data-id', it might require a different handling logic,
+                // but for now, we focus on the provided HTML structures.
                 val encodedUrl = serverBtn.attr("data-url")
                 if (encodedUrl.isBlank()) return@apmap
 
                 val decodedUrl = String(Base64.decode(encodedUrl, Base64.DEFAULT))
                 
-                val serverName = serverBtn.text()
-
+                // The routing logic is now based on the extracted serverName.
                 when {
-                    serverName.contains("GoVID", ignoreCase = true) -> {
-                        GovidExtractor().getUrl(decodedUrl, data)?.forEach(callback)
-                    }
-                    decodedUrl.contains("wecima.now/run/watch/") -> {
+                    serverName.contains("وي سيما", true) -> {
                         WeCimaExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
-                    decodedUrl.contains("vdbtm.shop") -> {
+                    serverName.contains("VIDBOM", true) -> {
                         VidbomExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
-                    decodedUrl.contains("1vid1shar.space") || decodedUrl.contains("dingtezuni.com") -> {
+                    serverName.contains("GoViD", true) -> {
+                        GovidExtractor().getUrl(decodedUrl, data)?.forEach(callback)
+                    }
+                    serverName.contains("vidshare", true) || serverName.contains("EarnvidS", true) -> {
+                         // Vidshare and Earnvids seem to use the same packed extractor
                         GeneralPackedExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
+                    // Add other servers as needed...
                     else -> {
+                        // Fallback for any other servers not explicitly handled
                         loadExtractor(decodedUrl, data, subtitleCallback, callback)
                     }
                 }
             } catch (e: Exception) {
-                // Ignore errors
+                // Ignore errors to prevent one broken server from stopping the others.
             }
         }
+        // ================== V16 Change End ==================
         return true
     }
 }
