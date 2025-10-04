@@ -10,12 +10,10 @@ class GovidExtractor : ExtractorApi() {
     override var mainUrl = "goveed1.space"
     override val requiresReferer = true
 
-    // Keep the CloudflareKiller, it's essential
     private val interceptor = CloudflareKiller()
 
     override suspend fun getUrl(url: String, referer: String?): MutableList<ExtractorLink>? {
         try {
-            // V23: Perfectly mimic the browser's request headers to bypass advanced Cloudflare
             val browserHeaders = mapOf(
                 "Referer" to referer!!,
                 "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
@@ -26,22 +24,22 @@ class GovidExtractor : ExtractorApi() {
                 "Upgrade-Insecure-Requests" to "1"
             )
 
-            // Use both the interceptor AND the custom headers for maximum effectiveness
             val response = app.get(url, headers = browserHeaders, interceptor = interceptor).document
-
             val script = response.selectFirst("script:containsData(eval(function(p,a,c,k,e,d))")?.data()
-                ?: return null // Fail silently if script not found
+                ?: return null
 
             val unpacked = getAndUnpack(script)
             if (unpacked.isBlank()) return null
 
-            val videoUrl = Regex("""sources:\s*\[\{file:\s*"(.*?)"\}\]""").find(unpacked)?.groupValues?.getOrNull(1)
+            var videoUrl = Regex("""sources:\s*\[\{file:\s*"(.*?)"\}\]""").find(unpacked)?.groupValues?.getOrNull(1)
                 ?: return null
 
-            // The final video URL requires its own referer (the embed page url)
-            val playerHeaders = mapOf(
-                "Referer" to url
-            )
+            // V24 FIX: Handle relative URLs that start with "//"
+            if (videoUrl.startsWith("//")) {
+                videoUrl = "https:$videoUrl"
+            }
+
+            val playerHeaders = mapOf("Referer" to url)
             val headersJson = JSONObject(playerHeaders).toString()
             val finalUrl = "$videoUrl#headers=$headersJson"
 
@@ -53,7 +51,6 @@ class GovidExtractor : ExtractorApi() {
                 )
             )
         } catch (e: Exception) {
-            // If an error occurs, print it to the logs but don't crash the app
             e.printStackTrace()
             return null
         }
