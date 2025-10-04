@@ -1,44 +1,36 @@
 package com.example.extractors
 
 import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.*
 import org.json.JSONObject
 
+// v25: The final, simplified version. A direct clone of the successful Vidbom logic.
 class GovidExtractor : ExtractorApi() {
     override var name = "GoVID"
     override var mainUrl = "goveed1.space"
-    override val requiresReferer = true
-
-    private val interceptor = CloudflareKiller()
+    override val requiresReferer = true // The referer is crucial
 
     override suspend fun getUrl(url: String, referer: String?): MutableList<ExtractorLink>? {
         try {
-            val browserHeaders = mapOf(
-                "Referer" to referer!!,
-                "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-                "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36",
-                "Sec-CH-UA" to "\"Chromium\";v=\"137\", \"Not/A)Brand\";v=\"24\"",
-                "Sec-CH-UA-Mobile" to "?1",
-                "Sec-CH-UA-Platform" to "\"Android\"",
-                "Upgrade-Insecure-Requests" to "1"
-            )
+            // No complex headers, no CloudflareKiller. Just a clean, simple request.
+            val response = app.get(url, referer = referer).document
 
-            val response = app.get(url, headers = browserHeaders, interceptor = interceptor).document
             val script = response.selectFirst("script:containsData(eval(function(p,a,c,k,e,d))")?.data()
-                ?: return null
+                ?: return null // If script is not found, fail silently.
 
             val unpacked = getAndUnpack(script)
             if (unpacked.isBlank()) return null
 
+            // Use the same robust regex that works for Vidbom and other sources
             var videoUrl = Regex("""sources:\s*\[\{file:\s*"(.*?)"\}\]""").find(unpacked)?.groupValues?.getOrNull(1)
                 ?: return null
 
-            // V24 FIX: Handle relative URLs that start with "//"
+            // The small but critical fix for protocol-relative URLs
             if (videoUrl.startsWith("//")) {
                 videoUrl = "https:$videoUrl"
             }
 
+            // The final video URL requires its own referer (the embed page url)
             val playerHeaders = mapOf("Referer" to url)
             val headersJson = JSONObject(playerHeaders).toString()
             val finalUrl = "$videoUrl#headers=$headersJson"
@@ -51,6 +43,7 @@ class GovidExtractor : ExtractorApi() {
                 )
             )
         } catch (e: Exception) {
+            // If any error occurs, do not crash the app.
             e.printStackTrace()
             return null
         }
