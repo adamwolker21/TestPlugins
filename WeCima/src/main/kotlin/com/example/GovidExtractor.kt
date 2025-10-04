@@ -5,22 +5,19 @@ import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.*
 import org.json.JSONObject
 
-// v27: The true final version. This mimics the browser's fingerprint from the user's screenshot.
+// v28: The final, logical conclusion. No "warm-up" call, just one direct, powerful request.
 class GovidExtractor : ExtractorApi() {
     override var name = "GoVID"
     override var mainUrl = "goveed1.space"
     override val requiresReferer = true
 
-    // We need the Cloudflare interceptor to get the initial cookies.
     private val interceptor = CloudflareKiller()
 
     override suspend fun getUrl(url: String, referer: String?): MutableList<ExtractorLink>? {
         try {
-            // This is the key: we "warm up" the interceptor by visiting the referer page first.
-            // This allows CloudflareKiller to solve the challenge and get the necessary cookies.
-            app.get(referer!!, interceptor = interceptor)
-
-            // Now, we make the actual request to the embed URL, sending the complete browser fingerprint.
+            // No more "warm-up". We make one direct request to the embed URL,
+            // providing the interceptor and all necessary headers at once.
+            // This is the cleanest way to solve the challenge.
             val response = app.get(url,
                 interceptor = interceptor,
                 referer = referer,
