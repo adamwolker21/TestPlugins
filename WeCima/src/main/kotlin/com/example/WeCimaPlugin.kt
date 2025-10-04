@@ -11,7 +11,7 @@ import com.example.extractors.WeCimaExtractor
 class WeCimaPlugin: Plugin() {
     override fun load(context: Context) {
         registerMainAPI(WeCimaProvider())
-        // Register all our custom extractors
+        // Register our working custom extractors
         registerExtractorAPI(WeCimaExtractor())
         registerExtractorAPI(VidbomExtractor())
         registerExtractorAPI(GeneralPackedExtractor())
