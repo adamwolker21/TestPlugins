@@ -3,10 +3,12 @@ package com.example.extractors
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.network.CloudflareKiller
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import org.json.JSONObject
 
 // The final, definitive extractor for the WeCima server.
 // This version is built on precise user-provided cURL and HTML data.
+// Build fixed for older CloudStream versions.
 class WeCimaExtractor : ExtractorApi() {
     override var name = "WeCima"
     override var mainUrl = "https://wecima.now"
@@ -19,7 +21,7 @@ class WeCimaExtractor : ExtractorApi() {
         // Step 1: Bypass Cloudflare and get the real embed page HTML.
         // We pass the episode page URL as the referer to pass the JavaScript check.
         val doc = app.get(url, referer = referer, interceptor = interceptor).document
-        
+
         // Step 2: Find the script tag containing the video sources.
         val script = doc.selectFirst("script:containsData(const sources)")?.data()
             ?: return null // If script is not found, fail silently.
@@ -27,7 +29,7 @@ class WeCimaExtractor : ExtractorApi() {
         // Step 3: Extract the JSON array of sources using Regex.
         val sourcesJson = Regex("""const sources\s*=\s*(\[.*?\]);""").find(script)?.groupValues?.getOrNull(1)
             ?: return null
-            
+
         // Step 4: Parse the JSON string into a list of VideoSource objects.
         val sources = tryParseJson<List<VideoSource>>(sourcesJson) ?: return null
 
@@ -38,13 +40,13 @@ class WeCimaExtractor : ExtractorApi() {
                 // We pass it in the URL hash for the player to use.
                 val playerHeaders = mapOf("Referer" to mainUrl)
                 val finalUrl = "$videoUrl#headers=${JSONObject(playerHeaders)}"
-                
-                newExtractorLink(
-                    this.name,
-                    "${this.name} - ${source.label}", // e.g., "WeCima - 720p WEBRip"
-                    finalUrl,
-                    referer ?: mainUrl,
-                    getQualityFromName(source.size.toString()),
+
+                ExtractorLink(
+                    source = this.name,
+                    name = "${this.name} - ${source.label}", // e.g., "WeCima - 720p WEBRip"
+                    url = finalUrl,
+                    referer = referer ?: mainUrl,
+                    quality = getQualityFromName(source.size.toString()),
                 )
             }
         }
