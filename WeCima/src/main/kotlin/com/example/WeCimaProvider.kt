@@ -133,6 +133,7 @@ class WeCimaProvider : MainAPI() {
         }
     }
 
+    @Suppress("DEPRECATION")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -166,15 +167,15 @@ class WeCimaProvider : MainAPI() {
                     }
 
                     val headers = mapOf("Referer" to mainUrl)
+                    val urlWithHeaders = "$finalUrl#headers=${JSONObject(headers)}"
 
                     callback(
-                        newExtractorLink(
+                        ExtractorLink(
                             source = this.name,
                             name = "${this.name} - $qualityText",
-                            url = finalUrl,
+                            url = urlWithHeaders,
                             referer = mainUrl,
-                            quality = quality,
-                            headers = headers
+                            quality = quality
                         )
                     )
                 }
