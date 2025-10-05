@@ -3,7 +3,6 @@ package com.example
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.json.JSONObject
 import org.jsoup.nodes.Element
@@ -26,7 +25,7 @@ class WeCimaProvider : MainAPI() {
     override val mainPage = mainPageOf(
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/7-series-english-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "مسلسلات أجنبي",
-        "/category/%d8%a3%d9%81%d9%84%d8%a7%d9%85/10-movies-english-%d8%a3%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "أفلام أجنبي"
+        "/category/%d8%a3%d9%81%d9%84%d8%a7%d9%85/10-movies-english-%d8%a7%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "أفلام أجنبي"
     )
 
     override suspend fun getMainPage(
@@ -159,19 +158,14 @@ class WeCimaProvider : MainAPI() {
                     val finalUrl = response.headers["Location"] ?: return@apmap
                     val qualityText = link.select("resolution").text().trim()
 
-                    val headers = mapOf(
-                        "Referer" to mainUrl,
-                        "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"
-                    )
+                    val headers = mapOf("Referer" to mainUrl)
                     val urlWithHeaders = "$finalUrl#headers=${JSONObject(headers)}"
 
                     callback(
                         newExtractorLink(
                             source = this.name,
                             name = "${this.name} - $qualityText",
-                            url = urlWithHeaders,
-                            referer = mainUrl,
-                            quality = getQualityFromName(qualityText)
+                            url = urlWithHeaders
                         )
                     )
                 }
