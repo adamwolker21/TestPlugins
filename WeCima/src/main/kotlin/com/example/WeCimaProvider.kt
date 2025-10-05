@@ -23,7 +23,7 @@ class WeCimaProvider : MainAPI() {
     private val interceptor = CloudflareKiller()
 
     override val mainPage = mainPageOf(
-        "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
+        "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%bA%d9%88%d9%8A%d8%a9/" to "مسلسلات آسيوية",
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/7-series-english-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "مسلسلات أجنبي",
         "/category/%d8%a3%d9%81%d9%84%d8%a7%d9%85/10-movies-english-%d8%a7%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "أفلام أجنبي"
     )
@@ -135,18 +135,8 @@ class WeCimaProvider : MainAPI() {
     }
 
     // This function ensures compatibility with the user's build environment.
-    // We use the deprecated ExtractorLink constructor because newExtractorLink is not available.
+    // It uses the deprecated ExtractorLink constructor because newExtractorLink is not available.
     @Suppress("DEPRECATION")
-    private fun newLink(
-        source: String,
-        name: String,
-        url: String,
-        referer: String,
-        quality: Int
-    ): ExtractorLink {
-         return ExtractorLink(source, name, url, referer, quality)
-    }
-
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -171,6 +161,8 @@ class WeCimaProvider : MainAPI() {
                     val finalUrl = response.headers["Location"] ?: return@apmap
 
                     val qualityText = link.select("resolution").text().trim()
+                    // The function getQualityFromName is not available in this version.
+                    // We will use a manual mapping.
                     val quality = when {
                         qualityText.contains("1080") -> Qualities.P1080.value
                         qualityText.contains("720") -> Qualities.P720.value
@@ -183,12 +175,13 @@ class WeCimaProvider : MainAPI() {
                     val urlWithHeaders = "$finalUrl#headers=${JSONObject(headers)}"
 
                     callback(
-                        newLink(
+                        ExtractorLink(
                             this.name,
                             "${this.name} - $qualityText",
                             urlWithHeaders,
-                            mainUrl,
+                            mainUrl, // referer
                             quality,
+                            isM3u8 = finalUrl.contains(".m3u8")
                         )
                     )
                 }
