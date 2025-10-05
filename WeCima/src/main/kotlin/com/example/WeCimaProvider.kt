@@ -89,7 +89,21 @@ class WeCimaProvider : MainAPI() {
 
         val plot = document.selectFirst("div.story__content")?.text()?.trim()
         val tags = document.select("li:has(span:contains(النوع)) p a").map { it.text() }
-        val year = document.selectFirst("h1[itemprop=name] a.unline")?.text()?.toIntOrNull()
+
+        // Updated year extraction
+        val year = document.selectFirst("li:has(span:contains(السنة)) p a")?.text()?.toIntOrNull()
+            ?: document.selectFirst("h1[itemprop=name] a.unline")?.text()?.toIntOrNull()
+
+        // New: Extract duration
+        val duration = document.selectFirst("li:has(span:contains(المدة)) p")
+            ?.text()?.filter { it.isDigit() }?.toIntOrNull()
+    
+        // New: Extract rating and convert to a 1-1000 scale
+        val rating = document.selectFirst("li:has(span:contains(التقييم)) p")
+            ?.text()?.let {
+                Regex("""(\d+\.?\d*)""").find(it)?.groupValues?.getOrNull(1)?.toFloatOrNull()?.times(100)
+                    ?.toInt()
+            }
 
         val seasons = document.select("div.seasons__list li a")
         val isTvSeries = seasons.isNotEmpty() || document.select("div.episodes__list").isNotEmpty()
@@ -127,11 +141,21 @@ class WeCimaProvider : MainAPI() {
             }
             
             return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.distinctBy { it.data }.sortedWith(compareBy({ it.season }, { it.episode }))) {
-                this.posterUrl = posterUrl; this.plot = plot; this.year = year; this.tags = tags
+                this.posterUrl = posterUrl
+                this.plot = plot
+                this.year = year
+                this.tags = tags
+                this.rating = rating
+                this.duration = duration
             }
         } else {
             return newMovieLoadResponse(title, url, TvType.Movie, url) {
-                this.posterUrl = posterUrl; this.plot = plot; this.year = year; this.tags = tags
+                this.posterUrl = posterUrl
+                this.plot = plot
+                this.year = year
+                this.tags = tags
+                this.rating = rating
+                this.duration = duration
             }
         }
     }
