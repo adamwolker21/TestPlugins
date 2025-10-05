@@ -7,8 +7,8 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import org.json.JSONObject
 
 // The final, definitive extractor for the WeCima server.
-// This version intelligently follows redirects to extract the final video URL.
-// Build fixed for the user's specific CloudStream environment.
+// This version is built on precise user-provided cURL data and correctly
+// follows the redirect chain while preserving the necessary Referer header.
 class WeCimaExtractor : ExtractorApi() {
     override var name = "WeCima"
     override var mainUrl = "https://wecima.now"
@@ -19,24 +19,27 @@ class WeCimaExtractor : ExtractorApi() {
     // This function will follow the redirect chain to get the final video URL
     private suspend fun getFinalUrl(url: String, referer: String): String {
         try {
+            // We ask the app to perform a GET request but not to follow redirects automatically.
             val response = app.get(
                 url,
                 referer = referer,
                 interceptor = interceptor,
-                allowRedirects = false // We need to handle redirects manually
+                allowRedirects = false // This is crucial.
             )
-            // Check if the response is a redirect (HTTP status 3xx)
+            // If the server responds with a 3xx status, it's a redirect.
+            // The final URL is in the 'Location' header.
             if (response.code in 300..399) {
-                // The final URL is in the 'Location' header
                 return response.headers["Location"] ?: url
             }
             return url
         } catch (e: Exception) {
+            // In case of error, return the original URL to avoid crashing.
             return url
         }
     }
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
+        // Step 1: Get the embed page, bypassing Cloudflare.
         val doc = app.get(url, referer = referer, interceptor = interceptor).document
         val script = doc.selectFirst("script:containsData(const sources)")?.data()
             ?: return null
@@ -46,16 +49,19 @@ class WeCimaExtractor : ExtractorApi() {
 
         val sources = tryParseJson<List<VideoSource>>(sourcesJson) ?: return null
 
-        // Using map instead of apmap for compatibility
+        // Process each source (e.g., 720p, 480p) found on the page.
         return sources.mapNotNull { source ->
             source.src?.let { intermediateUrl ->
-                // This is a suspend function call, so it needs to be handled correctly
+                // Step 2: Follow the redirect from the intermediate URL to get the final video URL.
+                // We must use the mainUrl as the referer for this step.
                 val finalVideoUrl = getFinalUrl(intermediateUrl, mainUrl)
 
-                // The final video stream requires the main site as a referer to play
+                // Step 3: Prepare the final link for the player, ensuring the correct Referer is passed.
+                // The video server itself requires "https://wecima.now/" as the Referer.
                 val playerHeaders = mapOf("Referer" to mainUrl)
                 val urlWithHeaders = "$finalVideoUrl#headers=${JSONObject(playerHeaders)}"
 
+                // Create the extractor link with all necessary info.
                 newExtractorLink(
                     source = this.name,
                     name = "${this.name} - ${source.label ?: source.size}",
@@ -65,6 +71,7 @@ class WeCimaExtractor : ExtractorApi() {
         }
     }
 
+    // A data class to easily parse the JSON from the "sources" variable.
     private data class VideoSource(
         val src: String? = null,
         val type: String? = null,
