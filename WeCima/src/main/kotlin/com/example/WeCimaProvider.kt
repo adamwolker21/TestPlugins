@@ -134,8 +134,6 @@ class WeCimaProvider : MainAPI() {
         }
     }
 
-    // This function ensures compatibility with the user's build environment.
-    // It uses the deprecated ExtractorLink constructor because newExtractorLink is not available.
     @Suppress("DEPRECATION")
     override suspend fun loadLinks(
         data: String,
