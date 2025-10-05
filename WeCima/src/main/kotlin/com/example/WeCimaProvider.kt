@@ -134,6 +134,8 @@ class WeCimaProvider : MainAPI() {
         }
     }
 
+    // This function ensures compatibility with the user's build environment.
+    // It uses the correct constructor for ExtractorLink based on previous build errors.
     @Suppress("DEPRECATION")
     override suspend fun loadLinks(
         data: String,
@@ -176,8 +178,7 @@ class WeCimaProvider : MainAPI() {
                             name = "${this.name} - $qualityText",
                             url = urlWithHeaders,
                             referer = mainUrl,
-                            quality = quality,
-                            isM3u8 = finalUrl.contains(".m3u8")
+                            quality = quality
                         )
                     )
                 }
