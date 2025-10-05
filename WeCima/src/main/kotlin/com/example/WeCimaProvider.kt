@@ -4,7 +4,6 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
-import org.json.JSONObject
 import org.jsoup.nodes.Element
 
 class WeCimaProvider : MainAPI() {
@@ -34,7 +33,7 @@ class WeCimaProvider : MainAPI() {
         val url = if (page == 1) {
             "$mainUrl${request.data.removePrefix("/")}"
         } else {
-            "$mainUrl${request.data.removePrefix("/")}?page=$page"
+            "$mainUrl${request.data.removePrefix("/")}page/$page/"
         }
         val document = app.get(url, interceptor = interceptor).document
         val home = document.select("div.media-card").mapNotNull {
@@ -45,7 +44,7 @@ class WeCimaProvider : MainAPI() {
 
     private fun Element.toSearchResult(): SearchResponse? {
         val linkElement = this.selectFirst("a") ?: return null
-        val href = linkElement.attr("href")
+        val href = fixUrl(linkElement.attr("href"))
         val title = this.selectFirst("h2[itemprop=name]")?.text() ?: return null
 
         val style = this.selectFirst("span.media-card__bg")?.attr("style")
@@ -53,7 +52,8 @@ class WeCimaProvider : MainAPI() {
             Regex("""url\(['"]?(.*?)['"]?\)""").find(it)?.groupValues?.get(1)
         } ?: this.selectFirst("meta[itemprop=thumbnailUrl]")?.attr("content")
 
-        val isSeries = title.contains("مسلسل") || title.contains("برنامج") || title.contains("موسم")
+        val isSeries = href.contains("/series/") || href.contains("/episode/") || 
+                      title.contains("مسلسل") || title.contains("موسم") || title.contains("حلقة")
 
         return if (isSeries) {
             newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
@@ -79,7 +79,7 @@ class WeCimaProvider : MainAPI() {
 
         val title = document.selectFirst("h1[itemprop=name]")?.ownText()?.trim() ?: return null
 
-        val posterStyle = document.selectFirst("wecima.media-entry--hero")?.attr("style")
+        val posterStyle = document.selectFirst(".media-entry--hero")?.attr("style")
         val posterUrl = posterStyle?.let {
             Regex("""url\(['"]?(.*?)['"]?\)""").find(it)?.groupValues?.get(1)
         }
@@ -89,21 +89,23 @@ class WeCimaProvider : MainAPI() {
         val year = document.selectFirst("h1[itemprop=name] a.unline")?.text()?.toIntOrNull()
 
         val seasons = document.select("div.seasons__list li a")
-        val isTvSeries = seasons.isNotEmpty() || document.select("div.episodes__list").isNotEmpty()
+        val episodesList = document.select("div.episodes__list a")
+        val isTvSeries = seasons.isNotEmpty() || episodesList.isNotEmpty()
 
         if (isTvSeries) {
             val episodes = mutableListOf<Episode>()
+            
             if (seasons.isNotEmpty()) {
-                seasons.apmap { seasonLink ->
-                    val seasonUrl = seasonLink.attr("href")
+                seasons.forEach { seasonLink ->
+                    val seasonUrl = fixUrl(seasonLink.attr("href"))
                     val seasonName = seasonLink.text()
-                    val seasonNum = Regex("""\d+""").find(seasonName)?.value?.toIntOrNull()
+                    val seasonNum = Regex("""\d+""").find(seasonName)?.value?.toIntOrNull() ?: 1
 
                     val seasonDoc = app.get(seasonUrl, interceptor = interceptor).document
-                    seasonDoc.select("div.episodes__list > a").forEach { epElement ->
-                        val epHref = epElement.attr("href")
-                        val epTitle = epElement.selectFirst("episodetitle.episode__title")?.text() ?: ""
-                        val epNum = Regex("""\d+""").find(epTitle)?.value?.toIntOrNull()
+                    seasonDoc.select("div.episodes__list a").forEach { epElement ->
+                        val epHref = fixUrl(epElement.attr("href"))
+                        val epTitle = epElement.selectFirst(".episode__title")?.text() ?: "الحلقة ${episodes.size + 1}"
+                        val epNum = Regex("""\d+""").find(epTitle)?.value?.toIntOrNull() ?: (episodes.size + 1)
 
                         episodes.add(
                             newEpisode(epHref) {
@@ -115,25 +117,37 @@ class WeCimaProvider : MainAPI() {
                     }
                 }
             } else {
-                document.select("div.episodes__list > a").forEach { epElement ->
-                    val epHref = epElement.attr("href")
-                    val epTitle = epElement.selectFirst("episodetitle.episode__title")?.text() ?: ""
-                    val epNum = Regex("""\d+""").find(epTitle)?.value?.toIntOrNull()
-                    episodes.add(newEpisode(epHref) { name = epTitle; season = 1; episode = epNum })
+                episodesList.forEach { epElement ->
+                    val epHref = fixUrl(epElement.attr("href"))
+                    val epTitle = epElement.selectFirst(".episode__title")?.text() ?: "الحلقة ${episodes.size + 1}"
+                    val epNum = Regex("""\d+""").find(epTitle)?.value?.toIntOrNull() ?: (episodes.size + 1)
+                    
+                    episodes.add(
+                        newEpisode(epHref) { 
+                            name = epTitle
+                            season = 1
+                            episode = epNum 
+                        }
+                    )
                 }
             }
 
-            return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.distinctBy { it.data }.sortedWith(compareBy({ it.season }, { it.episode }))) {
-                this.posterUrl = posterUrl; this.plot = plot; this.year = year; this.tags = tags
+            return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+                this.posterUrl = posterUrl
+                this.plot = plot
+                this.year = year
+                this.tags = tags
             }
         } else {
             return newMovieLoadResponse(title, url, TvType.Movie, url) {
-                this.posterUrl = posterUrl; this.plot = plot; this.year = year; this.tags = tags
+                this.posterUrl = posterUrl
+                this.plot = plot
+                this.year = year
+                this.tags = tags
             }
         }
     }
 
-    @Suppress("DEPRECATION")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -142,10 +156,15 @@ class WeCimaProvider : MainAPI() {
     ): Boolean {
         val document = app.get(data, interceptor = interceptor).document
 
-        document.select("ul.downloads__list li a").apmap { link ->
+        document.select("ul.downloads__list li a").forEach { link ->
             try {
-                val downloadUrl = link.attr("href")
-                if (downloadUrl.isBlank()) return@apmap
+                var downloadUrl = link.attr("href")
+                if (downloadUrl.isBlank()) return@forEach
+
+                // إذا كان الرابط نسبيًا، أضف العنوان الأساسي
+                if (downloadUrl.startsWith("/")) {
+                    downloadUrl = mainUrl.removeSuffix("/") + downloadUrl
+                }
 
                 val response = app.get(
                     downloadUrl,
@@ -154,35 +173,42 @@ class WeCimaProvider : MainAPI() {
                     allowRedirects = false
                 )
 
+                // معالجة التوجيهات
+                var finalUrl = downloadUrl
                 if (response.code in 300..399) {
-                    val finalUrl = response.headers["Location"] ?: return@apmap
-
-                    val qualityText = link.select("resolution").text().trim()
-                    val quality = when {
-                        qualityText.contains("1080") -> Qualities.P1080.value
-                        qualityText.contains("720") -> Qualities.P720.value
-                        qualityText.contains("480") -> Qualities.P480.value
-                        qualityText.contains("360") -> Qualities.P360.value
-                        else -> Qualities.Unknown.value
-                    }
-
-                    val headers = mapOf("Referer" to mainUrl)
-                    val urlWithHeaders = "$finalUrl#headers=${JSONObject(headers)}"
-
-                    callback(
-                        ExtractorLink(
-                            source = this.name,
-                            name = "${this.name} - $qualityText",
-                            url = urlWithHeaders,
-                            referer = mainUrl,
-                            quality = quality
-                        )
-                    )
+                    finalUrl = response.headers["Location"] ?: downloadUrl
                 }
+
+                val qualityText = link.select("span.resolution").text().trim()
+                val quality = when {
+                    qualityText.contains("1080") -> Qualities.P1080.value
+                    qualityText.contains("720") -> Qualities.P720.value
+                    qualityText.contains("480") -> Qualities.P480.value
+                    qualityText.contains("360") -> Qualities.P360.value
+                    else -> Qualities.Unknown.value
+                }
+
+                // استخدام المُنشئ الأساسي لـ ExtractorLink
+                callback(
+                    ExtractorLink(
+                        source = name,
+                        name = "$name - $qualityText",
+                        url = finalUrl,
+                        referer = mainUrl,
+                        quality = quality,
+                        isM3u8 = finalUrl.contains(".m3u8")
+                    )
+                )
+
             } catch (e: Exception) {
-                // Ignore errors
+                e.printStackTrace()
             }
         }
+        
         return true
+    }
+
+    private fun fixUrl(url: String): String {
+        return if (url.startsWith("http")) url else mainUrl.removeSuffix("/") + "/" + url.removePrefix("/")
     }
 }
