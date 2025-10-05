@@ -6,8 +6,9 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.json.JSONObject
 import org.jsoup.nodes.Element
+import java.net.URLEncoder
 
-// Final version equipping the video player with the full, correct browser fingerprint.
+// Final version applying the URL-encoding fix directly to the provider.
 class WeCimaProvider : MainAPI() {
     override var mainUrl = "https://wecima.now/"
     override var name = "WeCima"
@@ -158,19 +159,21 @@ class WeCimaProvider : MainAPI() {
                     val finalUrl = response.headers["Location"] ?: return@apmap
                     val qualityText = link.select("resolution").text().trim()
 
-                    // THE FINAL ARMOR: Provide the player with a complete and authentic browser fingerprint.
+                    // THE FINAL FIX: URL-encode the headers JSON
+                    // This "translates" the key into a safe format for the player.
                     val headers = mapOf(
                         "Referer" to mainUrl,
                         "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"
                     )
-                    val urlWithHeaders = "$finalUrl#headers=${JSONObject(headers)}"
-                    
-                    // Use the simple newExtractorLink to prevent build errors
+                    val headersJsonString = JSONObject(headers).toString()
+                    val encodedHeaders = URLEncoder.encode(headersJsonString, "UTF-8")
+                    val urlWithHeaders = "$finalUrl#headers=$encodedHeaders"
+
                     callback(
                         newExtractorLink(
-                            this.name,
-                            "${this.name} - $qualityText",
-                            urlWithHeaders,
+                            source = this.name,
+                            name = "${this.name} - $qualityText",
+                            url = urlWithHeaders
                         )
                     )
                 }
