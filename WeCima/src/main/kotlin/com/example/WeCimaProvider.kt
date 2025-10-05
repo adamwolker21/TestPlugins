@@ -5,7 +5,7 @@ import com.lagradost.cloudstream3.network.CloudflareKiller
 import org.json.JSONObject
 import org.jsoup.nodes.Element
 
-// Final version using the direct download links strategy, with a build-proof link generation method.
+// Final version using the direct download links strategy, with all build issues resolved.
 class WeCimaProvider : MainAPI() {
     override var mainUrl = "https://wecima.now/"
     override var name = "WeCima"
@@ -141,10 +141,10 @@ class WeCimaProvider : MainAPI() {
         val document = app.get(data, interceptor = interceptor).document
 
         // Strategy: Extract from the reliable "Download Links" section
-        document.select("ul.downloads__list li a").forEach { link ->
+        document.select("ul.downloads__list li a").apmap { link ->
             try {
                 val downloadUrl = fixUrl(link.attr("href"))
-                if (downloadUrl.isBlank()) return@forEach
+                if (downloadUrl.isBlank()) return@apmap
 
                 // Get the final redirected URL
                 val response = app.get(
@@ -155,7 +155,7 @@ class WeCimaProvider : MainAPI() {
                 )
 
                 if (response.code in 300..399) {
-                    val finalUrl = response.headers["Location"] ?: return@forEach
+                    val finalUrl = response.headers["Location"] ?: return@apmap
 
                     val qualityText = link.select("resolution").text().trim()
                     
