@@ -8,6 +8,7 @@ import org.json.JSONObject
 
 // The final, definitive extractor for the WeCima server.
 // This version intelligently follows redirects to extract the final video URL.
+// Build fixed for the user's specific CloudStream environment.
 class WeCimaExtractor : ExtractorApi() {
     override var name = "WeCima"
     override var mainUrl = "https://wecima.now"
@@ -17,20 +18,22 @@ class WeCimaExtractor : ExtractorApi() {
 
     // This function will follow the redirect chain to get the final video URL
     private suspend fun getFinalUrl(url: String, referer: String): String {
-        val response = app.get(
-            url,
-            referer = referer,
-            interceptor = interceptor,
-            allowRedirects = false // We need to handle redirects manually to capture the final URL
-        )
-
-        // Check if the response is a redirect (HTTP status 3xx)
-        if (response.code in 300..399) {
-            // The final URL is in the 'Location' header
-            return response.headers["Location"] ?: url
+        try {
+            val response = app.get(
+                url,
+                referer = referer,
+                interceptor = interceptor,
+                allowRedirects = false // We need to handle redirects manually
+            )
+            // Check if the response is a redirect (HTTP status 3xx)
+            if (response.code in 300..399) {
+                // The final URL is in the 'Location' header
+                return response.headers["Location"] ?: url
+            }
+            return url
+        } catch (e: Exception) {
+            return url
         }
-        // If it's not a redirect, it might be the final URL itself
-        return url
     }
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
@@ -43,9 +46,10 @@ class WeCimaExtractor : ExtractorApi() {
 
         val sources = tryParseJson<List<VideoSource>>(sourcesJson) ?: return null
 
-        return sources.apmap { source -> // Using apmap for concurrent requests
+        // Using map instead of apmap for compatibility
+        return sources.mapNotNull { source ->
             source.src?.let { intermediateUrl ->
-                // Follow the redirect to get the true, final video URL
+                // This is a suspend function call, so it needs to be handled correctly
                 val finalVideoUrl = getFinalUrl(intermediateUrl, mainUrl)
 
                 // The final video stream requires the main site as a referer to play
