@@ -7,7 +7,6 @@ import com.lagradost.cloudstream3.utils.Qualities
 import org.json.JSONObject
 import org.jsoup.nodes.Element
 
-// Final version using the direct download links strategy, with all build issues resolved.
 class WeCimaProvider : MainAPI() {
     override var mainUrl = "https://wecima.now/"
     override var name = "WeCima"
@@ -134,9 +133,6 @@ class WeCimaProvider : MainAPI() {
         }
     }
 
-    // This function ensures compatibility with the user's build environment.
-    // It uses the correct constructor for ExtractorLink based on previous build errors.
-    @Suppress("DEPRECATION")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -170,15 +166,15 @@ class WeCimaProvider : MainAPI() {
                     }
 
                     val headers = mapOf("Referer" to mainUrl)
-                    val urlWithHeaders = "$finalUrl#headers=${JSONObject(headers)}"
 
                     callback(
-                        ExtractorLink(
+                        newExtractorLink(
                             source = this.name,
                             name = "${this.name} - $qualityText",
-                            url = urlWithHeaders,
+                            url = finalUrl,
                             referer = mainUrl,
-                            quality = quality
+                            quality = quality,
+                            headers = headers
                         )
                     )
                 }
