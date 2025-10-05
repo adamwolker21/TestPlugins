@@ -188,9 +188,9 @@ class WeCimaProvider : MainAPI() {
                     else -> Qualities.Unknown.value
                 }
 
-                // استخدام المُنشئ المبسط لـ ExtractorLink بدون isM3u8
+                // استخدام newExtractorLink بدلاً من المُنشئ المُهمل
                 callback(
-                    ExtractorLink(
+                    newExtractorLink(
                         source = name,
                         name = "$name - $qualityText",
                         url = finalUrl,
