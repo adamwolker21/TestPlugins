@@ -1,13 +1,13 @@
 package com.example
 
-import android.util.Base64
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.Qualities
 import org.json.JSONObject
 import org.jsoup.nodes.Element
 
-// Final version using the direct download links strategy.
+// Final version using the direct download links strategy, with build fixes.
 class WeCimaProvider : MainAPI() {
     override var mainUrl = "https://wecima.now/"
     override var name = "WeCima"
@@ -43,7 +43,7 @@ class WeCimaProvider : MainAPI() {
         }
         return newHomePageResponse(request.name, home)
     }
-    
+
     private fun Element.toSearchResult(): SearchResponse? {
         val linkElement = this.selectFirst("a") ?: return null
         val href = linkElement.attr("href")
@@ -66,7 +66,7 @@ class WeCimaProvider : MainAPI() {
             }
         }
     }
-    
+
     override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl?s=$query"
         val document = app.get(url, interceptor = interceptor).document
@@ -74,7 +74,7 @@ class WeCimaProvider : MainAPI() {
             it.toSearchResult()
         }
     }
-    
+
     override suspend fun load(url: String): LoadResponse? {
         val document = app.get(url, interceptor = interceptor).document
 
@@ -123,7 +123,7 @@ class WeCimaProvider : MainAPI() {
                     episodes.add(newEpisode(epHref) { name = epTitle; season = 1; episode = epNum })
                 }
             }
-            
+
             return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.distinctBy { it.data }.sortedWith(compareBy({ it.season }, { it.episode }))) {
                 this.posterUrl = posterUrl; this.plot = plot; this.year = year; this.tags = tags
             }
@@ -133,14 +133,15 @@ class WeCimaProvider : MainAPI() {
             }
         }
     }
-    
+
+    // Suppress the deprecation warning to ensure the build succeeds.
+    @Suppress("DEPRECATION")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        // We will now ONLY extract from the download links, as they are more reliable.
         val document = app.get(data, interceptor = interceptor).document
 
         document.select("ul.downloads__list li a").forEach { link ->
@@ -148,53 +149,42 @@ class WeCimaProvider : MainAPI() {
                 val downloadUrl = link.attr("href")
                 if (downloadUrl.isBlank()) return@forEach
 
-                // The download URL is a direct link to an HTML page that redirects to the final MP4
-                // We need to visit it to get the redirect location.
                 val response = app.get(
                     downloadUrl,
                     referer = data,
                     interceptor = interceptor,
-                    allowRedirects = false // Crucial
+                    allowRedirects = false
                 )
 
                 if (response.code in 300..399) {
                     val finalUrl = response.headers["Location"] ?: return@forEach
 
                     val qualityText = link.select("resolution").text().trim()
-                    val quality = getQualityFromName(qualityText)
+                    val quality = when {
+                        qualityText.contains("1080") -> Qualities.P1080.value
+                        qualityText.contains("720") -> Qualities.P720.value
+                        qualityText.contains("480") -> Qualities.P480.value
+                        qualityText.contains("360") -> Qualities.P360.value
+                        else -> Qualities.Unknown.value
+                    }
 
-                    // The final video URL requires the main site as a referer.
                     val headers = mapOf("Referer" to mainUrl)
                     val urlWithHeaders = "$finalUrl#headers=${JSONObject(headers)}"
 
                     callback(
-                        newMovieLink(
+                        ExtractorLink(
                             this.name,
                             "${this.name} - $qualityText",
                             urlWithHeaders,
-                            quality
+                            mainUrl,
+                            quality,
                         )
                     )
                 }
             } catch (e: Exception) {
-                // Ignore errors and continue to the next link
+                // Ignore errors
             }
         }
         return true
-    }
-
-    private fun newMovieLink(
-        source: String,
-        name: String,
-        url: String,
-        quality: Int,
-    ): ExtractorLink {
-        return ExtractorLink(
-            source,
-            name,
-            url,
-            mainUrl,
-            quality,
-        )
     }
 }
