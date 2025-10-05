@@ -133,9 +133,10 @@ class WeCimaProvider : MainAPI() {
             }
         }
     }
-    
-    // Using newExtractorLink as the constructor is deprecated and causes build failure.
-    // This private function ensures we use the correct method for the user's build environment.
+
+    // This function ensures compatibility with the user's build environment.
+    // We use the deprecated ExtractorLink constructor because newExtractorLink is not available.
+    @Suppress("DEPRECATION")
     private fun newLink(
         source: String,
         name: String,
@@ -143,7 +144,7 @@ class WeCimaProvider : MainAPI() {
         referer: String,
         quality: Int
     ): ExtractorLink {
-         return newExtractorLink(source, name, url, referer, quality)
+         return ExtractorLink(source, name, url, referer, quality)
     }
 
     override suspend fun loadLinks(
