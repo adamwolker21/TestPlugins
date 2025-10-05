@@ -188,15 +188,14 @@ class WeCimaProvider : MainAPI() {
                     else -> Qualities.Unknown.value
                 }
 
-                // استخدام المُنشئ الأساسي لـ ExtractorLink
+                // استخدام المُنشئ المبسط لـ ExtractorLink بدون isM3u8
                 callback(
                     ExtractorLink(
                         source = name,
                         name = "$name - $qualityText",
                         url = finalUrl,
                         referer = mainUrl,
-                        quality = quality,
-                        isM3u8 = finalUrl.contains(".m3u8")
+                        quality = quality
                     )
                 )
 
