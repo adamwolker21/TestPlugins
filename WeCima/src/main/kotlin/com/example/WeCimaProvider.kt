@@ -7,7 +7,7 @@ import com.lagradost.cloudstream3.utils.Qualities
 import org.json.JSONObject
 import org.jsoup.nodes.Element
 
-// Final version using the direct download links strategy, with build fixes.
+// Final version using the direct download links strategy, with all build issues resolved.
 class WeCimaProvider : MainAPI() {
     override var mainUrl = "https://wecima.now/"
     override var name = "WeCima"
@@ -133,9 +133,19 @@ class WeCimaProvider : MainAPI() {
             }
         }
     }
+    
+    // Using newExtractorLink as the constructor is deprecated and causes build failure.
+    // This private function ensures we use the correct method for the user's build environment.
+    private fun newLink(
+        source: String,
+        name: String,
+        url: String,
+        referer: String,
+        quality: Int
+    ): ExtractorLink {
+         return newExtractorLink(source, name, url, referer, quality)
+    }
 
-    // Suppress the deprecation warning to ensure the build succeeds.
-    @Suppress("DEPRECATION")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -144,10 +154,10 @@ class WeCimaProvider : MainAPI() {
     ): Boolean {
         val document = app.get(data, interceptor = interceptor).document
 
-        document.select("ul.downloads__list li a").forEach { link ->
+        document.select("ul.downloads__list li a").apmap { link ->
             try {
                 val downloadUrl = link.attr("href")
-                if (downloadUrl.isBlank()) return@forEach
+                if (downloadUrl.isBlank()) return@apmap
 
                 val response = app.get(
                     downloadUrl,
@@ -157,7 +167,7 @@ class WeCimaProvider : MainAPI() {
                 )
 
                 if (response.code in 300..399) {
-                    val finalUrl = response.headers["Location"] ?: return@forEach
+                    val finalUrl = response.headers["Location"] ?: return@apmap
 
                     val qualityText = link.select("resolution").text().trim()
                     val quality = when {
@@ -172,7 +182,7 @@ class WeCimaProvider : MainAPI() {
                     val urlWithHeaders = "$finalUrl#headers=${JSONObject(headers)}"
 
                     callback(
-                        ExtractorLink(
+                        newLink(
                             this.name,
                             "${this.name} - $qualityText",
                             urlWithHeaders,
