@@ -7,14 +7,31 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import org.json.JSONObject
 
 // The final, definitive extractor for the WeCima server.
-// This version is built on precise user-provided cURL and HTML data.
-// Build fixed for the user's specific CloudStream environment.
+// This version intelligently follows redirects to extract the final video URL.
 class WeCimaExtractor : ExtractorApi() {
     override var name = "WeCima"
     override var mainUrl = "https://wecima.now"
     override val requiresReferer = true
 
     private val interceptor = CloudflareKiller()
+
+    // This function will follow the redirect chain to get the final video URL
+    private suspend fun getFinalUrl(url: String, referer: String): String {
+        val response = app.get(
+            url,
+            referer = referer,
+            interceptor = interceptor,
+            allowRedirects = false // We need to handle redirects manually to capture the final URL
+        )
+
+        // Check if the response is a redirect (HTTP status 3xx)
+        if (response.code in 300..399) {
+            // The final URL is in the 'Location' header
+            return response.headers["Location"] ?: url
+        }
+        // If it's not a redirect, it might be the final URL itself
+        return url
+    }
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val doc = app.get(url, referer = referer, interceptor = interceptor).document
@@ -26,19 +43,19 @@ class WeCimaExtractor : ExtractorApi() {
 
         val sources = tryParseJson<List<VideoSource>>(sourcesJson) ?: return null
 
-        return sources.mapNotNull { source ->
-            source.src?.let { videoUrl ->
-                // Headers are passed in the URL hash for the player to use.
-                // This is the correct way to handle referers for the final video link.
-                val playerHeaders = mapOf("Referer" to mainUrl)
-                val finalUrl = "$videoUrl#headers=${JSONObject(playerHeaders)}"
+        return sources.apmap { source -> // Using apmap for concurrent requests
+            source.src?.let { intermediateUrl ->
+                // Follow the redirect to get the true, final video URL
+                val finalVideoUrl = getFinalUrl(intermediateUrl, mainUrl)
 
-                // IMPORTANT: Using the specific newExtractorLink signature that is known to work.
-                // Quality information is passed in the name.
+                // The final video stream requires the main site as a referer to play
+                val playerHeaders = mapOf("Referer" to mainUrl)
+                val urlWithHeaders = "$finalVideoUrl#headers=${JSONObject(playerHeaders)}"
+
                 newExtractorLink(
                     source = this.name,
                     name = "${this.name} - ${source.label ?: source.size}",
-                    url = finalUrl
+                    url = urlWithHeaders
                 )
             }
         }
