@@ -4,10 +4,10 @@ import android.util.Base64
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.loadExtractor
-import com.example.extractors.*
+import org.json.JSONObject
 import org.jsoup.nodes.Element
 
+// Final version using the direct download links strategy.
 class WeCimaProvider : MainAPI() {
     override var mainUrl = "https://wecima.now/"
     override var name = "WeCima"
@@ -21,8 +21,7 @@ class WeCimaProvider : MainAPI() {
     )
 
     private val interceptor = CloudflareKiller()
-    
-    // ... (No changes in main page, search, or load functions)
+
     override val mainPage = mainPageOf(
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/7-series-english-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "مسلسلات أجنبي",
@@ -44,7 +43,7 @@ class WeCimaProvider : MainAPI() {
         }
         return newHomePageResponse(request.name, home)
     }
-
+    
     private fun Element.toSearchResult(): SearchResponse? {
         val linkElement = this.selectFirst("a") ?: return null
         val href = linkElement.attr("href")
@@ -67,7 +66,7 @@ class WeCimaProvider : MainAPI() {
             }
         }
     }
-
+    
     override suspend fun search(query: String): List<SearchResponse> {
         val url = "$mainUrl?s=$query"
         val document = app.get(url, interceptor = interceptor).document
@@ -75,7 +74,7 @@ class WeCimaProvider : MainAPI() {
             it.toSearchResult()
         }
     }
-
+    
     override suspend fun load(url: String): LoadResponse? {
         val document = app.get(url, interceptor = interceptor).document
 
@@ -124,7 +123,7 @@ class WeCimaProvider : MainAPI() {
                     episodes.add(newEpisode(epHref) { name = epTitle; season = 1; episode = epNum })
                 }
             }
-
+            
             return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.distinctBy { it.data }.sortedWith(compareBy({ it.season }, { it.episode }))) {
                 this.posterUrl = posterUrl; this.plot = plot; this.year = year; this.tags = tags
             }
@@ -134,48 +133,68 @@ class WeCimaProvider : MainAPI() {
             }
         }
     }
-
+    
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        // We will now ONLY extract from the download links, as they are more reliable.
         val document = app.get(data, interceptor = interceptor).document
-        val serverElements = document.select("ul.watch__server-list li btn, div.Watch--Servers--Single")
 
-        serverElements.apmap { serverElement ->
+        document.select("ul.downloads__list li a").forEach { link ->
             try {
-                val encodedUrl = serverElement.attr("data-url")
-                if (encodedUrl.isBlank()) return@apmap
+                val downloadUrl = link.attr("href")
+                if (downloadUrl.isBlank()) return@forEach
 
-                val serverName = (serverElement.selectFirst("strong")?.text() ?: serverElement.selectFirst("span")?.text())?.trim()?.lowercase()
-                val decodedUrl = String(Base64.decode(encodedUrl, Base64.DEFAULT))
+                // The download URL is a direct link to an HTML page that redirects to the final MP4
+                // We need to visit it to get the redirect location.
+                val response = app.get(
+                    downloadUrl,
+                    referer = data,
+                    interceptor = interceptor,
+                    allowRedirects = false // Crucial
+                )
 
-                when {
-                    // Use our new powerful extractor for GoViD
-                    serverName?.contains("govid") == true -> {
-                        GovidExtractor().getUrl(decodedUrl, data)?.forEach(callback)
-                    }
-                    // For other servers, use our trusted custom extractors
-                    decodedUrl.contains("wecima.now/run/watch/") -> {
-                        WeCimaExtractor().getUrl(decodedUrl, data)?.forEach(callback)
-                    }
-                    decodedUrl.contains("vdbtm.shop") -> {
-                        VidbomExtractor().getUrl(decodedUrl, data)?.forEach(callback)
-                    }
-                    decodedUrl.contains("1vid1shar.space") || decodedUrl.contains("dingtezuni.com") -> {
-                        GeneralPackedExtractor().getUrl(decodedUrl, data)?.forEach(callback)
-                    }
-                    // Fallback for any other new servers
-                    else -> {
-                        loadExtractor(decodedUrl, data, subtitleCallback, callback)
-                    }
+                if (response.code in 300..399) {
+                    val finalUrl = response.headers["Location"] ?: return@forEach
+
+                    val qualityText = link.select("resolution").text().trim()
+                    val quality = getQualityFromName(qualityText)
+
+                    // The final video URL requires the main site as a referer.
+                    val headers = mapOf("Referer" to mainUrl)
+                    val urlWithHeaders = "$finalUrl#headers=${JSONObject(headers)}"
+
+                    callback(
+                        newMovieLink(
+                            this.name,
+                            "${this.name} - $qualityText",
+                            urlWithHeaders,
+                            quality
+                        )
+                    )
                 }
             } catch (e: Exception) {
-                // Fails silently
+                // Ignore errors and continue to the next link
             }
         }
         return true
+    }
+
+    private fun newMovieLink(
+        source: String,
+        name: String,
+        url: String,
+        quality: Int,
+    ): ExtractorLink {
+        return ExtractorLink(
+            source,
+            name,
+            url,
+            mainUrl,
+            quality,
+        )
     }
 }
