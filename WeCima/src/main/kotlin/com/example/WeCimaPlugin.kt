@@ -6,16 +6,12 @@ import android.content.Context
 import com.example.extractors.GeneralPackedExtractor
 import com.example.extractors.VidbomExtractor
 
-import com.example.extractors.GovidExtractor // Add the import
-
 @CloudstreamPlugin
 class WeCimaPlugin: Plugin() {
     override fun load(context: Context) {
         registerMainAPI(WeCimaProvider())
         // Register all our custom extractors
-        
         registerExtractorAPI(VidbomExtractor())
         registerExtractorAPI(GeneralPackedExtractor())
-        registerExtractorAPI(GovidExtractor()) // Register the final extractor
     }
 }
