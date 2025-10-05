@@ -7,7 +7,7 @@ import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.json.JSONObject
 import org.jsoup.nodes.Element
 
-// Final version using the direct download links strategy, with all build issues resolved.
+// Final version equipping the video player with the full, correct browser fingerprint.
 class WeCimaProvider : MainAPI() {
     override var mainUrl = "https://wecima.now/"
     override var name = "WeCima"
@@ -134,6 +134,7 @@ class WeCimaProvider : MainAPI() {
         }
     }
 
+    @Suppress("DEPRECATION")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -142,13 +143,11 @@ class WeCimaProvider : MainAPI() {
     ): Boolean {
         val document = app.get(data, interceptor = interceptor).document
 
-        // Strategy: Extract from the reliable "Download Links" section
         document.select("ul.downloads__list li a").apmap { link ->
             try {
                 val downloadUrl = fixUrl(link.attr("href"))
                 if (downloadUrl.isBlank()) return@apmap
 
-                // Get the final redirected URL
                 val response = app.get(
                     downloadUrl,
                     referer = data,
@@ -158,19 +157,26 @@ class WeCimaProvider : MainAPI() {
 
                 if (response.code in 300..399) {
                     val finalUrl = response.headers["Location"] ?: return@apmap
-
                     val qualityText = link.select("resolution").text().trim()
-                    
-                    // Prepare headers to be embedded in the URL
-                    val headers = mapOf("Referer" to mainUrl)
+
+                    // THE FINAL ARMOR: Provide the player with a complete and authentic browser fingerprint.
+                    val headers = mapOf(
+                        "Referer" to mainUrl,
+                        "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36",
+                        "Accept" to "*/*",
+                        "Sec-Fetch-Dest" to "video",
+                        "Sec-Fetch-Mode" to "no-cors",
+                        "Sec-Fetch-Site" to "cross-site"
+                    )
                     val urlWithHeaders = "$finalUrl#headers=${JSONObject(headers)}"
-                    
-                    // Use the simple, build-proof newExtractorLink function
+
                     callback(
-                        newExtractorLink(
+                        ExtractorLink(
                             source = this.name,
                             name = "${this.name} - $qualityText",
-                            url = urlWithHeaders
+                            url = urlWithHeaders,
+                            referer = mainUrl, // Redundant but safe
+                            quality = getQualityFromName(qualityText),
                         )
                     )
                 }
