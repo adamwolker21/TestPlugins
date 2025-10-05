@@ -7,8 +7,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import org.json.JSONObject
 
 // The final, definitive extractor for the WeCima server.
-// This version intelligently follows redirects and, crucially,
-// appends the correct Referer header to the final video URL.
+// This version provides the player with a complete and correct browser fingerprint.
 class WeCimaExtractor : ExtractorApi() {
     override var name = "WeCima"
     override var mainUrl = "https://wecima.now"
@@ -16,16 +15,14 @@ class WeCimaExtractor : ExtractorApi() {
 
     private val interceptor = CloudflareKiller()
 
-    // This function will follow the redirect chain to get the final video URL
     private suspend fun getFinalUrl(url: String, referer: String): String {
         try {
             val response = app.get(
                 url,
                 referer = referer,
                 interceptor = interceptor,
-                allowRedirects = false // We handle redirects manually
+                allowRedirects = false
             )
-            // If the response is a redirect, the final URL is in the 'Location' header.
             if (response.code in 300..399) {
                 return response.headers["Location"] ?: url
             }
@@ -36,7 +33,6 @@ class WeCimaExtractor : ExtractorApi() {
     }
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        // Step 1: Get the embed page, bypassing Cloudflare.
         val doc = app.get(url, referer = referer, interceptor = interceptor).document
         val script = doc.selectFirst("script:containsData(const sources)")?.data()
             ?: return null
@@ -46,22 +42,21 @@ class WeCimaExtractor : ExtractorApi() {
 
         val sources = tryParseJson<List<VideoSource>>(sourcesJson) ?: return null
 
-        // Process each source found on the page.
         return sources.mapNotNull { source ->
             source.src?.let { intermediateUrl ->
-                // Step 2: Follow the redirect to get the final video URL.
                 val finalVideoUrl = getFinalUrl(intermediateUrl, mainUrl)
 
-                // Step 3: This is the crucial fix. We create a headers map
-                // with the correct Referer that the final video server expects.
-                val playerHeaders = mapOf("Referer" to mainUrl)
-                // We then serialize this map to a JSON string and append it
-                // to the URL. The player will automatically use these headers.
+                // THE FINAL FIX: Create a complete fingerprint for the player.
+                // This includes the correct Referer AND a matching User-Agent.
+                val playerHeaders = mapOf(
+                    "Referer" to mainUrl,
+                    "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"
+                )
                 val urlWithHeaders = "$finalVideoUrl#headers=${JSONObject(playerHeaders)}"
 
                 newExtractorLink(
                     source = this.name,
-                    name = "${this.name} - ${source.label ?: "${source.size}p"}", // Improved naming
+                    name = "${this.name} - ${source.label ?: "${source.size}p"}",
                     url = urlWithHeaders
                 )
             }
