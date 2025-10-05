@@ -188,14 +188,17 @@ class WeCimaProvider : MainAPI() {
                     else -> Qualities.Unknown.value
                 }
 
-                // استخدام newExtractorLink بدلاً من المُنشئ المُهمل
+                // الطريقة الصحيحة بناءً على تحليل المشروع المرجعي
+                // استخدام ExtractorLink مع جميع المعاملات المطلوبة بما فيهم isM3u8
                 callback(
-                    newExtractorLink(
+                    ExtractorLink(
                         source = name,
                         name = "$name - $qualityText",
                         url = finalUrl,
                         referer = mainUrl,
-                        quality = quality
+                        quality = quality,
+                        isM3u8 = finalUrl.contains(".m3u8"),
+                        headers = mapOf("Referer" to mainUrl)
                     )
                 )
 
