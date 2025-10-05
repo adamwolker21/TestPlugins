@@ -23,7 +23,7 @@ class WeCimaProvider : MainAPI() {
     private val interceptor = CloudflareKiller()
 
     override val mainPage = mainPageOf(
-        "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%bA%d9%88%d9%8A%d8%a9/" to "مسلسلات آسيوية",
+        "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/1-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%b3%d9%8a%d9%88%d9%8a%d8%a9/" to "مسلسلات آسيوية",
         "/category/%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa/7-series-english-%d9%85%d8%b3%d9%84%d8%b3%d9%84%d8%a7%d8%aa-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "مسلسلات أجنبي",
         "/category/%d8%a3%d9%81%d9%84%d8%a7%d9%85/10-movies-english-%d8%a7%d9%81%d9%84%d8%a7%d9%85-%d8%a7%d8%ac%d9%86%d8%a8%d9%8a/" to "أفلام أجنبي"
     )
@@ -161,8 +161,6 @@ class WeCimaProvider : MainAPI() {
                     val finalUrl = response.headers["Location"] ?: return@apmap
 
                     val qualityText = link.select("resolution").text().trim()
-                    // The function getQualityFromName is not available in this version.
-                    // We will use a manual mapping.
                     val quality = when {
                         qualityText.contains("1080") -> Qualities.P1080.value
                         qualityText.contains("720") -> Qualities.P720.value
@@ -176,11 +174,11 @@ class WeCimaProvider : MainAPI() {
 
                     callback(
                         ExtractorLink(
-                            this.name,
-                            "${this.name} - $qualityText",
-                            urlWithHeaders,
-                            mainUrl, // referer
-                            quality,
+                            source = this.name,
+                            name = "${this.name} - $qualityText",
+                            url = urlWithHeaders,
+                            referer = mainUrl,
+                            quality = quality,
                             isM3u8 = finalUrl.contains(".m3u8")
                         )
                     )
