@@ -1,0 +1,42 @@
+function extractHls2Link() {
+    // الخطوة 1: العثور على السكريبت المشفر في الصفحة
+    const scripts = Array.from(document.scripts);
+    const packedScript = scripts.find(script =>
+        script.textContent.trim().startsWith('eval(function(p,a,c,k,e,d)')
+    );
+
+    if (!packedScript) {
+        console.error("لم يتم العثور على سكريبت مطابق للنمط المطلوب.");
+        return;
+    }
+
+    const scriptContent = packedScript.textContent;
+    let deobfuscatedCode = '';
+
+    // الخطوة 2: فك تشفير السكريبت بطريقة آمنة
+    try {
+        const deobfuscator = new Function(`
+            const fakeEval = function(code) { return code; };
+            return (function() { return ${scriptContent.replace('eval', 'fakeEval')} })();
+        `);
+        deobfuscatedCode = deobfuscator();
+    } catch (e) {
+        console.error("حدث خطأ أثناء فك التشفير:", e);
+        return;
+    }
+
+    // الخطوة 3: البحث عن رابط hls2 باستخدام التعبيرات النمطية (Regex)
+    // يبحث هذا النمط عن النص: "hls2": "الرابط هنا" ويستخرج الرابط
+    const regex = /"hls2"\s*:\s*"([^"]+)"/;
+    const match = deobfuscatedCode.match(regex);
+
+    // الخطوة 4: عرض النتيجة
+    if (match && match[1]) {
+        const targetLink = match[1];
+        console.log("✅ تم استخراج الرابط المستهدف بنجاح:");
+        console.log(targetLink);
+    } else {
+        console.error("لم يتم العثور على رابط 'hls2' داخل السكريبت.");
+    }
+}
+extractHls2Link();
