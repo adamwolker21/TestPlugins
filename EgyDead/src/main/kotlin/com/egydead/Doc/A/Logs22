@@ -1,0 +1,923 @@
+--------- beginning of main
+10-11 21:06:27.009  5255  5255 D InputTransport: Input channel destroyed: 'c613952', fd=160
+10-11 21:06:27.042  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: MSG_WINDOW_FOCUS_CHANGED 1 0
+10-11 21:06:27.042  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: mThreadedRenderer.initializeIfNeeded()#2 mSurface={isValid=true 0x7b5aa34800}
+10-11 21:06:27.045  5255  5255 D InputMethodManager: startInputInner - Id : 0
+10-11 21:06:27.045  5255  5255 I InputMethodManager: startInputInner - mService.startInputOrWindowGainedFocus
+10-11 21:06:28.010  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:28.135  5255  5255 D WindowOnBackDispatcher: onBackInvoked, viewRoot=ViewRootImpl@bcacbfc[MainActivity], callback=androidx.activity.OnBackPressedDispatcher$Api33Impl$$ExternalSyntheticLambda0@c867560
+10-11 21:06:28.138  5255  5255 I IMM_LC  : hsifw() - flag : 0
+10-11 21:06:28.139  5255  5255 I IMM_LC  : hsifw() - mService.hideSoftInput
+10-11 21:06:28.146  5255  5255 D ScrollView: initGoToTop
+10-11 21:06:28.174  5255  5255 E CoilImgLoader: Error loading image: coil3.request.NullRequestDataException: The request's data is null.
+10-11 21:06:28.181  5255  5255 D ScrollView:  onsize change changed 
+10-11 21:06:28.892  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:28.933  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 1
+10-11 21:06:28.939  5255  5255 I NavComponent: Navigating to fragment: 2131361879
+10-11 21:06:28.940  5255  5255 I IMM_LC  : hsifw() - flag : 0
+10-11 21:06:28.940  5255  5255 I IMM_LC  : hsifw() - mService.hideSoftInput
+10-11 21:06:29.752  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:29.784  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 1
+10-11 21:06:29.794  5255  5255 I IMM_LC  : hsifw() - flag : 0
+10-11 21:06:29.795  5255  5255 I IMM_LC  : hsifw() - mService.hideSoftInput
+10-11 21:06:29.900  5255  5255 I PLG     : updatePluginList = https://raw.githubusercontent.com/adamwolker21/DZ/refs/heads/master/repo.json
+10-11 21:06:29.900  5255  5255 I PLG     : getPlugins = https://raw.githubusercontent.com/adamwolker21/DZ/refs/heads/master/repo.json
+10-11 21:06:30.143  5255  5412 D VotingApi: Requesting: https://counterapi.com/api/cs-raw.githubusercontent.com-adamwolker21-DZ/vote/806f9e9bb0fe6eed948cf51910bda7c7a4f4470876514f9eb99299b4b4e46db4?readOnly=true
+10-11 21:06:30.578  5255  5260 W st.cloudstream3: Cleared Reference was only reachable from finalizer (only reported once)
+10-11 21:06:30.661  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:30.677  5255  5260 I st.cloudstream3: Background concurrent copying GC freed 23MB AllocSpace bytes, 84(3620KB) LOS objects, 49% free, 14MB/28MB, paused 554us,74us total 270.302ms
+10-11 21:06:30.681  5255  5281 D OpenGLRenderer: setSurface called with nullptr
+10-11 21:06:30.682  5255  5261 D InputTransport: Input channel destroyed: 'ClientS', fd=145
+10-11 21:06:30.696  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 1
+10-11 21:06:30.708  5255  5411 I PLG     : handlePluginAction = https://raw.githubusercontent.com/adamwolker21/DZ/refs/heads/master/repo.json, (https://raw.githubusercontent.com/adamwolker21/DZ/refs/heads/master/repo.json, SitePlugin(url=https://raw.githubusercontent.com/adamwolker21/DZ/builds/EgyDead.cs3, status=1, version=1, apiVersion=1, name=EgyDead, internalName=EgyDead, authors=[adamwolker21], description=EgyDead, repositoryUrl=https://github.com/adamwolker21/DZ, tvTypes=[Movie, TvSeries], language=ar, iconUrl=https://www.faselhds.life/icon-faselplud.png, fileSize=24583)), false
+10-11 21:06:30.709  5255  5411 D PluginManager: Downloading plugin: https://raw.githubusercontent.com/adamwolker21/DZ/builds/EgyDead.cs3 to /data/user/0/com.lagradost.cloudstream3/files/Extensions/httpsraw.githubusercontent.comadamwolker21DZrefsheadsmasterrepo.json.-468825824/EgyDead.-124080901.cs3
+10-11 21:06:30.931  5255  5411 I PluginManager: Unloading plugin: /data/user/0/com.lagradost.cloudstream3/files/Extensions/httpsraw.githubusercontent.comadamwolker21DZrefsheadsmasterrepo.json.-468825824/EgyDead.-124080901.cs3
+10-11 21:06:30.931  5255  5411 W PluginManager: Couldn't find plugin /data/user/0/com.lagradost.cloudstream3/files/Extensions/httpsraw.githubusercontent.comadamwolker21DZrefsheadsmasterrepo.json.-468825824/EgyDead.-124080901.cs3
+10-11 21:06:30.931  5255  5411 I PluginManager: Loading plugin: PluginData(internalName=EgyDead, url=https://raw.githubusercontent.com/adamwolker21/DZ/builds/EgyDead.cs3, isOnline=true, filePath=/data/user/0/com.lagradost.cloudstream3/files/Extensions/httpsraw.githubusercontent.comadamwolker21DZrefsheadsmasterrepo.json.-468825824/EgyDead.-124080901.cs3, version=-2147483648)
+10-11 21:06:30.965  5255  5411 I PluginInstance: Adding EgyDead (https://tv6.egydead.live) MainAPI
+10-11 21:06:30.966  5255  5411 I PluginManager: Loaded plugin EgyDead successfully
+10-11 21:06:30.966  5255  5411 I PLG     : getPlugins = https://raw.githubusercontent.com/adamwolker21/DZ/refs/heads/master/repo.json
+10-11 21:06:30.967  5255  5255 I COMPACT : showToast = Plugin Loaded
+10-11 21:06:30.974  5255  5255 D CompatibilityChangeReporter: Compat change id reported: 147798919; UID 10523; state: ENABLED
+10-11 21:06:30.974  5255  5255 E Toast   : setGravity() shouldn't be called on text toasts, the values won't be used
+10-11 21:06:30.974  5255  5255 I Toast   : setView: it's a custom toast
+10-11 21:06:30.983  5255  5255 V Toast   : show: caller = com.lagradost.cloudstream3.CommonActivity.showToast:175 
+10-11 21:06:31.032  5255  5255 V Toast   : HANDLE SHOW: android.widget.Toast$TN@d21e10f mView=null mNextView=androidx.cardview.widget.CardView{a99959c V.E..V... ......ID 0,0-0,0 #7f0a0557 app:id/toast_layout_root}
+10-11 21:06:31.033  5255  5255 V ToastPresenter: sipHeight = -39
+10-11 21:06:31.035  5255  5255 V ToastPresenter: yOffset = 13
+10-11 21:06:31.037  5255  5281 D NativeCustomFrequencyManager: [NativeCFMS] BpCustomFrequencyManager::BpCustomFrequencyManager()
+10-11 21:06:31.044  5255  5255 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 1080, 2400), mDisplayCutout=DisplayCutout{insets=Rect(0, 88 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(512, 0 - 568, 88), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=1080 displayHeight=2400 physicalDisplayWidth=1080 physicalDisplayHeight=2400 density={2.625} cutoutSpec={M 0,0 M 0,12.25101276465640 a 10.60613009248640,10.60613009248640 0 1,0 0,21.21226018497290 a 10.60613009248640,10.60613009248640 0 1,0 0,-21.21226018497290 Z @dp} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=84, center=Point(84, 84)}, RoundedCorner{position=TopRight, radius=84, center=Point(996, 84)}, RoundedCorner{position=BottomRight, radius=84, center=Point(996, 2316)}, RoundedCorner{position=BottomLeft, radius=84, center=Point(84, 2316)}]}  mRoundedCornerFrame=Rect(0, 0 - 0, 0), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(964, 0 - 1080, 87) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,2361][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][130,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[950,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][1080,120], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,2316][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,0][0,0], mVisible=true, mInsetsRoundedCornerFrame=false} } host=Toast from=android.view.ViewRootImpl.setView:1732
+10-11 21:06:31.045  5255  5255 I ViewRootImpl@1a26ba5[Toast]: setView = androidx.cardview.widget.CardView@a99959c TM=true
+10-11 21:06:31.051  5255  5255 I ViewRootImpl@1a26ba5[Toast]: performTraversals params={(0,13)(wrapxwrap) gr=BOTTOM CENTER sim={adjust=resize} ty=TOAST fmt=TRANSLUCENT wanim=0x1030004 surfaceInsets=Rect(11, 11 - 11, 11)
+10-11 21:06:31.051  5255  5255 I ViewRootImpl@1a26ba5[Toast]:   fl=1000098
+10-11 21:06:31.051  5255  5255 I ViewRootImpl@1a26ba5[Toast]:   pfl=12000000
+10-11 21:06:31.051  5255  5255 I ViewRootImpl@1a26ba5[Toast]:   bhv=DEFAULT
+10-11 21:06:31.051  5255  5255 I ViewRootImpl@1a26ba5[Toast]:   fitTypes=STATUS_BARS NAVIGATION_BARS CAPTION_BAR
+10-11 21:06:31.051  5255  5255 I ViewRootImpl@1a26ba5[Toast]:   fitIgnoreVis naviIconColor=0}
+10-11 21:06:31.051  5255  5255 I ViewRootImpl@1a26ba5[Toast]: performTraversals mFirst=true windowShouldResize=false viewVisibilityChanged=false mForceNextWindowRelayout=false params={(0,13)(wrapxwrap) gr=BOTTOM CENTER sim={adjust=resize} ty=TOAST fmt=TRANSLUCENT wanim=0x1030004 surfaceInsets=Rect(11, 11 - 11, 11)
+10-11 21:06:31.051  5255  5255 I ViewRootImpl@1a26ba5[Toast]:   fl=1000098
+10-11 21:06:31.051  5255  5255 I ViewRootImpl@1a26ba5[Toast]:   pfl=12000000
+10-11 21:06:31.051  5255  5255 I ViewRootImpl@1a26ba5[Toast]:   bhv=DEFAULT
+10-11 21:06:31.051  5255  5255 I ViewRootImpl@1a26ba5[Toast]:   fitTypes=STATUS_BARS NAVIGATION_BARS CAPTION_BAR
+10-11 21:06:31.051  5255  5255 I ViewRootImpl@1a26ba5[Toast]:   fitIgnoreVis naviIconColor=0}
+10-11 21:06:31.066  5255  5255 I ViewRootImpl@1a26ba5[Toast]: updateBlastSurfaceIfNeeded mBlastBufferQueue=null isSameSurfaceControl=false
+10-11 21:06:31.067  5255  5255 I BLASTBufferQueue: new BLASTBufferQueue, mName= ViewRootImpl@1a26ba5[Toast] mNativeObject= 0x7bdd543e00 sc.mNativeObject= 0x7bed8c6800 caller= android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:2909 android.view.ViewRootImpl.relayoutWindow:9847 android.view.ViewRootImpl.performTraversals:3884 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 android.view.Choreographer$CallbackRecord.run:1301 android.view.Choreographer$CallbackRecord.run:1309 android.view.Choreographer.doCallbacks:923 android.view.Choreographer.doFrame:852 android.view.Choreographer$FrameDisplayEventReceiver.run:1283 
+10-11 21:06:31.067  5255  5255 I BLASTBufferQueue: update, w= 373 h= 178 mName = ViewRootImpl@1a26ba5[Toast] mNativeObject= 0x7bdd543e00 sc.mNativeObject= 0x7bed8c6800 format= -3 caller= android.graphics.BLASTBufferQueue.<init>:84 android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:2909 android.view.ViewRootImpl.relayoutWindow:9847 android.view.ViewRootImpl.performTraversals:3884 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 
+10-11 21:06:31.067  5255  5255 I ViewRootImpl@1a26ba5[Toast]: Relayout returned: old=(0,88,1080,2361) new=(364,2192,715,2348) req=(351,156)0 dur=15 res=0x3 s={true 0x7b2b9d0000} ch=true seqId=0
+10-11 21:06:31.068  5255  5255 I ViewRootImpl@1a26ba5[Toast]: mThreadedRenderer.initialize() mSurface={isValid=true 0x7b2b9d0000} hwInitialized=true
+10-11 21:06:31.068  5255  5281 D OpenGLRenderer: eglCreateWindowSurface
+10-11 21:06:31.068  5255  5255 I ViewRootImpl@1a26ba5[Toast]: reportNextDraw android.view.ViewRootImpl.performTraversals:4438 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 android.view.Choreographer$CallbackRecord.run:1301 android.view.Choreographer$CallbackRecord.run:1309 
+10-11 21:06:31.068  5255  5255 I ViewRootImpl@1a26ba5[Toast]: Setup new sync id=0
+10-11 21:06:31.068  5255  5255 I ViewRootImpl@1a26ba5[Toast]: Setting syncFrameCallback
+10-11 21:06:31.069  5255  5255 I ViewRootImpl@1a26ba5[Toast]: registerCallbacksForSync syncBuffer=false
+10-11 21:06:31.075  5255  5480 I ViewRootImpl@1a26ba5[Toast]: Received frameDrawingCallback syncResult=0 frameNum=1.
+10-11 21:06:31.075  5255  5480 I ViewRootImpl@1a26ba5[Toast]: Setting up sync and frameCommitCallback
+10-11 21:06:31.076  5255  5281 I BLASTBufferQueue: [ViewRootImpl@1a26ba5[Toast]#2](f:0,a:0) onFrameAvailable the first frame is available
+10-11 21:06:31.076  5255  5281 I ViewRootImpl@1a26ba5[Toast]: Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true
+10-11 21:06:31.077  5255  5281 D OpenGLRenderer: CFMS:: SetUp Pid : 5255    Tid : 5281
+10-11 21:06:31.079  5255  5255 I ViewRootImpl@1a26ba5[Toast]: onSyncComplete
+10-11 21:06:31.079  5255  5255 I ViewRootImpl@1a26ba5[Toast]: setupSync seqId=0 mSyncId=0 fn=1 caller=android.view.ViewRootImpl$$ExternalSyntheticLambda11.accept:6 android.window.SurfaceSyncer.lambda$setupSync$1$android-window-SurfaceSyncer:128 android.window.SurfaceSyncer$$ExternalSyntheticLambda1.accept:8 android.window.SurfaceSyncer$SyncSet.checkIfSyncIsComplete:382 android.window.SurfaceSyncer$SyncSet.markSyncReady:359 android.window.SurfaceSyncer.markSyncReady:151 android.view.ViewRootImpl.performTraversals:4503 
+10-11 21:06:31.079  5255  5255 I ViewRootImpl@1a26ba5[Toast]: reportDrawFinished seqId=0 mSyncId=-1 fn=1 mSurfaceChangedTransaction=0x7bed834e00
+10-11 21:06:31.675  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:31.708  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 1
+10-11 21:06:31.727  5255  5255 I IMM_LC  : hsifw() - flag : 0
+10-11 21:06:31.727  5255  5255 I IMM_LC  : hsifw() - mService.hideSoftInput
+10-11 21:06:31.819  5255  5404 I WebViewFactory: Loading com.google.android.webview version 141.0.7390.43 (code 739004333)
+10-11 21:06:31.831  5255  5404 W st.cloudstream3: Failed to find entry 'classes.dex': Entry not found
+10-11 21:06:31.832  5255  5404 D nativeloader: Configuring clns-6 for other apk /data/app/~~KzgKvUv1JwmzxHei_tsHXQ==/com.google.android.trichromelibrary_739004333-NHJfK8xUfQ5oC0LHEjEvPw==/base.apk. target_sdk_version=36, uses_libraries=ALL, library_path=/data/app/~~Z7EoFjMbPG94A6o-3Nb5UQ==/com.google.android.webview-eZKrupClwVmgDmxWAn78Ag==/lib/arm64:/data/app/~~Z7EoFjMbPG94A6o-3Nb5UQ==/com.google.android.webview-eZKrupClwVmgDmxWAn78Ag==/base.apk!/lib/arm64-v8a:/data/app/~~KzgKvUv1JwmzxHei_tsHXQ==/com.google.android.trichromelibrary_739004333-NHJfK8xUfQ5oC0LHEjEvPw==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand
+10-11 21:06:31.833  5255  5404 D nativeloader: Extending system_exposed_libraries: libhumantracking.arcsoft.so:libPortraitDistortionCorrection.arcsoft.so:libPortraitDistortionCorrectionCali.arcsoft.so:libface_landmark.arcsoft.so:libFacialStickerEngine.arcsoft.so:libveengine.arcsoft.so:liblow_light_hdr.arcsoft.so:libhigh_dynamic_range.arcsoft.so:libFacialAttributeDetection.arcsoft.so:libBeauty_v4.camera.samsung.so:libexifa.camera.samsung.so:libjpega.camera.samsung.so:libOpenCv.camera.samsung.so:libImageScreener.camera.samsung.so:libMyFilter.camera.samsung.so:libtensorflowLite.myfilter.camera.samsung.so:libtensorflowlite_inference_api.myfilter.camera.samsung.so:libEventFinder.camera.samsung.so:libHIDTSnapJNI.camera.samsung.so:libSmartScan.camera.samsung.so:libRectify.camera.samsung.so:libDocRectifyWrapper.camera.samsung.so:libUltraWideDistortionCorrection.camera.samsung.so:libWideDistortionCorrection.camera.samsung.so:libHpr_RecGAE_cvFeature_v1.0.camera.samsung.so:libHprFace_GAE_api.camera.samsung.so:libFace_Landmark_API.camera.samsung.so:libHprFace_GAE_jn
+10-11 21:06:31.839  5255  5404 D nativeloader: Configuring clns-7 for other apk /data/app/~~Z7EoFjMbPG94A6o-3Nb5UQ==/com.google.android.webview-eZKrupClwVmgDmxWAn78Ag==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~Z7EoFjMbPG94A6o-3Nb5UQ==/com.google.android.webview-eZKrupClwVmgDmxWAn78Ag==/lib/arm64:/data/app/~~Z7EoFjMbPG94A6o-3Nb5UQ==/com.google.android.webview-eZKrupClwVmgDmxWAn78Ag==/base.apk!/lib/arm64-v8a:/data/app/~~KzgKvUv1JwmzxHei_tsHXQ==/com.google.android.trichromelibrary_739004333-NHJfK8xUfQ5oC0LHEjEvPw==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand
+10-11 21:06:31.871  5255  5404 I cr_WVCFactoryProvider: version=141.0.7390.43 (739004333) minSdkVersion=29 multiprocess=true packageId=127 splits=<none>
+10-11 21:06:31.877  5255  5404 D nativeloader: Load /data/app/~~KzgKvUv1JwmzxHei_tsHXQ==/com.google.android.trichromelibrary_739004333-NHJfK8xUfQ5oC0LHEjEvPw==/base.apk!/lib/arm64-v8a/libmonochrome_64.so using class loader ns clns-7 (caller=/data/app/~~Z7EoFjMbPG94A6o-3Nb5UQ==/com.google.android.webview-eZKrupClwVmgDmxWAn78Ag==/base.apk): ok
+10-11 21:06:31.879  5255  5404 D nativeloader: Load /system/lib64/libwebviewchromium_plat_support.so using class loader ns clns-7 (caller=/data/app/~~Z7EoFjMbPG94A6o-3Nb5UQ==/com.google.android.webview-eZKrupClwVmgDmxWAn78Ag==/base.apk): ok
+10-11 21:06:31.882  5255  5587 I chromium: [1011/210631.882457:INFO:android_webview/browser/variations/variations_seed_loader.cc:67] Failed to open file for reading.: No such file or directory (2)
+10-11 21:06:31.889  5255  5404 I cr_LibraryLoader: Successfully loaded native library
+10-11 21:06:31.890  5255  5404 I cr_CachingUmaRecorder: Flushed 13 samples from 13 histograms, 0 samples were dropped.
+10-11 21:06:32.997  5255  5281 D OpenGLRenderer: setSurface called with nullptr
+10-11 21:06:32.997  5255  5281 D OpenGLRenderer: setSurface() destroyed EGLSurface
+10-11 21:06:32.997  5255  5281 D OpenGLRenderer: destroyEglSurface
+10-11 21:06:32.999  5255  5255 I ViewRootImpl@1a26ba5[Toast]: dispatchDetachedFromWindow
+10-11 21:06:33.011  5255  5255 D InputTransport: Input channel destroyed: 'd463a98', fd=144
+10-11 21:06:33.812  5255  5260 I st.cloudstream3: Background concurrent copying GC freed 7338KB AllocSpace bytes, 69(4852KB) LOS objects, 50% free, 21MB/43MB, paused 1.362ms,69us total 148.376ms
+10-11 21:06:33.816  5255  5281 D OpenGLRenderer: setSurface called with nullptr
+10-11 21:06:33.833  5255  5262 W System  : A resource failed to call close. 
+10-11 21:06:34.557  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:34.829  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 1
+10-11 21:06:35.368  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:35.547  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 1
+10-11 21:06:36.456  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:36.514  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 1
+10-11 21:06:36.960  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:37.001  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 1
+10-11 21:06:37.017  5255  5255 I NavComponent: Navigating to fragment: 2131362274
+10-11 21:06:37.019  5255  5255 I IMM_LC  : hsifw() - flag : 0
+10-11 21:06:37.019  5255  5255 I IMM_LC  : hsifw() - mService.hideSoftInput
+10-11 21:06:37.121  5255  5255 D ScrollView: initGoToTop
+10-11 21:06:37.325  5255  5255 I SurfaceView@79d7e73: onWindowVisibilityChanged(0) true android.view.SurfaceView{79d7e73 V.E..V... ......I. 0,0-0,0} of ViewRootImpl@fd04a9[MainActivity]
+10-11 21:06:37.325  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.329  5255  5255 I CS3ExoPlayer: SET STYLE = SaveCaptionStyle(foregroundColor=-1, backgroundColor=0, windowColor=0, edgeType=1, edgeColor=-16777216, typeface=null, typefaceFilePath=null, elevation=20, fixedTextSize=null, edgeSize=null, removeCaptions=false, removeBloat=true, upperCase=false, bold=false, italic=false, backgroundRadius=null)
+10-11 21:06:37.336  5255  5255 D VideoClickActionHolder: allVideoClickActions: [null:com.lagradost.cloudstream3.actions.temp.PlayInBrowserAction, null:com.lagradost.cloudstream3.actions.temp.CopyClipboardAction, null:com.lagradost.cloudstream3.actions.temp.ViewM3U8Action, null:com.lagradost.cloudstream3.actions.temp.VlcPackage, null:com.lagradost.cloudstream3.actions.temp.MpvPackage, null:com.lagradost.cloudstream3.actions.temp.NextPlayerPackage, null:com.lagradost.cloudstream3.actions.temp.JustPlayerPackage, null:com.lagradost.cloudstream3.actions.temp.fcast.FcastAction, null:com.lagradost.cloudstream3.actions.temp.LibreTorrentPackage, null:com.lagradost.cloudstream3.actions.temp.BiglyBTPackage, null:com.lagradost.cloudstream3.actions.temp.VlcNightlyPackage, null:com.lagradost.cloudstream3.actions.temp.WebVideoCastPackage, null:com.lagradost.cloudstream3.actions.temp.MpvYTDLPackage, null:com.lagradost.cloudstream3.actions.temp.MpvKtPackage, null:com.lagradost.cloudstream3.actions.temp.MpvKtPreviewPackage, null:com.lagradost.cloudstream3.actions.AlwaysAskAction]
+10-11 21:06:37.337  5255  5255 I IMM_LC  : hsifw() - flag : 0
+10-11 21:06:37.337  5255  5255 I IMM_LC  : hsifw() - mService.hideSoftInput
+10-11 21:06:37.338  5255  5404 I SYNCVM  : addFromUrl = https://tv6.egydead.live/%d9%85%d8%b4%d8%a7%d9%87%d8%af%d8%a9-%d9%81%d9%8a%d9%84%d9%85-pretty-crazy-2025-%d9%85%d8%aa%d8%b1%d8%ac%d9%85/
+10-11 21:06:37.338  5255  5404 I SYNCUTIL: getIdsFromUrl https://tv6.egydead.live/%d9%85%d8%b4%d8%a7%d9%87%d8%af%d8%a9-%d9%81%d9%8a%d9%84%d9%85-pretty-crazy-2025-%d9%85%d8%aa%d8%b1%d8%ac%d9%85/
+10-11 21:06:37.350  5255  5255 I SurfaceView@79d7e73: onWindowVisibilityChanged(8) false android.view.SurfaceView{79d7e73 V.E..V... ......I. 0,0-0,0} of ViewRootImpl@fd04a9[MainActivity]
+10-11 21:06:37.351  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.351  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.351  5255  5255 I SurfaceView@79d7e73: onDetachedFromWindow: tryReleaseSurfaces()
+10-11 21:06:37.351  5255  5255 I SurfaceView@79d7e73: releaseSurfaces: viewRoot = ViewRootImpl@fd04a9[MainActivity]
+10-11 21:06:37.351  5255  5255 I SurfaceView@79d7e73: applyTransactionOnVriDraw: vri = ViewRootImpl@fd04a9[MainActivity] fRS = true t = 0x7b2bdbc000 android.view.SurfaceView.releaseSurfaces:858 android.view.SurfaceView.onDetachedFromWindow:500 android.view.View.dispatchDetachedFromWindow:22538 
+10-11 21:06:37.351  5255  5255 I SurfaceView@79d7e73: applyTransactionOnVriDraw: viewRoot.applyTransactionOnDrawFromReleaseSurfaces
+10-11 21:06:37.352  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: applyTransactionOnDraw: mRemoved = false isHardwareEnabled = true t = 0x7b2bdbc000android.view.ViewRootImpl.applyTransactionOnDrawFromReleaseSurfaces:12850 android.view.SurfaceView.applyTransactionOnVriDraw:2046 android.view.SurfaceView.releaseSurfaces:858 android.view.SurfaceView.onDetachedFromWindow:500 android.view.View.dispatchDetachedFromWindow:22538 
+10-11 21:06:37.354  5255  5255 I SurfaceView@79d7e73: onWindowVisibilityChanged(0) true android.view.SurfaceView{79d7e73 V.E..V... ......I. 0,0-0,0} of ViewRootImpl@fd04a9[MainActivity]
+10-11 21:06:37.354  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.361  5255  5255 I DecorView: notifyKeepScreenOnChanged: keepScreenOn=false
+10-11 21:06:37.370  5255  5255 I CS3ExoPlayer: reloadPlayer
+10-11 21:06:37.371  5255  5255 I CS3ExoPlayer: releasePlayer
+10-11 21:06:37.371  5255  5255 I CS3ExoPlayer: Handle event: PlayerAttachedEvent(player=null, source=Player)
+10-11 21:06:37.374  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: performTraversals params={(0,0)(fillxfill) sim={state=always_hidden adjust=resize} ty=BASE_APPLICATION wanim=0x1030309
+10-11 21:06:37.374  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   fl=85810100
+10-11 21:06:37.374  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   pfl=12020040
+10-11 21:06:37.374  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   vsysui=500
+10-11 21:06:37.374  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   bhv=DEFAULT
+10-11 21:06:37.374  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:37.374  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: performTraversals mFirst=false windowShouldResize=false viewVisibilityChanged=false mForceNextWindowRelayout=false params={(0,0)(fillxfill) sim={state=always_hidden adjust=resize} ty=BASE_APPLICATION fmt=TRANSLUCENT wanim=0x1030309
+10-11 21:06:37.374  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   fl=85810100
+10-11 21:06:37.374  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   pfl=12020040
+10-11 21:06:37.374  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   vsysui=500
+10-11 21:06:37.374  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   bhv=DEFAULT
+10-11 21:06:37.374  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:37.383  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: updateBlastSurfaceIfNeeded mBlastBufferQueue=0x7b42be6300 isSameSurfaceControl=true
+10-11 21:06:37.383  5255  5255 I BLASTBufferQueue: update, w= 1080 h= 2400 mName = ViewRootImpl@fd04a9[MainActivity] mNativeObject= 0x7b42be6300 sc.mNativeObject= 0x7ae821d280 format= -3 caller= android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:2898 android.view.ViewRootImpl.relayoutWindow:9847 android.view.ViewRootImpl.performTraversals:3884 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 android.view.Choreographer$CallbackRecord.run:1301 
+10-11 21:06:37.384  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: Relayout returned: old=(0,0,1080,2400) new=(0,0,1080,2400) req=(1080,2400)0 dur=9 res=0x0 s={true 0x7b5aa34800} ch=false seqId=0
+10-11 21:06:37.386  5255  5255 W View    : requestLayout() improperly called by android.widget.FrameLayout{81a9912 I.E..V... ......I. 0,0-0,0 #7f0a04e7 app:id/start_panel} during layout: running second layout pass
+10-11 21:06:37.386  5255  5255 W View    : requestLayout() improperly called by android.widget.FrameLayout{3e2d8e3 I.E..V... ......ID 1080,0-1080,2143 #7f0a0168 app:id/end_panel} during layout: running second layout pass
+10-11 21:06:37.387  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.394  5255  5481 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7b2bdbc000 mBlastBufferQueue=0x7b42be6300 fn= 490 caller= android.view.ViewRootImpl.lambda$applyTransactionOnDraw$11$android-view-ViewRootImpl:12865 android.view.ViewRootImpl$$ExternalSyntheticLambda1.onFrameDraw:4 android.graphics.HardwareRenderer$FrameDrawingCallback.onFrameDraw:924 
+10-11 21:06:37.397  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.414  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.431  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.456  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.474  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.487  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.498  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.514  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.531  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.548  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.565  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.582  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.598  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.599  5255  5413 I RVM2    : applyMeta
+10-11 21:06:37.615  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.631  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.648  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.665  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.681  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.685  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:37.686  5255  5255 E CoilImgLoader: Error loading image: coil3.request.NullRequestDataException: The request's data is null.
+10-11 21:06:37.687  5255  5255 E CoilImgLoader: Error loading image: coil3.request.NullRequestDataException: The request's data is null.
+10-11 21:06:37.689  5255  5403 I SYNCVM  : addFromUrl = https://tv6.egydead.live/%d9%85%d8%b4%d8%a7%d9%87%d8%af%d8%a9-%d9%81%d9%8a%d9%84%d9%85-pretty-crazy-2025-%d9%85%d8%aa%d8%b1%d8%ac%d9%85/
+10-11 21:06:37.689  5255  5403 I SYNCUTIL: getIdsFromUrl https://tv6.egydead.live/%d9%85%d8%b4%d8%a7%d9%87%d8%af%d8%a9-%d9%81%d9%8a%d9%84%d9%85-pretty-crazy-2025-%d9%85%d8%aa%d8%b1%d8%ac%d9%85/
+10-11 21:06:37.717  5255  5255 D SurfaceView@79d7e73: updateSurface: has no frame
+10-11 21:06:37.718  5255  5255 I SurfaceView@79d7e73: Changes: creating=true format=true size=true visible=true alpha=false hint=false mUseAlpha=false visible=true left=true top=true
+10-11 21:06:37.722  5255  5255 I BLASTBufferQueue: update, w= 1080 h= 525 mName = null mNativeObject= 0x7bdd543b00 sc.mNativeObject= 0x7ae8221b00 format= 4 caller= android.view.SurfaceView.createBlastSurfaceControls:1383 android.view.SurfaceView.updateSurface:1079 android.view.SurfaceView.lambda$new$0$android-view-SurfaceView:200 android.view.SurfaceView$$ExternalSyntheticLambda5.onPreDraw:2 android.view.ViewTreeObserver.dispatchOnPreDraw:1121 android.view.ViewRootImpl.performTraversals:4442 
+10-11 21:06:37.722  5255  5255 I SurfaceView@79d7e73: 127762035 Cur surface: Surface(name=null)/@0x7d37449
+10-11 21:06:37.723  5255  5255 I SurfaceView@79d7e73: pST: sr = Rect(0, 218 - 1080, 743) sw = 1080 sh = 525
+10-11 21:06:37.723  5255  5255 D SurfaceView@79d7e73: performSurfaceTransaction RenderWorker position = [0, 218, 1080, 743] surfaceSize = 1080x525
+10-11 21:06:37.723  5255  5255 I SurfaceView@79d7e73: applyTransactionOnVriDraw: vri = ViewRootImpl@fd04a9[MainActivity] fRS = false t = 0x7bdd474400 android.view.SurfaceView.performSurfaceTransaction:959 android.view.SurfaceView.updateSurface:1105 android.view.SurfaceView.lambda$new$0$android-view-SurfaceView:200 
+10-11 21:06:37.723  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: applyTransactionOnDraw: mRemoved = false isHardwareEnabled = true t = 0x7bdd474400android.view.SurfaceView.applyTransactionOnVriDraw:2048 android.view.SurfaceView.performSurfaceTransaction:959 android.view.SurfaceView.updateSurface:1105 android.view.SurfaceView.lambda$new$0$android-view-SurfaceView:200 android.view.SurfaceView$$ExternalSyntheticLambda5.onPreDraw:2 
+10-11 21:06:37.723  5255  5255 I SurfaceView@79d7e73: updateSurface: mVisible = true mSurface.isValid() = true
+10-11 21:06:37.723  5255  5255 I SurfaceView@79d7e73: updateSurface: mSurfaceCreated = false surfaceChanged = true visibleChanged = true
+10-11 21:06:37.723  5255  5255 I SurfaceView@79d7e73: visibleChanged -- surfaceCreated
+10-11 21:06:37.723  5255  5255 I SurfaceView@79d7e73: surfaceCreated 0 #8 android.view.SurfaceView{79d7e73 V.E..V... ......ID 0,0-1080,525}
+10-11 21:06:37.723  5255  5255 I SurfaceView@79d7e73: surfaceChanged -- format=4 w=1080 h=525
+10-11 21:06:37.723  5255  5255 I SurfaceView@79d7e73: surfaceChanged (1080,525) 0 #8 android.view.SurfaceView{79d7e73 V.E..V... ......ID 0,0-1080,525}
+10-11 21:06:37.723  5255  5255 I SurfaceView@79d7e73: surfaceRedrawNeeded
+10-11 21:06:37.724  5255  5255 V SurfaceView@79d7e73: Layout: x=0 y=218 w=1080 h=525, frame=Rect(0, 0 - 1080, 525)
+10-11 21:06:37.732  5255  5480 D SurfaceView@79d7e73: updateSurfacePosition RenderWorker, frameNr = 508, position = [0, 218, 1080, 743] surfaceSize = 1080x525
+10-11 21:06:37.732  5255  5480 I SurfaceView@79d7e73: uSP: rtp = Rect(0, 218 - 1080, 743) rtsw = 1080 rtsh = 525
+10-11 21:06:37.732  5255  5480 I SurfaceView@79d7e73: onSSPAndSRT: pl = 0 pt = 218 sx = 1.0 sy = 1.0
+10-11 21:06:37.733  5255  5480 I SurfaceView@79d7e73: aOrMT: ViewRootImpl@fd04a9[MainActivity] t = android.view.SurfaceControl$Transaction@8aad45a fN = 508 android.view.SurfaceView.-$$Nest$mapplyOrMergeTransaction:0 android.view.SurfaceView$SurfaceViewPositionUpdateListener.positionChanged:1537 android.graphics.RenderNode$CompositePositionUpdateListener.positionChanged:373 
+10-11 21:06:37.733  5255  5480 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7bdd474800 mBlastBufferQueue=0x7b42be6300 fn= 508 caller= android.view.SurfaceView.applyOrMergeTransaction:1455 android.view.SurfaceView.-$$Nest$mapplyOrMergeTransaction:0 android.view.SurfaceView$SurfaceViewPositionUpdateListener.positionChanged:1537 
+10-11 21:06:37.734  5255  5480 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7bdd474400 mBlastBufferQueue=0x7b42be6300 fn= 508 caller= android.view.ViewRootImpl.lambda$applyTransactionOnDraw$11$android-view-ViewRootImpl:12865 android.view.ViewRootImpl$$ExternalSyntheticLambda1.onFrameDraw:4 android.graphics.HardwareRenderer$FrameDrawingCallback.onFrameDraw:924 
+10-11 21:06:37.759  5255  5255 I SurfaceView@79d7e73: finishedDrawing
+10-11 21:06:38.740  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:39.272  5255  5255 I Dialog  : mIsDeviceDefault = false, mIsSamsungBasicInteraction = false, isMetaDataInActivity = false
+10-11 21:06:39.309  5255  5255 I DecorView: [INFO] isPopOver=false config=false
+10-11 21:06:39.309  5255  5255 I DecorView: updateCaptionType: isFloating=false isApplication=true hasWindowDecorCaption=false this=DecorView@4d82ef1[]
+10-11 21:06:39.310  5255  5255 D DecorView: setCaptionType = 0, this = DecorView@4d82ef1[]
+10-11 21:06:39.313  5255  5255 I DecorView: getCurrentDensityDpi: from app context. densityDpi=420 msg=resources_loaded
+10-11 21:06:39.313  5255  5255 I DecorView: setWindowBackground: isPopOver=false color=0 d=android.graphics.drawable.ColorDrawable@3465157
+10-11 21:06:39.324  5255  5281 D NativeCustomFrequencyManager: [NativeCFMS] BpCustomFrequencyManager::BpCustomFrequencyManager()
+10-11 21:06:39.325  5255  5255 I DecorView: notifyKeepScreenOnChanged: keepScreenOn=false
+10-11 21:06:39.344  5255  5255 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 1080, 2400), mDisplayCutout=DisplayCutout{insets=Rect(0, 88 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(512, 0 - 568, 88), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=1080 displayHeight=2400 physicalDisplayWidth=1080 physicalDisplayHeight=2400 density={2.625} cutoutSpec={M 0,0 M 0,12.25101276465640 a 10.60613009248640,10.60613009248640 0 1,0 0,21.21226018497290 a 10.60613009248640,10.60613009248640 0 1,0 0,-21.21226018497290 Z @dp} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=84, center=Point(84, 84)}, RoundedCorner{position=TopRight, radius=84, center=Point(996, 84)}, RoundedCorner{position=BottomRight, radius=84, center=Point(996, 2316)}, RoundedCorner{position=BottomLeft, radius=84, center=Point(84, 2316)}]}  mRoundedCornerFrame=Rect(0, 0 - 1080, 2400), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(964, 0 - 1080, 87) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,2361][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][130,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[950,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][1080,120], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,2316][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,0][0,0], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_IME, mFrame=[0,0][0,0], mVisibleFrame=[0,1409][1080,2400], mVisible=false, mInsetsRoundedCornerFrame=false} } host=com.lagradost.cloudstream3/com.lagradost.cloudstream3.MainActivity from=android.view.ViewRootImpl.setView:1732
+10-11 21:06:39.346  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]: setView = com.android.internal.policy.DecorView@4d82ef1 TM=true
+10-11 21:06:39.371  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]: performTraversals params={(0,0)(fillxfill) gr=CENTER sim={adjust=resize forwardNavigation} ty=APPLICATION fmt=TRANSPARENT wanim=0x7f14000b
+10-11 21:06:39.371  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]:   fl=85810100
+10-11 21:06:39.371  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]:   pfl=12020040
+10-11 21:06:39.371  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]:   vsysui=500
+10-11 21:06:39.371  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]:   bhv=DEFAULT
+10-11 21:06:39.371  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:39.372  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]: performTraversals mFirst=true windowShouldResize=true viewVisibilityChanged=false mForceNextWindowRelayout=false params={(0,0)(fillxfill) gr=CENTER sim={adjust=resize forwardNavigation} ty=APPLICATION fmt=TRANSPARENT wanim=0x7f14000b
+10-11 21:06:39.372  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]:   fl=85810100
+10-11 21:06:39.372  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]:   pfl=12020040
+10-11 21:06:39.372  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]:   vsysui=500
+10-11 21:06:39.372  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]:   bhv=DEFAULT
+10-11 21:06:39.372  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:39.387  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]: updateBlastSurfaceIfNeeded mBlastBufferQueue=null isSameSurfaceControl=false
+10-11 21:06:39.389  5255  5255 I BLASTBufferQueue: new BLASTBufferQueue, mName= ViewRootImpl@a6e7dc[MainActivity] mNativeObject= 0x7b5a970500 sc.mNativeObject= 0x7b1681dd60 caller= android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:2909 android.view.ViewRootImpl.relayoutWindow:9847 android.view.ViewRootImpl.performTraversals:3884 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 android.view.Choreographer$CallbackRecord.run:1301 android.view.Choreographer$CallbackRecord.run:1309 android.view.Choreographer.doCallbacks:923 android.view.Choreographer.doFrame:852 android.view.Choreographer$FrameDisplayEventReceiver.run:1283 
+10-11 21:06:39.389  5255  5255 I BLASTBufferQueue: update, w= 1080 h= 2400 mName = ViewRootImpl@a6e7dc[MainActivity] mNativeObject= 0x7b5a970500 sc.mNativeObject= 0x7b1681dd60 format= -2 caller= android.graphics.BLASTBufferQueue.<init>:84 android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:2909 android.view.ViewRootImpl.relayoutWindow:9847 android.view.ViewRootImpl.performTraversals:3884 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 
+10-11 21:06:39.390  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]: Relayout returned: old=(0,0,1080,2400) new=(0,0,1080,2400) req=(1080,2400)0 dur=15 res=0x3 s={true 0x7b42f63800} ch=true seqId=0
+10-11 21:06:39.391  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]: mThreadedRenderer.initialize() mSurface={isValid=true 0x7b42f63800} hwInitialized=true
+10-11 21:06:39.392  5255  5281 D OpenGLRenderer: eglCreateWindowSurface
+10-11 21:06:39.422  5255  5255 D AbsListView:  in onLayout changed 
+10-11 21:06:39.423  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]: reportNextDraw android.view.ViewRootImpl.performTraversals:4438 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 android.view.Choreographer$CallbackRecord.run:1301 android.view.Choreographer$CallbackRecord.run:1309 
+10-11 21:06:39.423  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]: Setup new sync id=0
+10-11 21:06:39.423  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]: Setting syncFrameCallback
+10-11 21:06:39.424  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]: registerCallbacksForSync syncBuffer=false
+10-11 21:06:39.427  5255  5481 I ViewRootImpl@a6e7dc[MainActivity]: Received frameDrawingCallback syncResult=0 frameNum=1.
+10-11 21:06:39.427  5255  5481 I ViewRootImpl@a6e7dc[MainActivity]: Setting up sync and frameCommitCallback
+10-11 21:06:39.436  5255  5281 I BLASTBufferQueue: [ViewRootImpl@a6e7dc[MainActivity]#4](f:0,a:0) onFrameAvailable the first frame is available
+10-11 21:06:39.437  5255  5281 I ViewRootImpl@a6e7dc[MainActivity]: Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true
+10-11 21:06:39.440  5255  5281 D OpenGLRenderer: CFMS:: SetUp Pid : 5255    Tid : 5281
+10-11 21:06:39.445  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]: onSyncComplete
+10-11 21:06:39.446  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]: setupSync seqId=0 mSyncId=0 fn=1 caller=android.view.ViewRootImpl$$ExternalSyntheticLambda11.accept:6 android.window.SurfaceSyncer.lambda$setupSync$1$android-window-SurfaceSyncer:128 android.window.SurfaceSyncer$$ExternalSyntheticLambda1.accept:8 android.window.SurfaceSyncer$SyncSet.checkIfSyncIsComplete:382 android.window.SurfaceSyncer$SyncSet.markSyncReady:359 android.window.SurfaceSyncer.markSyncReady:151 android.view.ViewRootImpl.performTraversals:4503 
+10-11 21:06:39.447  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]: reportDrawFinished seqId=0 mSyncId=-1 fn=1 mSurfaceChangedTransaction=0x7bdd474c00
+10-11 21:06:39.450  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: MSG_WINDOW_FOCUS_CHANGED 0 0
+10-11 21:06:39.516  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]: MSG_WINDOW_FOCUS_CHANGED 1 0
+10-11 21:06:39.516  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]: mThreadedRenderer.initializeIfNeeded()#2 mSurface={isValid=true 0x7b42f63800}
+10-11 21:06:39.517  5255  5255 D InputMethodManager: startInputInner - Id : 0
+10-11 21:06:39.518  5255  5255 I InputMethodManager: startInputInner - mService.startInputOrWindowGainedFocus
+10-11 21:06:39.526  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 1
+10-11 21:06:40.274  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:40.331  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]: ViewPostIme pointer 1
+10-11 21:06:40.333  5255  5255 D AbsListView: onTouchUp() mTouchMode : 0
+10-11 21:06:40.409  5255  5255 I MSHandlerLifeCycle: removeMultiSplitHandler: no exist. decor=DecorView@4d82ef1[MainActivity]
+10-11 21:06:40.410  5255  5281 D OpenGLRenderer: setSurface called with nullptr
+10-11 21:06:40.410  5255  5281 D OpenGLRenderer: setSurface() destroyed EGLSurface
+10-11 21:06:40.410  5255  5281 D OpenGLRenderer: destroyEglSurface
+10-11 21:06:40.413  5255  5281 D OpenGLRenderer: endAllActiveAnimators on 0x7ae8363900 (MaterialTextView) with handle 0x7b3ca62a80
+10-11 21:06:40.414  5255  5255 I ViewRootImpl@a6e7dc[MainActivity]: dispatchDetachedFromWindow
+10-11 21:06:40.438  5255  5255 D InputTransport: Input channel destroyed: '1fc12e6', fd=149
+10-11 21:06:40.440  5255  5255 I Dialog  : mIsDeviceDefault = false, mIsSamsungBasicInteraction = false, isMetaDataInActivity = false
+10-11 21:06:40.512  5255  5255 I DecorView: [INFO] isPopOver=false config=false
+10-11 21:06:40.512  5255  5255 I DecorView: updateCaptionType: isFloating=false isApplication=true hasWindowDecorCaption=false this=DecorView@f284d23[]
+10-11 21:06:40.512  5255  5255 D DecorView: setCaptionType = 0, this = DecorView@f284d23[]
+10-11 21:06:40.514  5255  5255 I DecorView: getCurrentDensityDpi: from app context. densityDpi=420 msg=resources_loaded
+10-11 21:06:40.514  5255  5255 I DecorView: setWindowBackground: isPopOver=false color=0 d=android.graphics.drawable.ColorDrawable@ff0c7d9
+10-11 21:06:40.520  5255  5281 D NativeCustomFrequencyManager: [NativeCFMS] BpCustomFrequencyManager::BpCustomFrequencyManager()
+10-11 21:06:40.521  5255  5255 I DecorView: notifyKeepScreenOnChanged: keepScreenOn=false
+10-11 21:06:40.535  5255  5255 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 1080, 2400), mDisplayCutout=DisplayCutout{insets=Rect(0, 88 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(512, 0 - 568, 88), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=1080 displayHeight=2400 physicalDisplayWidth=1080 physicalDisplayHeight=2400 density={2.625} cutoutSpec={M 0,0 M 0,12.25101276465640 a 10.60613009248640,10.60613009248640 0 1,0 0,21.21226018497290 a 10.60613009248640,10.60613009248640 0 1,0 0,-21.21226018497290 Z @dp} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=84, center=Point(84, 84)}, RoundedCorner{position=TopRight, radius=84, center=Point(996, 84)}, RoundedCorner{position=BottomRight, radius=84, center=Point(996, 2316)}, RoundedCorner{position=BottomLeft, radius=84, center=Point(84, 2316)}]}  mRoundedCornerFrame=Rect(0, 0 - 1080, 2400), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(964, 0 - 1080, 87) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,2361][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][130,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[950,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][1080,120], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,2316][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,0][0,0], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_IME, mFrame=[0,0][0,0], mVisibleFrame=[0,1409][1080,2400], mVisible=false, mInsetsRoundedCornerFrame=false} } host=com.lagradost.cloudstream3/com.lagradost.cloudstream3.MainActivity from=android.view.ViewRootImpl.setView:1732
+10-11 21:06:40.536  5255  5255 I ViewRootImpl@b348a76[MainActivity]: setView = com.android.internal.policy.DecorView@f284d23 TM=true
+10-11 21:06:40.542  5255  5255 I ViewRootImpl@b348a76[MainActivity]: performTraversals params={(0,0)(fillxfill) gr=CENTER sim={adjust=resize forwardNavigation} ty=APPLICATION fmt=TRANSPARENT wanim=0x7f14000b
+10-11 21:06:40.542  5255  5255 I ViewRootImpl@b348a76[MainActivity]:   fl=85810100
+10-11 21:06:40.542  5255  5255 I ViewRootImpl@b348a76[MainActivity]:   pfl=12020040
+10-11 21:06:40.542  5255  5255 I ViewRootImpl@b348a76[MainActivity]:   vsysui=500
+10-11 21:06:40.542  5255  5255 I ViewRootImpl@b348a76[MainActivity]:   bhv=DEFAULT
+10-11 21:06:40.542  5255  5255 I ViewRootImpl@b348a76[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:40.542  5255  5255 I ViewRootImpl@b348a76[MainActivity]: performTraversals mFirst=true windowShouldResize=true viewVisibilityChanged=false mForceNextWindowRelayout=false params={(0,0)(fillxfill) gr=CENTER sim={adjust=resize forwardNavigation} ty=APPLICATION fmt=TRANSPARENT wanim=0x7f14000b
+10-11 21:06:40.542  5255  5255 I ViewRootImpl@b348a76[MainActivity]:   fl=85810100
+10-11 21:06:40.542  5255  5255 I ViewRootImpl@b348a76[MainActivity]:   pfl=12020040
+10-11 21:06:40.542  5255  5255 I ViewRootImpl@b348a76[MainActivity]:   vsysui=500
+10-11 21:06:40.542  5255  5255 I ViewRootImpl@b348a76[MainActivity]:   bhv=DEFAULT
+10-11 21:06:40.542  5255  5255 I ViewRootImpl@b348a76[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:40.551  5255  5255 I ViewRootImpl@b348a76[MainActivity]: updateBlastSurfaceIfNeeded mBlastBufferQueue=null isSameSurfaceControl=false
+10-11 21:06:40.552  5255  5255 I BLASTBufferQueue: new BLASTBufferQueue, mName= ViewRootImpl@b348a76[MainActivity] mNativeObject= 0x7b5a970800 sc.mNativeObject= 0x7b164f4ec0 caller= android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:2909 android.view.ViewRootImpl.relayoutWindow:9847 android.view.ViewRootImpl.performTraversals:3884 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 android.view.Choreographer$CallbackRecord.run:1301 android.view.Choreographer$CallbackRecord.run:1309 android.view.Choreographer.doCallbacks:923 android.view.Choreographer.doFrame:852 android.view.Choreographer$FrameDisplayEventReceiver.run:1283 
+10-11 21:06:40.552  5255  5255 I BLASTBufferQueue: update, w= 1080 h= 2400 mName = ViewRootImpl@b348a76[MainActivity] mNativeObject= 0x7b5a970800 sc.mNativeObject= 0x7b164f4ec0 format= -2 caller= android.graphics.BLASTBufferQueue.<init>:84 android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:2909 android.view.ViewRootImpl.relayoutWindow:9847 android.view.ViewRootImpl.performTraversals:3884 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 
+10-11 21:06:40.553  5255  5255 I ViewRootImpl@b348a76[MainActivity]: Relayout returned: old=(0,0,1080,2400) new=(0,0,1080,2400) req=(1080,2400)0 dur=9 res=0x3 s={true 0x7b42f63800} ch=true seqId=0
+10-11 21:06:40.553  5255  5255 I ViewRootImpl@b348a76[MainActivity]: mThreadedRenderer.initialize() mSurface={isValid=true 0x7b42f63800} hwInitialized=true
+10-11 21:06:40.554  5255  5281 D OpenGLRenderer: eglCreateWindowSurface
+10-11 21:06:40.555  5255  5255 I ViewRootImpl@b348a76[MainActivity]: reportNextDraw android.view.ViewRootImpl.performTraversals:4438 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 android.view.Choreographer$CallbackRecord.run:1301 android.view.Choreographer$CallbackRecord.run:1309 
+10-11 21:06:40.555  5255  5255 I ViewRootImpl@b348a76[MainActivity]: Setup new sync id=0
+10-11 21:06:40.555  5255  5255 I ViewRootImpl@b348a76[MainActivity]: Setting syncFrameCallback
+10-11 21:06:40.555  5255  5255 I ViewRootImpl@b348a76[MainActivity]: registerCallbacksForSync syncBuffer=false
+10-11 21:06:40.557  5255  5480 I ViewRootImpl@b348a76[MainActivity]: Received frameDrawingCallback syncResult=0 frameNum=1.
+10-11 21:06:40.557  5255  5480 I ViewRootImpl@b348a76[MainActivity]: Setting up sync and frameCommitCallback
+10-11 21:06:40.569  5255  5281 I BLASTBufferQueue: [ViewRootImpl@b348a76[MainActivity]#5](f:0,a:0) onFrameAvailable the first frame is available
+10-11 21:06:40.570  5255  5281 I ViewRootImpl@b348a76[MainActivity]: Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true
+10-11 21:06:40.571  5255  5281 D OpenGLRenderer: CFMS:: SetUp Pid : 5255    Tid : 5281
+10-11 21:06:40.574  5255  5255 I ViewRootImpl@b348a76[MainActivity]: onSyncComplete
+10-11 21:06:40.574  5255  5255 I ViewRootImpl@b348a76[MainActivity]: setupSync seqId=0 mSyncId=0 fn=1 caller=android.view.ViewRootImpl$$ExternalSyntheticLambda11.accept:6 android.window.SurfaceSyncer.lambda$setupSync$1$android-window-SurfaceSyncer:128 android.window.SurfaceSyncer$$ExternalSyntheticLambda1.accept:8 android.window.SurfaceSyncer$SyncSet.checkIfSyncIsComplete:382 android.window.SurfaceSyncer$SyncSet.markSyncReady:359 android.window.SurfaceSyncer.markSyncReady:151 android.view.ViewRootImpl.performTraversals:4503 
+10-11 21:06:40.575  5255  5255 I ViewRootImpl@b348a76[MainActivity]: reportDrawFinished seqId=0 mSyncId=-1 fn=1 mSurfaceChangedTransaction=0x7b164e1e00
+10-11 21:06:40.577  5255  5255 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 1080, 2400), mDisplayCutout=DisplayCutout{insets=Rect(0, 88 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(512, 0 - 568, 88), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=1080 displayHeight=2400 physicalDisplayWidth=1080 physicalDisplayHeight=2400 density={2.625} cutoutSpec={M 0,0 M 0,12.25101276465640 a 10.60613009248640,10.60613009248640 0 1,0 0,21.21226018497290 a 10.60613009248640,10.60613009248640 0 1,0 0,-21.21226018497290 Z @dp} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=84, center=Point(84, 84)}, RoundedCorner{position=TopRight, radius=84, center=Point(996, 84)}, RoundedCorner{position=BottomRight, radius=84, center=Point(996, 2316)}, RoundedCorner{position=BottomLeft, radius=84, center=Point(84, 2316)}]}  mRoundedCornerFrame=Rect(0, 0 - 1080, 2400), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(964, 0 - 1080, 87) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,2361][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][130,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[950,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][1080,120], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,2316][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,0][0,0], mVisible=true, mInsetsRoundedCornerFrame=false} } host=com.lagradost.cloudstream3/com.lagradost.cloudstream3.MainActivity from=android.view.ViewRootImpl$ViewRootHandler.handleMessageImpl:6740
+10-11 21:06:40.579  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: MSG_WINDOW_FOCUS_CHANGED 1 0
+10-11 21:06:40.579  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: mThreadedRenderer.initializeIfNeeded()#2 mSurface={isValid=true 0x7b5aa34800}
+10-11 21:06:40.584  5255  5255 D InputMethodManager: startInputInner - Id : 0
+10-11 21:06:40.584  5255  5255 I InputMethodManager: startInputInner - mService.startInputOrWindowGainedFocus
+10-11 21:06:40.611  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: MSG_WINDOW_FOCUS_CHANGED 0 0
+10-11 21:06:40.641  5255  5255 I ViewRootImpl@b348a76[MainActivity]: MSG_WINDOW_FOCUS_CHANGED 1 0
+10-11 21:06:40.641  5255  5255 I ViewRootImpl@b348a76[MainActivity]: mThreadedRenderer.initializeIfNeeded()#2 mSurface={isValid=true 0x7b42f63800}
+10-11 21:06:40.642  5255  5255 D InputMethodManager: startInputInner - Id : 0
+10-11 21:06:40.642  5255  5255 I InputMethodManager: startInputInner - mService.startInputOrWindowGainedFocus
+10-11 21:06:41.179  5255  5260 I st.cloudstream3: Background concurrent copying GC freed 19MB AllocSpace bytes, 49(2656KB) LOS objects, 49% free, 21MB/43MB, paused 337us,69us total 176.814ms
+10-11 21:06:41.185  5255  5281 D OpenGLRenderer: setSurface called with nullptr
+10-11 21:06:41.185  5255  5261 D InputTransport: Input channel destroyed: 'ClientS', fd=148
+10-11 21:06:41.186  5255  5261 D InputTransport: Input channel destroyed: 'ClientS', fd=261
+10-11 21:06:41.186  5255  5261 D InputTransport: Input channel destroyed: 'ClientS', fd=267
+10-11 21:06:41.527  5255  5412 D RepoLink: Loaded ExtractorLink: ExtractorLink(name=Bigwarp 2101 kbps, url=https://fs69.bigwarp.io/v/01/02035/mdxvolfllzac_x/x.mp4?t=N1bwvDEvTM3ajB2eSmgnON7VmP1_AbyPvwnkzgGtGfI&s=1760213202&e=43200&f=10175030&sp=1000&i=0.0&kmnr=491340330475, referer=https://bigwarp.pro/embed-mdxvolfllzac.html, type=VIDEO)
+10-11 21:06:41.528  5255  5412 D RepoLink: Loaded ExtractorLink: ExtractorLink(name=Bigwarp 1889 kbps, url=https://fs69.bigwarp.io/v/01/02035/mdxvolfllzac_o/o.mp4?t=CP-dBeFdNL5eC8dyJQr8Wn7yaUhoU6ztlv6fx3YZfmE&s=1760213202&e=43200&f=10175030&sp=600&i=0.0&kmnr=491340330475, referer=https://bigwarp.pro/embed-mdxvolfllzac.html, type=VIDEO)
+10-11 21:06:41.809  5255  5412 D RepoLink: Loaded ExtractorLink: ExtractorLink(name=DoodStream, url=https://oi321o.cloudatacdn.com/u5kj64ajqlb3sdgge575eoytj6bpdjn3v3mwdfu3qlv6kkrjereg6w3ddw4q/wm9wta64lk~ojqWJyIfyN?token=qovgq1x3avggt61drklo3c7y, referer=https://ds2play.com/, type=VIDEO)
+10-11 21:06:42.017  5255  5412 D RepoLink: Loaded ExtractorLink: ExtractorLink(name=Vidguard, url=https://7p1z2bdanj.guardstorage.net/hls_3/2nH17s6xdViJ5-NoTZNsf9hvOt811SLVHfYhup2ekHz-8c3g6yPKolXamDXEUhV8TbNwGe5pHOOJt6X1IhC8d50MRH7Y1NXipKn7KtsKLWetVhOhbBwfXSqFvYxc017RhUllvw43pr7Rh_1ups378LAyMSjrAek9Da_Xwv1VWf48FgcnapDA6b1h3vXNR2btT249NCVt0CMA8wu9_b9Z9w/master.m3u8?sig=-QY1Eku8RgDHYUsHiIJvng&expires=1760222202, referer=https://listeamed.net, type=M3U8)
+10-11 21:06:42.044  5255  5412 D RepoLink: Loaded ExtractorLink: ExtractorLink(name=MixDrop, url=https://s-delivery26.mxcontent.net/v2/vklg8l06in18o.mp4?s=xCLTVPf8CJDKbsaphVtv7w&e=1760234802&_t=1760220615, referer=https://mxdrop.to/e/vklg8l06in18o, type=VIDEO)
+10-11 21:06:42.446  5255  5412 D ApiError: -------------------------------------------------------------------
+10-11 21:06:42.446  5255  5412 D ApiError: safeApiCall: can't bypass captcha
+10-11 21:06:42.446  5255  5412 D ApiError: safeApiCall: can't bypass captcha
+10-11 21:06:42.446  5255  5412 W System.err: com.lagradost.cloudstream3.ErrorLoadingException: can't bypass captcha
+10-11 21:06:42.446  5255  5412 W System.err: 	at com.lagradost.cloudstream3.extractors.Zorofile.getUrl$suspendImpl(Zorofile.kt:34)
+10-11 21:06:42.447  5255  5412 W System.err: 	at com.lagradost.cloudstream3.extractors.Zorofile$getUrl$1.invokeSuspend(Unknown Source:18)
+10-11 21:06:42.447  5255  5412 W System.err: 	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+10-11 21:06:42.447  5255  5412 W System.err: 	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+10-11 21:06:42.447  5255  5412 W System.err: 	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+10-11 21:06:42.447  5255  5412 W System.err: 	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:95)
+10-11 21:06:42.447  5255  5412 W System.err: 	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:69)
+10-11 21:06:42.447  5255  5412 W System.err: 	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+10-11 21:06:42.447  5255  5412 W System.err: 	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:47)
+10-11 21:06:42.447  5255  5412 W System.err: 	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+10-11 21:06:42.448  5255  5412 W System.err: 	at com.lagradost.cloudstream3.ParCollectionsKt.apmap(ParCollections.kt:49)
+10-11 21:06:42.448  5255  5412 W System.err: 	at com.egydead.EgyDeadProvider.loadLinks(EgyDeadProvider.kt:121)
+10-11 21:06:42.448  5255  5412 W System.err: 	at com.egydead.EgyDeadProvider$loadLinks$1.invokeSuspend(Unknown Source:18)
+10-11 21:06:42.448  5255  5412 W System.err: 	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+10-11 21:06:42.448  5255  5412 W System.err: 	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+10-11 21:06:42.448  5255  5412 W System.err: 	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:113)
+10-11 21:06:42.448  5255  5412 W System.err: 	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+10-11 21:06:42.448  5255  5412 W System.err: 	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+10-11 21:06:42.448  5255  5412 W System.err: 	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:820)
+10-11 21:06:42.448  5255  5412 W System.err: 	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+10-11 21:06:42.448  5255  5412 W System.err: 	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+10-11 21:06:42.449  5255  5412 D ApiError: -------------------------------------------------------------------
+10-11 21:06:42.452  5255  5255 I MSHandlerLifeCycle: removeMultiSplitHandler: no exist. decor=DecorView@f284d23[MainActivity]
+10-11 21:06:42.454  5255  5281 D OpenGLRenderer: setSurface called with nullptr
+10-11 21:06:42.454  5255  5281 D OpenGLRenderer: setSurface() destroyed EGLSurface
+10-11 21:06:42.454  5255  5281 D OpenGLRenderer: destroyEglSurface
+10-11 21:06:42.462  5255  5255 I ViewRootImpl@b348a76[MainActivity]: dispatchDetachedFromWindow
+10-11 21:06:42.485  5255  5255 D InputTransport: Input channel destroyed: 'eb22e88', fd=149
+10-11 21:06:42.487  5255  5255 I Dialog  : mIsDeviceDefault = false, mIsSamsungBasicInteraction = false, isMetaDataInActivity = false
+10-11 21:06:42.520  5255  5255 I DecorView: [INFO] isPopOver=false config=false
+10-11 21:06:42.520  5255  5255 I DecorView: updateCaptionType: isFloating=false isApplication=true hasWindowDecorCaption=false this=DecorView@2a41cc[]
+10-11 21:06:42.520  5255  5255 D DecorView: setCaptionType = 0, this = DecorView@2a41cc[]
+10-11 21:06:42.523  5255  5255 I DecorView: getCurrentDensityDpi: from app context. densityDpi=420 msg=resources_loaded
+10-11 21:06:42.523  5255  5255 I DecorView: setWindowBackground: isPopOver=false color=0 d=android.graphics.drawable.ColorDrawable@bddcb2a
+10-11 21:06:42.533  5255  5281 D NativeCustomFrequencyManager: [NativeCFMS] BpCustomFrequencyManager::BpCustomFrequencyManager()
+10-11 21:06:42.534  5255  5255 I DecorView: notifyKeepScreenOnChanged: keepScreenOn=false
+10-11 21:06:42.552  5255  5255 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 1080, 2400), mDisplayCutout=DisplayCutout{insets=Rect(0, 88 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(512, 0 - 568, 88), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=1080 displayHeight=2400 physicalDisplayWidth=1080 physicalDisplayHeight=2400 density={2.625} cutoutSpec={M 0,0 M 0,12.25101276465640 a 10.60613009248640,10.60613009248640 0 1,0 0,21.21226018497290 a 10.60613009248640,10.60613009248640 0 1,0 0,-21.21226018497290 Z @dp} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=84, center=Point(84, 84)}, RoundedCorner{position=TopRight, radius=84, center=Point(996, 84)}, RoundedCorner{position=BottomRight, radius=84, center=Point(996, 2316)}, RoundedCorner{position=BottomLeft, radius=84, center=Point(84, 2316)}]}  mRoundedCornerFrame=Rect(0, 0 - 1080, 2400), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(964, 0 - 1080, 87) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,2361][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][130,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[950,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][1080,120], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,2316][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,0][0,0], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_IME, mFrame=[0,0][0,0], mVisibleFrame=[0,1409][1080,2400], mVisible=false, mInsetsRoundedCornerFrame=false} } host=com.lagradost.cloudstream3/com.lagradost.cloudstream3.MainActivity from=android.view.ViewRootImpl.setView:1732
+10-11 21:06:42.554  5255  5255 I ViewRootImpl@5897493[MainActivity]: setView = com.android.internal.policy.DecorView@2a41cc TM=true
+10-11 21:06:42.570  5255  5255 I ViewRootImpl@5897493[MainActivity]: performTraversals params={(0,0)(fillxfill) gr=CENTER sim={adjust=resize forwardNavigation} ty=APPLICATION fmt=TRANSPARENT wanim=0x7f14000b
+10-11 21:06:42.570  5255  5255 I ViewRootImpl@5897493[MainActivity]:   fl=85810100
+10-11 21:06:42.570  5255  5255 I ViewRootImpl@5897493[MainActivity]:   pfl=12020040
+10-11 21:06:42.570  5255  5255 I ViewRootImpl@5897493[MainActivity]:   vsysui=500
+10-11 21:06:42.570  5255  5255 I ViewRootImpl@5897493[MainActivity]:   bhv=DEFAULT
+10-11 21:06:42.570  5255  5255 I ViewRootImpl@5897493[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:42.571  5255  5255 I ViewRootImpl@5897493[MainActivity]: performTraversals mFirst=true windowShouldResize=true viewVisibilityChanged=false mForceNextWindowRelayout=false params={(0,0)(fillxfill) gr=CENTER sim={adjust=resize forwardNavigation} ty=APPLICATION fmt=TRANSPARENT wanim=0x7f14000b
+10-11 21:06:42.571  5255  5255 I ViewRootImpl@5897493[MainActivity]:   fl=85810100
+10-11 21:06:42.571  5255  5255 I ViewRootImpl@5897493[MainActivity]:   pfl=12020040
+10-11 21:06:42.571  5255  5255 I ViewRootImpl@5897493[MainActivity]:   vsysui=500
+10-11 21:06:42.571  5255  5255 I ViewRootImpl@5897493[MainActivity]:   bhv=DEFAULT
+10-11 21:06:42.571  5255  5255 I ViewRootImpl@5897493[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:42.587  5255  5255 I ViewRootImpl@5897493[MainActivity]: updateBlastSurfaceIfNeeded mBlastBufferQueue=null isSameSurfaceControl=false
+10-11 21:06:42.588  5255  5255 I BLASTBufferQueue: new BLASTBufferQueue, mName= ViewRootImpl@5897493[MainActivity] mNativeObject= 0x7bed685300 sc.mNativeObject= 0x7bdd56bee0 caller= android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:2909 android.view.ViewRootImpl.relayoutWindow:9847 android.view.ViewRootImpl.performTraversals:3884 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 android.view.Choreographer$CallbackRecord.run:1301 android.view.Choreographer$CallbackRecord.run:1309 android.view.Choreographer.doCallbacks:923 android.view.Choreographer.doFrame:852 android.view.Choreographer$FrameDisplayEventReceiver.run:1283 
+10-11 21:06:42.589  5255  5255 I BLASTBufferQueue: update, w= 1080 h= 2400 mName = ViewRootImpl@5897493[MainActivity] mNativeObject= 0x7bed685300 sc.mNativeObject= 0x7bdd56bee0 format= -2 caller= android.graphics.BLASTBufferQueue.<init>:84 android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:2909 android.view.ViewRootImpl.relayoutWindow:9847 android.view.ViewRootImpl.performTraversals:3884 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 
+10-11 21:06:42.589  5255  5255 I ViewRootImpl@5897493[MainActivity]: Relayout returned: old=(0,0,1080,2400) new=(0,0,1080,2400) req=(1080,2400)0 dur=16 res=0x3 s={true 0x7b42f63800} ch=true seqId=0
+10-11 21:06:42.591  5255  5255 I ViewRootImpl@5897493[MainActivity]: mThreadedRenderer.initialize() mSurface={isValid=true 0x7b42f63800} hwInitialized=true
+10-11 21:06:42.591  5255  5281 D OpenGLRenderer: eglCreateWindowSurface
+10-11 21:06:42.611  5255  5255 D AbsListView:  in onLayout changed 
+10-11 21:06:42.612  5255  5255 I ViewRootImpl@5897493[MainActivity]: reportNextDraw android.view.ViewRootImpl.performTraversals:4438 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 android.view.Choreographer$CallbackRecord.run:1301 android.view.Choreographer$CallbackRecord.run:1309 
+10-11 21:06:42.612  5255  5255 I ViewRootImpl@5897493[MainActivity]: Setup new sync id=0
+10-11 21:06:42.612  5255  5255 I ViewRootImpl@5897493[MainActivity]: Setting syncFrameCallback
+10-11 21:06:42.613  5255  5255 I ViewRootImpl@5897493[MainActivity]: registerCallbacksForSync syncBuffer=false
+10-11 21:06:42.615  5255  5481 I ViewRootImpl@5897493[MainActivity]: Received frameDrawingCallback syncResult=0 frameNum=1.
+10-11 21:06:42.615  5255  5481 I ViewRootImpl@5897493[MainActivity]: Setting up sync and frameCommitCallback
+10-11 21:06:42.621  5255  5281 I BLASTBufferQueue: [ViewRootImpl@5897493[MainActivity]#6](f:0,a:0) onFrameAvailable the first frame is available
+10-11 21:06:42.622  5255  5281 I ViewRootImpl@5897493[MainActivity]: Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true
+10-11 21:06:42.624  5255  5281 D OpenGLRenderer: CFMS:: SetUp Pid : 5255    Tid : 5281
+10-11 21:06:42.629  5255  5255 I ViewRootImpl@5897493[MainActivity]: onSyncComplete
+10-11 21:06:42.629  5255  5255 I ViewRootImpl@5897493[MainActivity]: setupSync seqId=0 mSyncId=0 fn=1 caller=android.view.ViewRootImpl$$ExternalSyntheticLambda11.accept:6 android.window.SurfaceSyncer.lambda$setupSync$1$android-window-SurfaceSyncer:128 android.window.SurfaceSyncer$$ExternalSyntheticLambda1.accept:8 android.window.SurfaceSyncer$SyncSet.checkIfSyncIsComplete:382 android.window.SurfaceSyncer$SyncSet.markSyncReady:359 android.window.SurfaceSyncer.markSyncReady:151 android.view.ViewRootImpl.performTraversals:4503 
+10-11 21:06:42.630  5255  5255 I ViewRootImpl@5897493[MainActivity]: reportDrawFinished seqId=0 mSyncId=-1 fn=1 mSurfaceChangedTransaction=0x7b42c24800
+10-11 21:06:42.631  5255  5255 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 1080, 2400), mDisplayCutout=DisplayCutout{insets=Rect(0, 88 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(512, 0 - 568, 88), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=1080 displayHeight=2400 physicalDisplayWidth=1080 physicalDisplayHeight=2400 density={2.625} cutoutSpec={M 0,0 M 0,12.25101276465640 a 10.60613009248640,10.60613009248640 0 1,0 0,21.21226018497290 a 10.60613009248640,10.60613009248640 0 1,0 0,-21.21226018497290 Z @dp} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=84, center=Point(84, 84)}, RoundedCorner{position=TopRight, radius=84, center=Point(996, 84)}, RoundedCorner{position=BottomRight, radius=84, center=Point(996, 2316)}, RoundedCorner{position=BottomLeft, radius=84, center=Point(84, 2316)}]}  mRoundedCornerFrame=Rect(0, 0 - 1080, 2400), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(964, 0 - 1080, 87) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,2361][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][130,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[950,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][1080,120], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,2316][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,0][0,0], mVisible=true, mInsetsRoundedCornerFrame=false} } host=com.lagradost.cloudstream3/com.lagradost.cloudstream3.MainActivity from=android.view.ViewRootImpl$ViewRootHandler.handleMessageImpl:6740
+10-11 21:06:42.634  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: MSG_WINDOW_FOCUS_CHANGED 0 0
+10-11 21:06:42.641  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: MSG_WINDOW_FOCUS_CHANGED 0 0
+10-11 21:06:42.682  5255  5255 I ViewRootImpl@5897493[MainActivity]: MSG_WINDOW_FOCUS_CHANGED 1 0
+10-11 21:06:42.683  5255  5255 I ViewRootImpl@5897493[MainActivity]: mThreadedRenderer.initializeIfNeeded()#2 mSurface={isValid=true 0x7b42f63800}
+10-11 21:06:42.684  5255  5255 D InputMethodManager: startInputInner - Id : 0
+10-11 21:06:42.684  5255  5255 I InputMethodManager: startInputInner - mService.startInputOrWindowGainedFocus
+10-11 21:06:45.157  5255  5255 I ViewRootImpl@5897493[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:45.189  5255  5255 I ViewRootImpl@5897493[MainActivity]: ViewPostIme pointer 1
+10-11 21:06:45.194  5255  5255 I MSHandlerLifeCycle: removeMultiSplitHandler: no exist. decor=DecorView@2a41cc[MainActivity]
+10-11 21:06:45.195  5255  5281 D OpenGLRenderer: setSurface called with nullptr
+10-11 21:06:45.195  5255  5281 D OpenGLRenderer: setSurface() destroyed EGLSurface
+10-11 21:06:45.195  5255  5281 D OpenGLRenderer: destroyEglSurface
+10-11 21:06:45.197  5255  5255 I ViewRootImpl@5897493[MainActivity]: dispatchDetachedFromWindow
+10-11 21:06:45.226  5255  5255 D InputTransport: Input channel destroyed: '2f215a6', fd=120
+10-11 21:06:45.232  5255  5255 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 1080, 2400), mDisplayCutout=DisplayCutout{insets=Rect(0, 88 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(512, 0 - 568, 88), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=1080 displayHeight=2400 physicalDisplayWidth=1080 physicalDisplayHeight=2400 density={2.625} cutoutSpec={M 0,0 M 0,12.25101276465640 a 10.60613009248640,10.60613009248640 0 1,0 0,21.21226018497290 a 10.60613009248640,10.60613009248640 0 1,0 0,-21.21226018497290 Z @dp} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=84, center=Point(84, 84)}, RoundedCorner{position=TopRight, radius=84, center=Point(996, 84)}, RoundedCorner{position=BottomRight, radius=84, center=Point(996, 2316)}, RoundedCorner{position=BottomLeft, radius=84, center=Point(84, 2316)}]}  mRoundedCornerFrame=Rect(0, 0 - 1080, 2400), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(964, 0 - 1080, 87) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,2361][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][130,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[950,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][1080,120], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,2316][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,0][0,0], mVisible=true, mInsetsRoundedCornerFrame=false} } host=com.lagradost.cloudstream3/com.lagradost.cloudstream3.MainActivity from=android.view.ViewRootImpl$ViewRootHandler.handleMessageImpl:6740
+10-11 21:06:45.261  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: MSG_WINDOW_FOCUS_CHANGED 1 0
+10-11 21:06:45.261  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: mThreadedRenderer.initializeIfNeeded()#2 mSurface={isValid=true 0x7b5aa34800}
+10-11 21:06:45.270  5255  5255 D InputMethodManager: startInputInner - Id : 0
+10-11 21:06:45.271  5255  5255 I InputMethodManager: startInputInner - mService.startInputOrWindowGainedFocus
+10-11 21:06:46.190  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:46.261  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:46.273  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:46.290  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:46.306  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:46.322  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:46.326  5255  5255 D WindowOnBackDispatcher: onBackInvoked, viewRoot=ViewRootImpl@5897493[MainActivity], callback=androidx.activity.OnBackPressedDispatcher$Api33Impl$$ExternalSyntheticLambda0@c867560
+10-11 21:06:46.336  5255  5255 I IMM_LC  : hsifw() - flag : 0
+10-11 21:06:46.336  5255  5255 I IMM_LC  : hsifw() - mService.hideSoftInput
+10-11 21:06:46.340  5255  5255 I CS3ExoPlayer: onStop
+10-11 21:06:46.340  5255  5255 I CS3ExoPlayer: saveData
+10-11 21:06:46.340  5255  5255 I CS3ExoPlayer: handleEvent Pause
+10-11 21:06:46.417  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:46.539  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:46.557  5255  5480 D SurfaceView@79d7e73: updateSurfacePosition RenderWorker, frameNr = 564, position = [52, 311, 1028, 786] surfaceSize = 1080x525
+10-11 21:06:46.557  5255  5480 I SurfaceView@79d7e73: uSP: rtp = Rect(52, 311 - 1028, 786) rtsw = 1080 rtsh = 525
+10-11 21:06:46.558  5255  5480 I SurfaceView@79d7e73: onSSPAndSRT: pl = 52 pt = 311 sx = 0.9037037 sy = 0.9047619
+10-11 21:06:46.558  5255  5480 I SurfaceView@79d7e73: aOrMT: ViewRootImpl@fd04a9[MainActivity] t = android.view.SurfaceControl$Transaction@8aad45a fN = 564 android.view.SurfaceView.-$$Nest$mapplyOrMergeTransaction:0 android.view.SurfaceView$SurfaceViewPositionUpdateListener.positionChanged:1537 android.graphics.RenderNode$CompositePositionUpdateListener.positionChanged:373 
+10-11 21:06:46.558  5255  5480 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7bdd474800 mBlastBufferQueue=0x7b42be6300 fn= 564 caller= android.view.SurfaceView.applyOrMergeTransaction:1455 android.view.SurfaceView.-$$Nest$mapplyOrMergeTransaction:0 android.view.SurfaceView$SurfaceViewPositionUpdateListener.positionChanged:1537 
+10-11 21:06:46.576  5255  5481 D SurfaceView@79d7e73: updateSurfacePosition RenderWorker, frameNr = 565, position = [54, 314, 1026, 787] surfaceSize = 1080x525
+10-11 21:06:46.576  5255  5481 I SurfaceView@79d7e73: uSP: rtp = Rect(54, 314 - 1026, 787) rtsw = 1080 rtsh = 525
+10-11 21:06:46.576  5255  5481 I SurfaceView@79d7e73: onSSPAndSRT: pl = 54 pt = 314 sx = 0.9 sy = 0.9009524
+10-11 21:06:46.576  5255  5481 I SurfaceView@79d7e73: aOrMT: ViewRootImpl@fd04a9[MainActivity] t = android.view.SurfaceControl$Transaction@8aad45a fN = 565 android.view.SurfaceView.-$$Nest$mapplyOrMergeTransaction:0 android.view.SurfaceView$SurfaceViewPositionUpdateListener.positionChanged:1537 android.graphics.RenderNode$CompositePositionUpdateListener.positionChanged:373 
+10-11 21:06:46.576  5255  5481 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7bdd474800 mBlastBufferQueue=0x7b42be6300 fn= 565 caller= android.view.SurfaceView.applyOrMergeTransaction:1455 android.view.SurfaceView.-$$Nest$mapplyOrMergeTransaction:0 android.view.SurfaceView$SurfaceViewPositionUpdateListener.positionChanged:1537 
+10-11 21:06:46.577  5255  5255 I SurfaceView@79d7e73: onWindowVisibilityChanged(8) false android.view.SurfaceView{79d7e73 V.E..V... ........ 0,0-1080,525} of ViewRootImpl@fd04a9[MainActivity]
+10-11 21:06:46.577  5255  5255 I SurfaceView@79d7e73: Changes: creating=false format=false size=false visible=true alpha=false hint=false mUseAlpha=false visible=true left=false top=false
+10-11 21:06:46.577  5255  5255 I SurfaceView@79d7e73: 127762035 Cur surface: Surface(name=null)/@0x7d37449
+10-11 21:06:46.577  5255  5255 I SurfaceView@79d7e73: applyTransactionOnVriDraw: vri = ViewRootImpl@fd04a9[MainActivity] fRS = false t = 0x7b164dda00 android.view.SurfaceView.performSurfaceTransaction:959 android.view.SurfaceView.updateSurface:1105 android.view.SurfaceView.onWindowVisibilityChanged:371 
+10-11 21:06:46.578  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: applyTransactionOnDraw: mRemoved = false isHardwareEnabled = true t = 0x7b164dda00android.view.SurfaceView.applyTransactionOnVriDraw:2048 android.view.SurfaceView.performSurfaceTransaction:959 android.view.SurfaceView.updateSurface:1105 android.view.SurfaceView.onWindowVisibilityChanged:371 android.view.View.dispatchDetachedFromWindow:22529 
+10-11 21:06:46.578  5255  5255 I SurfaceView@79d7e73: surfaceDestroyed
+10-11 21:06:46.578  5255  5255 I SurfaceView@79d7e73: surfaceDestroyed callback.size 0 #2 android.view.SurfaceView{79d7e73 V.E..V... ........ 0,0-1080,525}
+10-11 21:06:46.578  5255  5255 I SurfaceView@79d7e73: updateSurface: mVisible = false mSurface.isValid() = true
+10-11 21:06:46.578  5255  5255 I SurfaceView@79d7e73: releaseSurfaces: viewRoot = ViewRootImpl@fd04a9[MainActivity]
+10-11 21:06:46.579  5255  5255 I SurfaceView@79d7e73: applyTransactionOnVriDraw: vri = ViewRootImpl@fd04a9[MainActivity] fRS = true t = 0x7b16517e00 android.view.SurfaceView.releaseSurfaces:858 android.view.SurfaceView.updateSurface:1172 android.view.SurfaceView.onWindowVisibilityChanged:371 
+10-11 21:06:46.579  5255  5255 I SurfaceView@79d7e73: applyTransactionOnVriDraw: viewRoot.applyTransactionOnDrawFromReleaseSurfaces
+10-11 21:06:46.579  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: applyTransactionOnDraw: mRemoved = false isHardwareEnabled = true t = 0x7b16517e00android.view.ViewRootImpl.applyTransactionOnDrawFromReleaseSurfaces:12850 android.view.SurfaceView.applyTransactionOnVriDraw:2046 android.view.SurfaceView.releaseSurfaces:858 android.view.SurfaceView.updateSurface:1172 android.view.SurfaceView.onWindowVisibilityChanged:371 
+10-11 21:06:46.579  5255  5255 V SurfaceView@79d7e73: Layout: x=0 y=218 w=1080 h=525, frame=Rect(0, 0 - 1080, 525)
+10-11 21:06:46.579  5255  5255 I SurfaceView@79d7e73: onDetachedFromWindow: tryReleaseSurfaces()
+10-11 21:06:46.579  5255  5255 I SurfaceView@79d7e73: releaseSurfaces: viewRoot = ViewRootImpl@fd04a9[MainActivity]
+10-11 21:06:46.579  5255  5255 I SurfaceView@79d7e73: applyTransactionOnVriDraw: vri = ViewRootImpl@fd04a9[MainActivity] fRS = true t = 0x7b16517f00 android.view.SurfaceView.releaseSurfaces:858 android.view.SurfaceView.onDetachedFromWindow:500 android.view.View.dispatchDetachedFromWindow:22538 
+10-11 21:06:46.579  5255  5255 I SurfaceView@79d7e73: applyTransactionOnVriDraw: viewRoot.applyTransactionOnDrawFromReleaseSurfaces
+10-11 21:06:46.579  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: applyTransactionOnDraw: mRemoved = false isHardwareEnabled = true t = 0x7b16517f00android.view.ViewRootImpl.applyTransactionOnDrawFromReleaseSurfaces:12850 android.view.SurfaceView.applyTransactionOnVriDraw:2046 android.view.SurfaceView.releaseSurfaces:858 android.view.SurfaceView.onDetachedFromWindow:500 android.view.View.dispatchDetachedFromWindow:22538 
+10-11 21:06:46.586  5255  5255 I DecorView: notifyKeepScreenOnChanged: keepScreenOn=false
+10-11 21:06:46.587  5255  5255 I CS3ExoPlayer: releasePlayer
+10-11 21:06:46.587  5255  5255 I CS3ExoPlayer: Handle event: PlayerAttachedEvent(player=null, source=Player)
+10-11 21:06:46.588  5255  5255 I DecorView: notifyKeepScreenOnChanged: keepScreenOn=false
+10-11 21:06:46.589  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: performTraversals params={(0,0)(fillxfill) sim={state=always_hidden adjust=resize} ty=BASE_APPLICATION wanim=0x1030309
+10-11 21:06:46.589  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   fl=85810100
+10-11 21:06:46.589  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   pfl=12020040
+10-11 21:06:46.589  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   vsysui=500
+10-11 21:06:46.589  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   bhv=DEFAULT
+10-11 21:06:46.589  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:46.590  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: performTraversals mFirst=false windowShouldResize=false viewVisibilityChanged=false mForceNextWindowRelayout=false params={(0,0)(fillxfill) sim={state=always_hidden adjust=resize} ty=BASE_APPLICATION fmt=TRANSLUCENT wanim=0x1030309
+10-11 21:06:46.590  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   fl=85810100
+10-11 21:06:46.590  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   pfl=12020040
+10-11 21:06:46.590  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   vsysui=500
+10-11 21:06:46.590  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   bhv=DEFAULT
+10-11 21:06:46.590  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:46.595  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: updateBlastSurfaceIfNeeded mBlastBufferQueue=0x7b42be6300 isSameSurfaceControl=true
+10-11 21:06:46.595  5255  5255 I BLASTBufferQueue: update, w= 1080 h= 2400 mName = ViewRootImpl@fd04a9[MainActivity] mNativeObject= 0x7b42be6300 sc.mNativeObject= 0x7b16770d40 format= -3 caller= android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:2898 android.view.ViewRootImpl.relayoutWindow:9847 android.view.ViewRootImpl.performTraversals:3884 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 android.view.Choreographer$CallbackRecord.run:1301 
+10-11 21:06:46.596  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: Relayout returned: old=(0,0,1080,2400) new=(0,0,1080,2400) req=(1080,2400)0 dur=5 res=0x0 s={true 0x7b5aa34800} ch=false seqId=0
+10-11 21:06:46.598  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: updateBoundsLayer: t = android.view.SurfaceControl$Transaction@d926069 sc = Surface(name=Bounds for - com.lagradost.cloudstream3/com.lagradost.cloudstream3.MainActivity@0)/@0xae93aee frame = 566
+10-11 21:06:46.598  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7b5ab6f500 mBlastBufferQueue=0x7b42be6300 fn= 566 caller= android.view.ViewRootImpl.prepareSurfaces:2985 android.view.ViewRootImpl.performTraversals:4233 android.view.ViewRootImpl.doTraversal:3116 
+10-11 21:06:46.599  5255  5281 D SurfaceView@79d7e73: windowPositionLost, frameNr = 566
+10-11 21:06:46.600  5255  5480 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7b164dda00 mBlastBufferQueue=0x7b42be6300 fn= 566 caller= android.view.ViewRootImpl.lambda$applyTransactionOnDraw$11$android-view-ViewRootImpl:12865 android.view.ViewRootImpl$$ExternalSyntheticLambda1.onFrameDraw:4 android.graphics.HardwareRenderer$FrameDrawingCallback.onFrameDraw:924 
+10-11 21:06:46.600  5255  5480 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7b16517e00 mBlastBufferQueue=0x7b42be6300 fn= 566 caller= android.view.ViewRootImpl.lambda$applyTransactionOnDraw$11$android-view-ViewRootImpl:12865 android.view.ViewRootImpl$$ExternalSyntheticLambda1.onFrameDraw:4 android.graphics.HardwareRenderer$FrameDrawingCallback.onFrameDraw:924 
+10-11 21:06:46.600  5255  5480 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7b16517f00 mBlastBufferQueue=0x7b42be6300 fn= 566 caller= android.view.ViewRootImpl.lambda$applyTransactionOnDraw$11$android-view-ViewRootImpl:12865 android.view.ViewRootImpl$$ExternalSyntheticLambda1.onFrameDraw:4 android.graphics.HardwareRenderer$FrameDrawingCallback.onFrameDraw:924 
+10-11 21:06:48.673  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:48.713  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 1
+10-11 21:06:48.725  5255  5255 I NavComponent: Navigating to fragment: 2131362274
+10-11 21:06:48.726  5255  5255 I IMM_LC  : hsifw() - flag : 0
+10-11 21:06:48.726  5255  5255 I IMM_LC  : hsifw() - mService.hideSoftInput
+10-11 21:06:48.759  5255  5255 D ScrollView: initGoToTop
+10-11 21:06:48.961  5255  5255 I SurfaceView@67b93a4: onWindowVisibilityChanged(0) true android.view.SurfaceView{67b93a4 V.E..V... ......I. 0,0-0,0} of ViewRootImpl@fd04a9[MainActivity]
+10-11 21:06:48.961  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:48.966  5255  5255 I CS3ExoPlayer: SET STYLE = SaveCaptionStyle(foregroundColor=-1, backgroundColor=0, windowColor=0, edgeType=1, edgeColor=-16777216, typeface=null, typefaceFilePath=null, elevation=20, fixedTextSize=null, edgeSize=null, removeCaptions=false, removeBloat=true, upperCase=false, bold=false, italic=false, backgroundRadius=null)
+10-11 21:06:48.972  5255  5255 I IMM_LC  : hsifw() - flag : 0
+10-11 21:06:48.972  5255  5255 I IMM_LC  : hsifw() - mService.hideSoftInput
+10-11 21:06:48.974  5255  5403 I SYNCVM  : addFromUrl = https://tv6.egydead.live/%d9%85%d8%b4%d8%a7%d9%87%d8%af%d8%a9-%d9%81%d9%8a%d9%84%d9%85-mantis-2025-%d9%85%d8%aa%d8%b1%d8%ac%d9%85/
+10-11 21:06:48.974  5255  5403 I SYNCUTIL: getIdsFromUrl https://tv6.egydead.live/%d9%85%d8%b4%d8%a7%d9%87%d8%af%d8%a9-%d9%81%d9%8a%d9%84%d9%85-mantis-2025-%d9%85%d8%aa%d8%b1%d8%ac%d9%85/
+10-11 21:06:48.981  5255  5255 I SurfaceView@67b93a4: onWindowVisibilityChanged(8) false android.view.SurfaceView{67b93a4 V.E..V... ......I. 0,0-0,0} of ViewRootImpl@fd04a9[MainActivity]
+10-11 21:06:48.981  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:48.981  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:48.981  5255  5255 I SurfaceView@67b93a4: onDetachedFromWindow: tryReleaseSurfaces()
+10-11 21:06:48.981  5255  5255 I SurfaceView@67b93a4: releaseSurfaces: viewRoot = ViewRootImpl@fd04a9[MainActivity]
+10-11 21:06:48.981  5255  5255 I SurfaceView@67b93a4: applyTransactionOnVriDraw: vri = ViewRootImpl@fd04a9[MainActivity] fRS = true t = 0x7ae8517500 android.view.SurfaceView.releaseSurfaces:858 android.view.SurfaceView.onDetachedFromWindow:500 android.view.View.dispatchDetachedFromWindow:22538 
+10-11 21:06:48.981  5255  5255 I SurfaceView@67b93a4: applyTransactionOnVriDraw: viewRoot.applyTransactionOnDrawFromReleaseSurfaces
+10-11 21:06:48.981  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: applyTransactionOnDraw: mRemoved = false isHardwareEnabled = true t = 0x7ae8517500android.view.ViewRootImpl.applyTransactionOnDrawFromReleaseSurfaces:12850 android.view.SurfaceView.applyTransactionOnVriDraw:2046 android.view.SurfaceView.releaseSurfaces:858 android.view.SurfaceView.onDetachedFromWindow:500 android.view.View.dispatchDetachedFromWindow:22538 
+10-11 21:06:48.983  5255  5255 I SurfaceView@67b93a4: onWindowVisibilityChanged(0) true android.view.SurfaceView{67b93a4 V.E..V... ......I. 0,0-0,0} of ViewRootImpl@fd04a9[MainActivity]
+10-11 21:06:48.983  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:48.985  5255  5255 I DecorView: notifyKeepScreenOnChanged: keepScreenOn=false
+10-11 21:06:48.990  5255  5255 I CS3ExoPlayer: reloadPlayer
+10-11 21:06:48.990  5255  5255 I CS3ExoPlayer: releasePlayer
+10-11 21:06:48.990  5255  5255 I CS3ExoPlayer: Handle event: PlayerAttachedEvent(player=null, source=Player)
+10-11 21:06:48.993  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: performTraversals params={(0,0)(fillxfill) sim={state=always_hidden adjust=resize} ty=BASE_APPLICATION wanim=0x1030309
+10-11 21:06:48.993  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   fl=85810100
+10-11 21:06:48.993  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   pfl=12020040
+10-11 21:06:48.993  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   vsysui=500
+10-11 21:06:48.993  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   bhv=DEFAULT
+10-11 21:06:48.993  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:48.994  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: performTraversals mFirst=false windowShouldResize=false viewVisibilityChanged=false mForceNextWindowRelayout=false params={(0,0)(fillxfill) sim={state=always_hidden adjust=resize} ty=BASE_APPLICATION fmt=TRANSLUCENT wanim=0x1030309
+10-11 21:06:48.994  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   fl=85810100
+10-11 21:06:48.994  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   pfl=12020040
+10-11 21:06:48.994  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   vsysui=500
+10-11 21:06:48.994  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   bhv=DEFAULT
+10-11 21:06:48.994  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:49.002  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: updateBlastSurfaceIfNeeded mBlastBufferQueue=0x7b42be6300 isSameSurfaceControl=true
+10-11 21:06:49.003  5255  5255 I BLASTBufferQueue: update, w= 1080 h= 2400 mName = ViewRootImpl@fd04a9[MainActivity] mNativeObject= 0x7b42be6300 sc.mNativeObject= 0x7b29e86a40 format= -3 caller= android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:2898 android.view.ViewRootImpl.relayoutWindow:9847 android.view.ViewRootImpl.performTraversals:3884 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 android.view.Choreographer$CallbackRecord.run:1301 
+10-11 21:06:49.003  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: Relayout returned: old=(0,0,1080,2400) new=(0,0,1080,2400) req=(1080,2400)0 dur=8 res=0x0 s={true 0x7b5aa34800} ch=false seqId=0
+10-11 21:06:49.003  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: updateBoundsLayer: t = android.view.SurfaceControl$Transaction@d926069 sc = Surface(name=Bounds for - com.lagradost.cloudstream3/com.lagradost.cloudstream3.MainActivity@0)/@0xae93aee frame = 581
+10-11 21:06:49.003  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7b5ab6f500 mBlastBufferQueue=0x7b42be6300 fn= 581 caller= android.view.ViewRootImpl.prepareSurfaces:2985 android.view.ViewRootImpl.performTraversals:4233 android.view.ViewRootImpl.doTraversal:3116 
+10-11 21:06:49.004  5255  5255 W View    : requestLayout() improperly called by android.widget.FrameLayout{47f12e9 I.E..V... ......I. 0,0-0,0 #7f0a04e7 app:id/start_panel} during layout: running second layout pass
+10-11 21:06:49.004  5255  5255 W View    : requestLayout() improperly called by android.widget.FrameLayout{b143b6e I.E..V... ......ID 1080,0-1080,2143 #7f0a0168 app:id/end_panel} during layout: running second layout pass
+10-11 21:06:49.004  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.008  5255  5481 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7ae8517500 mBlastBufferQueue=0x7b42be6300 fn= 581 caller= android.view.ViewRootImpl.lambda$applyTransactionOnDraw$11$android-view-ViewRootImpl:12865 android.view.ViewRootImpl$$ExternalSyntheticLambda1.onFrameDraw:4 android.graphics.HardwareRenderer$FrameDrawingCallback.onFrameDraw:924 
+10-11 21:06:49.010  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.026  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.045  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.064  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.075  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.086  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.103  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.120  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.137  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.153  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.170  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.187  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.203  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.220  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.237  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.253  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.270  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.287  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.303  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.320  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.337  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.354  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.370  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.386  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.403  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.420  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.437  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.453  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.470  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.486  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.503  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.520  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.536  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.554  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.570  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.587  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.598  5255  5397 I RVM2    : applyMeta
+10-11 21:06:49.600  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:49.601  5255  5255 E CoilImgLoader: Error loading image: coil3.request.NullRequestDataException: The request's data is null.
+10-11 21:06:49.602  5255  5255 E CoilImgLoader: Error loading image: coil3.request.NullRequestDataException: The request's data is null.
+10-11 21:06:49.604  5255  5391 I SYNCVM  : addFromUrl = https://tv6.egydead.live/%d9%85%d8%b4%d8%a7%d9%87%d8%af%d8%a9-%d9%81%d9%8a%d9%84%d9%85-mantis-2025-%d9%85%d8%aa%d8%b1%d8%ac%d9%85/
+10-11 21:06:49.604  5255  5391 I SYNCUTIL: getIdsFromUrl https://tv6.egydead.live/%d9%85%d8%b4%d8%a7%d9%87%d8%af%d8%a9-%d9%81%d9%8a%d9%84%d9%85-mantis-2025-%d9%85%d8%aa%d8%b1%d8%ac%d9%85/
+10-11 21:06:49.619  5255  5255 D SurfaceView@67b93a4: updateSurface: has no frame
+10-11 21:06:49.621  5255  5255 I SurfaceView@67b93a4: Changes: creating=true format=true size=true visible=true alpha=false hint=false mUseAlpha=false visible=true left=true top=true
+10-11 21:06:49.625  5255  5255 I BLASTBufferQueue: update, w= 1080 h= 525 mName = null mNativeObject= 0x7bed685600 sc.mNativeObject= 0x7b29e89060 format= 4 caller= android.view.SurfaceView.createBlastSurfaceControls:1383 android.view.SurfaceView.updateSurface:1079 android.view.SurfaceView.lambda$new$0$android-view-SurfaceView:200 android.view.SurfaceView$$ExternalSyntheticLambda5.onPreDraw:2 android.view.ViewTreeObserver.dispatchOnPreDraw:1121 android.view.ViewRootImpl.performTraversals:4442 
+10-11 21:06:49.626  5255  5255 I SurfaceView@67b93a4: 108762020 Cur surface: Surface(name=null)/@0xff463b6
+10-11 21:06:49.626  5255  5255 I SurfaceView@67b93a4: pST: sr = Rect(0, 218 - 1080, 743) sw = 1080 sh = 525
+10-11 21:06:49.626  5255  5255 D SurfaceView@67b93a4: performSurfaceTransaction RenderWorker position = [0, 218, 1080, 743] surfaceSize = 1080x525
+10-11 21:06:49.627  5255  5255 I SurfaceView@67b93a4: applyTransactionOnVriDraw: vri = ViewRootImpl@fd04a9[MainActivity] fRS = false t = 0x7b2b97b400 android.view.SurfaceView.performSurfaceTransaction:959 android.view.SurfaceView.updateSurface:1105 android.view.SurfaceView.lambda$new$0$android-view-SurfaceView:200 
+10-11 21:06:49.627  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: applyTransactionOnDraw: mRemoved = false isHardwareEnabled = true t = 0x7b2b97b400android.view.SurfaceView.applyTransactionOnVriDraw:2048 android.view.SurfaceView.performSurfaceTransaction:959 android.view.SurfaceView.updateSurface:1105 android.view.SurfaceView.lambda$new$0$android-view-SurfaceView:200 android.view.SurfaceView$$ExternalSyntheticLambda5.onPreDraw:2 
+10-11 21:06:49.627  5255  5255 I SurfaceView@67b93a4: updateSurface: mVisible = true mSurface.isValid() = true
+10-11 21:06:49.627  5255  5255 I SurfaceView@67b93a4: updateSurface: mSurfaceCreated = false surfaceChanged = true visibleChanged = true
+10-11 21:06:49.627  5255  5255 I SurfaceView@67b93a4: visibleChanged -- surfaceCreated
+10-11 21:06:49.627  5255  5255 I SurfaceView@67b93a4: surfaceCreated 0 #8 android.view.SurfaceView{67b93a4 V.E..V... ......ID 0,0-1080,525}
+10-11 21:06:49.628  5255  5255 I SurfaceView@67b93a4: surfaceChanged -- format=4 w=1080 h=525
+10-11 21:06:49.628  5255  5255 I SurfaceView@67b93a4: surfaceChanged (1080,525) 0 #8 android.view.SurfaceView{67b93a4 V.E..V... ......ID 0,0-1080,525}
+10-11 21:06:49.628  5255  5255 I SurfaceView@67b93a4: surfaceRedrawNeeded
+10-11 21:06:49.629  5255  5255 V SurfaceView@67b93a4: Layout: x=0 y=218 w=1080 h=525, frame=Rect(0, 0 - 1080, 525)
+10-11 21:06:49.638  5255  5480 D SurfaceView@67b93a4: updateSurfacePosition RenderWorker, frameNr = 617, position = [0, 218, 1080, 743] surfaceSize = 1080x525
+10-11 21:06:49.638  5255  5480 I SurfaceView@67b93a4: uSP: rtp = Rect(0, 218 - 1080, 743) rtsw = 1080 rtsh = 525
+10-11 21:06:49.638  5255  5480 I SurfaceView@67b93a4: onSSPAndSRT: pl = 0 pt = 218 sx = 1.0 sy = 1.0
+10-11 21:06:49.638  5255  5480 I SurfaceView@67b93a4: aOrMT: ViewRootImpl@fd04a9[MainActivity] t = android.view.SurfaceControl$Transaction@71ef290 fN = 617 android.view.SurfaceView.-$$Nest$mapplyOrMergeTransaction:0 android.view.SurfaceView$SurfaceViewPositionUpdateListener.positionChanged:1537 android.graphics.RenderNode$CompositePositionUpdateListener.positionChanged:373 
+10-11 21:06:49.639  5255  5480 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7b2b97b500 mBlastBufferQueue=0x7b42be6300 fn= 617 caller= android.view.SurfaceView.applyOrMergeTransaction:1455 android.view.SurfaceView.-$$Nest$mapplyOrMergeTransaction:0 android.view.SurfaceView$SurfaceViewPositionUpdateListener.positionChanged:1537 
+10-11 21:06:49.639  5255  5480 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7b2b97b400 mBlastBufferQueue=0x7b42be6300 fn= 617 caller= android.view.ViewRootImpl.lambda$applyTransactionOnDraw$11$android-view-ViewRootImpl:12865 android.view.ViewRootImpl$$ExternalSyntheticLambda1.onFrameDraw:4 android.graphics.HardwareRenderer$FrameDrawingCallback.onFrameDraw:924 
+10-11 21:06:49.653  5255  5255 I SurfaceView@67b93a4: finishedDrawing
+10-11 21:06:50.692  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:51.219  5255  5255 I Dialog  : mIsDeviceDefault = false, mIsSamsungBasicInteraction = false, isMetaDataInActivity = false
+10-11 21:06:51.248  5255  5255 I DecorView: [INFO] isPopOver=false config=false
+10-11 21:06:51.249  5255  5255 I DecorView: updateCaptionType: isFloating=false isApplication=true hasWindowDecorCaption=false this=DecorView@58541bb[]
+10-11 21:06:51.249  5255  5255 D DecorView: setCaptionType = 0, this = DecorView@58541bb[]
+10-11 21:06:51.252  5255  5255 I DecorView: getCurrentDensityDpi: from app context. densityDpi=420 msg=resources_loaded
+10-11 21:06:51.253  5255  5255 I DecorView: setWindowBackground: isPopOver=false color=0 d=android.graphics.drawable.ColorDrawable@f648a31
+10-11 21:06:51.264  5255  5281 D NativeCustomFrequencyManager: [NativeCFMS] BpCustomFrequencyManager::BpCustomFrequencyManager()
+10-11 21:06:51.265  5255  5255 I DecorView: notifyKeepScreenOnChanged: keepScreenOn=false
+10-11 21:06:51.281  5255  5255 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 1080, 2400), mDisplayCutout=DisplayCutout{insets=Rect(0, 88 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(512, 0 - 568, 88), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=1080 displayHeight=2400 physicalDisplayWidth=1080 physicalDisplayHeight=2400 density={2.625} cutoutSpec={M 0,0 M 0,12.25101276465640 a 10.60613009248640,10.60613009248640 0 1,0 0,21.21226018497290 a 10.60613009248640,10.60613009248640 0 1,0 0,-21.21226018497290 Z @dp} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=84, center=Point(84, 84)}, RoundedCorner{position=TopRight, radius=84, center=Point(996, 84)}, RoundedCorner{position=BottomRight, radius=84, center=Point(996, 2316)}, RoundedCorner{position=BottomLeft, radius=84, center=Point(84, 2316)}]}  mRoundedCornerFrame=Rect(0, 0 - 1080, 2400), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(964, 0 - 1080, 87) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,2361][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][130,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[950,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][1080,120], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,2316][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,0][0,0], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_IME, mFrame=[0,0][0,0], mVisibleFrame=[0,1409][1080,2400], mVisible=false, mInsetsRoundedCornerFrame=false} } host=com.lagradost.cloudstream3/com.lagradost.cloudstream3.MainActivity from=android.view.ViewRootImpl.setView:1732
+10-11 21:06:51.283  5255  5255 I ViewRootImpl@e6890ee[MainActivity]: setView = com.android.internal.policy.DecorView@58541bb TM=true
+10-11 21:06:51.298  5255  5255 I ViewRootImpl@e6890ee[MainActivity]: performTraversals params={(0,0)(fillxfill) gr=CENTER sim={adjust=resize forwardNavigation} ty=APPLICATION fmt=TRANSPARENT wanim=0x7f14000b
+10-11 21:06:51.298  5255  5255 I ViewRootImpl@e6890ee[MainActivity]:   fl=85810100
+10-11 21:06:51.298  5255  5255 I ViewRootImpl@e6890ee[MainActivity]:   pfl=12020040
+10-11 21:06:51.298  5255  5255 I ViewRootImpl@e6890ee[MainActivity]:   vsysui=500
+10-11 21:06:51.298  5255  5255 I ViewRootImpl@e6890ee[MainActivity]:   bhv=DEFAULT
+10-11 21:06:51.298  5255  5255 I ViewRootImpl@e6890ee[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:51.299  5255  5255 I ViewRootImpl@e6890ee[MainActivity]: performTraversals mFirst=true windowShouldResize=true viewVisibilityChanged=false mForceNextWindowRelayout=false params={(0,0)(fillxfill) gr=CENTER sim={adjust=resize forwardNavigation} ty=APPLICATION fmt=TRANSPARENT wanim=0x7f14000b
+10-11 21:06:51.299  5255  5255 I ViewRootImpl@e6890ee[MainActivity]:   fl=85810100
+10-11 21:06:51.299  5255  5255 I ViewRootImpl@e6890ee[MainActivity]:   pfl=12020040
+10-11 21:06:51.299  5255  5255 I ViewRootImpl@e6890ee[MainActivity]:   vsysui=500
+10-11 21:06:51.299  5255  5255 I ViewRootImpl@e6890ee[MainActivity]:   bhv=DEFAULT
+10-11 21:06:51.299  5255  5255 I ViewRootImpl@e6890ee[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:51.314  5255  5255 I ViewRootImpl@e6890ee[MainActivity]: updateBlastSurfaceIfNeeded mBlastBufferQueue=null isSameSurfaceControl=false
+10-11 21:06:51.315  5255  5255 I BLASTBufferQueue: new BLASTBufferQueue, mName= ViewRootImpl@e6890ee[MainActivity] mNativeObject= 0x7bed685f00 sc.mNativeObject= 0x7b29fd1000 caller= android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:2909 android.view.ViewRootImpl.relayoutWindow:9847 android.view.ViewRootImpl.performTraversals:3884 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 android.view.Choreographer$CallbackRecord.run:1301 android.view.Choreographer$CallbackRecord.run:1309 android.view.Choreographer.doCallbacks:923 android.view.Choreographer.doFrame:852 android.view.Choreographer$FrameDisplayEventReceiver.run:1283 
+10-11 21:06:51.315  5255  5255 I BLASTBufferQueue: update, w= 1080 h= 2400 mName = ViewRootImpl@e6890ee[MainActivity] mNativeObject= 0x7bed685f00 sc.mNativeObject= 0x7b29fd1000 format= -2 caller= android.graphics.BLASTBufferQueue.<init>:84 android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:2909 android.view.ViewRootImpl.relayoutWindow:9847 android.view.ViewRootImpl.performTraversals:3884 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 
+10-11 21:06:51.316  5255  5255 I ViewRootImpl@e6890ee[MainActivity]: Relayout returned: old=(0,0,1080,2400) new=(0,0,1080,2400) req=(1080,2400)0 dur=14 res=0x3 s={true 0x7b42f63800} ch=true seqId=0
+10-11 21:06:51.318  5255  5255 I ViewRootImpl@e6890ee[MainActivity]: mThreadedRenderer.initialize() mSurface={isValid=true 0x7b42f63800} hwInitialized=true
+10-11 21:06:51.318  5255  5281 D OpenGLRenderer: eglCreateWindowSurface
+10-11 21:06:51.344  5255  5255 D AbsListView:  in onLayout changed 
+10-11 21:06:51.346  5255  5255 I ViewRootImpl@e6890ee[MainActivity]: reportNextDraw android.view.ViewRootImpl.performTraversals:4438 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 android.view.Choreographer$CallbackRecord.run:1301 android.view.Choreographer$CallbackRecord.run:1309 
+10-11 21:06:51.346  5255  5255 I ViewRootImpl@e6890ee[MainActivity]: Setup new sync id=0
+10-11 21:06:51.346  5255  5255 I ViewRootImpl@e6890ee[MainActivity]: Setting syncFrameCallback
+10-11 21:06:51.346  5255  5255 I ViewRootImpl@e6890ee[MainActivity]: registerCallbacksForSync syncBuffer=false
+10-11 21:06:51.349  5255  5481 I ViewRootImpl@e6890ee[MainActivity]: Received frameDrawingCallback syncResult=0 frameNum=1.
+10-11 21:06:51.349  5255  5481 I ViewRootImpl@e6890ee[MainActivity]: Setting up sync and frameCommitCallback
+10-11 21:06:51.355  5255  5281 I BLASTBufferQueue: [ViewRootImpl@e6890ee[MainActivity]#8](f:0,a:0) onFrameAvailable the first frame is available
+10-11 21:06:51.357  5255  5281 I ViewRootImpl@e6890ee[MainActivity]: Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true
+10-11 21:06:51.359  5255  5281 D OpenGLRenderer: CFMS:: SetUp Pid : 5255    Tid : 5281
+10-11 21:06:51.363  5255  5255 I ViewRootImpl@e6890ee[MainActivity]: onSyncComplete
+10-11 21:06:51.363  5255  5255 I ViewRootImpl@e6890ee[MainActivity]: setupSync seqId=0 mSyncId=0 fn=1 caller=android.view.ViewRootImpl$$ExternalSyntheticLambda11.accept:6 android.window.SurfaceSyncer.lambda$setupSync$1$android-window-SurfaceSyncer:128 android.window.SurfaceSyncer$$ExternalSyntheticLambda1.accept:8 android.window.SurfaceSyncer$SyncSet.checkIfSyncIsComplete:382 android.window.SurfaceSyncer$SyncSet.markSyncReady:359 android.window.SurfaceSyncer.markSyncReady:151 android.view.ViewRootImpl.performTraversals:4503 
+10-11 21:06:51.364  5255  5255 I ViewRootImpl@e6890ee[MainActivity]: reportDrawFinished seqId=0 mSyncId=-1 fn=1 mSurfaceChangedTransaction=0x7b2b97b200
+10-11 21:06:51.367  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: MSG_WINDOW_FOCUS_CHANGED 0 0
+10-11 21:06:51.421  5255  5255 I ViewRootImpl@e6890ee[MainActivity]: MSG_WINDOW_FOCUS_CHANGED 1 0
+10-11 21:06:51.421  5255  5255 I ViewRootImpl@e6890ee[MainActivity]: mThreadedRenderer.initializeIfNeeded()#2 mSurface={isValid=true 0x7b42f63800}
+10-11 21:06:51.422  5255  5255 D InputMethodManager: startInputInner - Id : 0
+10-11 21:06:51.422  5255  5255 I InputMethodManager: startInputInner - mService.startInputOrWindowGainedFocus
+10-11 21:06:51.432  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 1
+10-11 21:06:52.229  5255  5255 I ViewRootImpl@e6890ee[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:52.278  5255  5255 I ViewRootImpl@e6890ee[MainActivity]: ViewPostIme pointer 1
+10-11 21:06:52.279  5255  5255 D AbsListView: onTouchUp() mTouchMode : 0
+10-11 21:06:52.352  5255  5255 I MSHandlerLifeCycle: removeMultiSplitHandler: no exist. decor=DecorView@58541bb[MainActivity]
+10-11 21:06:52.353  5255  5281 D OpenGLRenderer: setSurface called with nullptr
+10-11 21:06:52.354  5255  5281 D OpenGLRenderer: setSurface() destroyed EGLSurface
+10-11 21:06:52.354  5255  5281 D OpenGLRenderer: destroyEglSurface
+10-11 21:06:52.356  5255  5281 D OpenGLRenderer: endAllActiveAnimators on 0x7b2a1e9f00 (MaterialTextView) with handle 0x7ae99d55c0
+10-11 21:06:52.356  5255  5255 I ViewRootImpl@e6890ee[MainActivity]: dispatchDetachedFromWindow
+10-11 21:06:52.378  5255  5255 D InputTransport: Input channel destroyed: 'a6b48de', fd=151
+10-11 21:06:52.380  5255  5255 I Dialog  : mIsDeviceDefault = false, mIsSamsungBasicInteraction = false, isMetaDataInActivity = false
+10-11 21:06:52.415  5255  5255 I DecorView: [INFO] isPopOver=false config=false
+10-11 21:06:52.415  5255  5255 I DecorView: updateCaptionType: isFloating=false isApplication=true hasWindowDecorCaption=false this=DecorView@65602b9[]
+10-11 21:06:52.415  5255  5255 D DecorView: setCaptionType = 0, this = DecorView@65602b9[]
+10-11 21:06:52.418  5255  5255 I DecorView: getCurrentDensityDpi: from app context. densityDpi=420 msg=resources_loaded
+10-11 21:06:52.418  5255  5255 I DecorView: setWindowBackground: isPopOver=false color=0 d=android.graphics.drawable.ColorDrawable@5d87e5f
+10-11 21:06:52.424  5255  5281 D NativeCustomFrequencyManager: [NativeCFMS] BpCustomFrequencyManager::BpCustomFrequencyManager()
+10-11 21:06:52.425  5255  5255 I DecorView: notifyKeepScreenOnChanged: keepScreenOn=false
+10-11 21:06:52.436  5255  5255 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 1080, 2400), mDisplayCutout=DisplayCutout{insets=Rect(0, 88 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(512, 0 - 568, 88), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=1080 displayHeight=2400 physicalDisplayWidth=1080 physicalDisplayHeight=2400 density={2.625} cutoutSpec={M 0,0 M 0,12.25101276465640 a 10.60613009248640,10.60613009248640 0 1,0 0,21.21226018497290 a 10.60613009248640,10.60613009248640 0 1,0 0,-21.21226018497290 Z @dp} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=84, center=Point(84, 84)}, RoundedCorner{position=TopRight, radius=84, center=Point(996, 84)}, RoundedCorner{position=BottomRight, radius=84, center=Point(996, 2316)}, RoundedCorner{position=BottomLeft, radius=84, center=Point(84, 2316)}]}  mRoundedCornerFrame=Rect(0, 0 - 1080, 2400), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(964, 0 - 1080, 87) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,2361][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][130,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[950,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][1080,120], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,2316][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,0][0,0], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_IME, mFrame=[0,0][0,0], mVisibleFrame=[0,1409][1080,2400], mVisible=false, mInsetsRoundedCornerFrame=false} } host=com.lagradost.cloudstream3/com.lagradost.cloudstream3.MainActivity from=android.view.ViewRootImpl.setView:1732
+10-11 21:06:52.439  5255  5255 I ViewRootImpl@486a944[MainActivity]: setView = com.android.internal.policy.DecorView@65602b9 TM=true
+10-11 21:06:52.445  5255  5255 I ViewRootImpl@486a944[MainActivity]: performTraversals params={(0,0)(fillxfill) gr=CENTER sim={adjust=resize forwardNavigation} ty=APPLICATION fmt=TRANSPARENT wanim=0x7f14000b
+10-11 21:06:52.445  5255  5255 I ViewRootImpl@486a944[MainActivity]:   fl=85810100
+10-11 21:06:52.445  5255  5255 I ViewRootImpl@486a944[MainActivity]:   pfl=12020040
+10-11 21:06:52.445  5255  5255 I ViewRootImpl@486a944[MainActivity]:   vsysui=500
+10-11 21:06:52.445  5255  5255 I ViewRootImpl@486a944[MainActivity]:   bhv=DEFAULT
+10-11 21:06:52.445  5255  5255 I ViewRootImpl@486a944[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:52.446  5255  5255 I ViewRootImpl@486a944[MainActivity]: performTraversals mFirst=true windowShouldResize=true viewVisibilityChanged=false mForceNextWindowRelayout=false params={(0,0)(fillxfill) gr=CENTER sim={adjust=resize forwardNavigation} ty=APPLICATION fmt=TRANSPARENT wanim=0x7f14000b
+10-11 21:06:52.446  5255  5255 I ViewRootImpl@486a944[MainActivity]:   fl=85810100
+10-11 21:06:52.446  5255  5255 I ViewRootImpl@486a944[MainActivity]:   pfl=12020040
+10-11 21:06:52.446  5255  5255 I ViewRootImpl@486a944[MainActivity]:   vsysui=500
+10-11 21:06:52.446  5255  5255 I ViewRootImpl@486a944[MainActivity]:   bhv=DEFAULT
+10-11 21:06:52.446  5255  5255 I ViewRootImpl@486a944[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:52.462  5255  5255 I ViewRootImpl@486a944[MainActivity]: updateBlastSurfaceIfNeeded mBlastBufferQueue=null isSameSurfaceControl=false
+10-11 21:06:52.463  5255  5255 I BLASTBufferQueue: new BLASTBufferQueue, mName= ViewRootImpl@486a944[MainActivity] mNativeObject= 0x7bed686500 sc.mNativeObject= 0x7b2a1b8f60 caller= android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:2909 android.view.ViewRootImpl.relayoutWindow:9847 android.view.ViewRootImpl.performTraversals:3884 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 android.view.Choreographer$CallbackRecord.run:1301 android.view.Choreographer$CallbackRecord.run:1309 android.view.Choreographer.doCallbacks:923 android.view.Choreographer.doFrame:852 android.view.Choreographer$FrameDisplayEventReceiver.run:1283 
+10-11 21:06:52.463  5255  5255 I BLASTBufferQueue: update, w= 1080 h= 2400 mName = ViewRootImpl@486a944[MainActivity] mNativeObject= 0x7bed686500 sc.mNativeObject= 0x7b2a1b8f60 format= -2 caller= android.graphics.BLASTBufferQueue.<init>:84 android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:2909 android.view.ViewRootImpl.relayoutWindow:9847 android.view.ViewRootImpl.performTraversals:3884 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 
+10-11 21:06:52.464  5255  5255 I ViewRootImpl@486a944[MainActivity]: Relayout returned: old=(0,0,1080,2400) new=(0,0,1080,2400) req=(1080,2400)0 dur=15 res=0x3 s={true 0x7b42f63800} ch=true seqId=0
+10-11 21:06:52.465  5255  5255 I ViewRootImpl@486a944[MainActivity]: mThreadedRenderer.initialize() mSurface={isValid=true 0x7b42f63800} hwInitialized=true
+10-11 21:06:52.466  5255  5281 D OpenGLRenderer: eglCreateWindowSurface
+10-11 21:06:52.468  5255  5255 I ViewRootImpl@486a944[MainActivity]: reportNextDraw android.view.ViewRootImpl.performTraversals:4438 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 android.view.Choreographer$CallbackRecord.run:1301 android.view.Choreographer$CallbackRecord.run:1309 
+10-11 21:06:52.468  5255  5255 I ViewRootImpl@486a944[MainActivity]: Setup new sync id=0
+10-11 21:06:52.468  5255  5255 I ViewRootImpl@486a944[MainActivity]: Setting syncFrameCallback
+10-11 21:06:52.468  5255  5255 I ViewRootImpl@486a944[MainActivity]: registerCallbacksForSync syncBuffer=false
+10-11 21:06:52.471  5255  5480 I ViewRootImpl@486a944[MainActivity]: Received frameDrawingCallback syncResult=0 frameNum=1.
+10-11 21:06:52.471  5255  5480 I ViewRootImpl@486a944[MainActivity]: Setting up sync and frameCommitCallback
+10-11 21:06:52.482  5255  5281 I BLASTBufferQueue: [ViewRootImpl@486a944[MainActivity]#9](f:0,a:0) onFrameAvailable the first frame is available
+10-11 21:06:52.483  5255  5281 I ViewRootImpl@486a944[MainActivity]: Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true
+10-11 21:06:52.485  5255  5281 D OpenGLRenderer: CFMS:: SetUp Pid : 5255    Tid : 5281
+10-11 21:06:52.490  5255  5255 I ViewRootImpl@486a944[MainActivity]: onSyncComplete
+10-11 21:06:52.490  5255  5255 I ViewRootImpl@486a944[MainActivity]: setupSync seqId=0 mSyncId=0 fn=1 caller=android.view.ViewRootImpl$$ExternalSyntheticLambda11.accept:6 android.window.SurfaceSyncer.lambda$setupSync$1$android-window-SurfaceSyncer:128 android.window.SurfaceSyncer$$ExternalSyntheticLambda1.accept:8 android.window.SurfaceSyncer$SyncSet.checkIfSyncIsComplete:382 android.window.SurfaceSyncer$SyncSet.markSyncReady:359 android.window.SurfaceSyncer.markSyncReady:151 android.view.ViewRootImpl.performTraversals:4503 
+10-11 21:06:52.490  5255  5255 I ViewRootImpl@486a944[MainActivity]: reportDrawFinished seqId=0 mSyncId=-1 fn=1 mSurfaceChangedTransaction=0x7b29f92200
+10-11 21:06:52.491  5255  5255 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 1080, 2400), mDisplayCutout=DisplayCutout{insets=Rect(0, 88 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(512, 0 - 568, 88), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=1080 displayHeight=2400 physicalDisplayWidth=1080 physicalDisplayHeight=2400 density={2.625} cutoutSpec={M 0,0 M 0,12.25101276465640 a 10.60613009248640,10.60613009248640 0 1,0 0,21.21226018497290 a 10.60613009248640,10.60613009248640 0 1,0 0,-21.21226018497290 Z @dp} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=84, center=Point(84, 84)}, RoundedCorner{position=TopRight, radius=84, center=Point(996, 84)}, RoundedCorner{position=BottomRight, radius=84, center=Point(996, 2316)}, RoundedCorner{position=BottomLeft, radius=84, center=Point(84, 2316)}]}  mRoundedCornerFrame=Rect(0, 0 - 1080, 2400), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(964, 0 - 1080, 87) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,2361][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][130,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[950,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][1080,120], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,2316][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,0][0,0], mVisible=true, mInsetsRoundedCornerFrame=false} } host=com.lagradost.cloudstream3/com.lagradost.cloudstream3.MainActivity from=android.view.ViewRootImpl$ViewRootHandler.handleMessageImpl:6740
+10-11 21:06:52.494  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: MSG_WINDOW_FOCUS_CHANGED 0 0
+10-11 21:06:52.510  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: MSG_WINDOW_FOCUS_CHANGED 0 0
+10-11 21:06:52.541  5255  5255 I ViewRootImpl@486a944[MainActivity]: MSG_WINDOW_FOCUS_CHANGED 1 0
+10-11 21:06:52.541  5255  5255 I ViewRootImpl@486a944[MainActivity]: mThreadedRenderer.initializeIfNeeded()#2 mSurface={isValid=true 0x7b42f63800}
+10-11 21:06:52.542  5255  5255 D InputMethodManager: startInputInner - Id : 0
+10-11 21:06:52.542  5255  5255 I InputMethodManager: startInputInner - mService.startInputOrWindowGainedFocus
+10-11 21:06:52.628  5255  5260 I st.cloudstream3: Background concurrent copying GC freed 11MB AllocSpace bytes, 68(5836KB) LOS objects, 46% free, 27MB/51MB, paused 326us,354us total 192.670ms
+10-11 21:06:52.629  5255  5261 D InputTransport: Input channel destroyed: 'ClientS', fd=196
+10-11 21:06:52.633  5255  5281 D OpenGLRenderer: setSurface called with nullptr
+10-11 21:06:52.636  5255  5261 D InputTransport: Input channel destroyed: 'ClientS', fd=120
+10-11 21:06:52.636  5255  5261 D InputTransport: Input channel destroyed: 'ClientS', fd=163
+10-11 21:06:52.640  5255  5281 D OpenGLRenderer: setSurface called with nullptr
+10-11 21:06:52.643  5255  5281 D OpenGLRenderer: setSurface called with nullptr
+10-11 21:06:53.090  5255  5411 D RepoLink: Loaded ExtractorLink: ExtractorLink(name=Bigwarp 1932 kbps, url=https://fs52.bigwarp.io/v/02/02139/mti4fk6nb3ju_x/x.mp4?t=l-8VzxTV-8_PHoKfzSfbGXzO4SjsS9gTVu6ClTdmaa4&s=1760213213&e=43200&f=10699244&sp=1000&i=0.0&kmnr=369332649772, referer=https://bigwarp.pro/embed-mti4fk6nb3ju.html, type=VIDEO)
+10-11 21:06:53.480  5255  5411 D RepoLink: Loaded ExtractorLink: ExtractorLink(name=Vidguard, url=https://zkiaa1g08m.guardstorage.net/hls_3/xVlmd_SoO-a2OkxeKM3MHxmRgq6coSMvpPnuEPFJqh2sIEBxb8ziqBU4Art1BCYbAbvuAQG5qoSKW1_Bpd7GqQ/master.m3u8?sig=2cCDXEkFe7dXerY0QLnmoQ&expires=1760222214, referer=https://listeamed.net, type=M3U8)
+10-11 21:06:53.482  5255  5411 D RepoLink: Loaded ExtractorLink: ExtractorLink(name=DoodStream, url=https://cc527fo.cloudatacdn.com/u5kj7lcbq7b3sdgge66nezapdfkfs7vqffdjz6rwvy2kdwvkgqfxzatpoaba/aze3u1d2i8~PM0XTXh7ar?token=h6815tszbzudodacsg77c3yq, referer=https://ds2play.com/, type=VIDEO)
+10-11 21:06:53.887  5255  5411 D ApiError: -------------------------------------------------------------------
+10-11 21:06:53.888  5255  5411 D ApiError: safeApiCall: can't bypass captcha
+10-11 21:06:53.888  5255  5411 D ApiError: safeApiCall: can't bypass captcha
+10-11 21:06:53.888  5255  5411 W System.err: com.lagradost.cloudstream3.ErrorLoadingException: can't bypass captcha
+10-11 21:06:53.888  5255  5411 W System.err: 	at com.lagradost.cloudstream3.extractors.Zorofile.getUrl$suspendImpl(Zorofile.kt:34)
+10-11 21:06:53.889  5255  5411 W System.err: 	at com.lagradost.cloudstream3.extractors.Zorofile$getUrl$1.invokeSuspend(Unknown Source:18)
+10-11 21:06:53.889  5255  5411 W System.err: 	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+10-11 21:06:53.889  5255  5411 W System.err: 	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+10-11 21:06:53.889  5255  5411 W System.err: 	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+10-11 21:06:53.889  5255  5411 W System.err: 	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:95)
+10-11 21:06:53.889  5255  5411 W System.err: 	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:69)
+10-11 21:06:53.889  5255  5411 W System.err: 	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+10-11 21:06:53.889  5255  5411 W System.err: 	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:47)
+10-11 21:06:53.889  5255  5411 W System.err: 	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+10-11 21:06:53.889  5255  5411 W System.err: 	at com.lagradost.cloudstream3.ParCollectionsKt.apmap(ParCollections.kt:49)
+10-11 21:06:53.889  5255  5411 W System.err: 	at com.egydead.EgyDeadProvider.loadLinks(EgyDeadProvider.kt:121)
+10-11 21:06:53.889  5255  5411 W System.err: 	at com.egydead.EgyDeadProvider$loadLinks$1.invokeSuspend(Unknown Source:18)
+10-11 21:06:53.889  5255  5411 W System.err: 	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+10-11 21:06:53.889  5255  5411 W System.err: 	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+10-11 21:06:53.889  5255  5411 W System.err: 	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:113)
+10-11 21:06:53.889  5255  5411 W System.err: 	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+10-11 21:06:53.890  5255  5411 W System.err: 	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+10-11 21:06:53.890  5255  5411 W System.err: 	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:820)
+10-11 21:06:53.890  5255  5411 W System.err: 	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+10-11 21:06:53.890  5255  5411 W System.err: 	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+10-11 21:06:53.890  5255  5411 D ApiError: -------------------------------------------------------------------
+10-11 21:06:53.893  5255  5255 I MSHandlerLifeCycle: removeMultiSplitHandler: no exist. decor=DecorView@65602b9[MainActivity]
+10-11 21:06:53.894  5255  5281 D OpenGLRenderer: setSurface called with nullptr
+10-11 21:06:53.894  5255  5281 D OpenGLRenderer: setSurface() destroyed EGLSurface
+10-11 21:06:53.895  5255  5281 D OpenGLRenderer: destroyEglSurface
+10-11 21:06:53.902  5255  5255 I ViewRootImpl@486a944[MainActivity]: dispatchDetachedFromWindow
+10-11 21:06:53.924  5255  5255 D InputTransport: Input channel destroyed: '99767a7', fd=145
+10-11 21:06:53.926  5255  5255 I Dialog  : mIsDeviceDefault = false, mIsSamsungBasicInteraction = false, isMetaDataInActivity = false
+10-11 21:06:53.956  5255  5255 I DecorView: [INFO] isPopOver=false config=false
+10-11 21:06:53.957  5255  5255 I DecorView: updateCaptionType: isFloating=false isApplication=true hasWindowDecorCaption=false this=DecorView@3daf093[]
+10-11 21:06:53.957  5255  5255 D DecorView: setCaptionType = 0, this = DecorView@3daf093[]
+10-11 21:06:53.959  5255  5255 I DecorView: getCurrentDensityDpi: from app context. densityDpi=420 msg=resources_loaded
+10-11 21:06:53.959  5255  5255 I DecorView: setWindowBackground: isPopOver=false color=0 d=android.graphics.drawable.ColorDrawable@6730c9
+10-11 21:06:53.968  5255  5281 D NativeCustomFrequencyManager: [NativeCFMS] BpCustomFrequencyManager::BpCustomFrequencyManager()
+10-11 21:06:53.969  5255  5255 I DecorView: notifyKeepScreenOnChanged: keepScreenOn=false
+10-11 21:06:53.983  5255  5255 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 1080, 2400), mDisplayCutout=DisplayCutout{insets=Rect(0, 88 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(512, 0 - 568, 88), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=1080 displayHeight=2400 physicalDisplayWidth=1080 physicalDisplayHeight=2400 density={2.625} cutoutSpec={M 0,0 M 0,12.25101276465640 a 10.60613009248640,10.60613009248640 0 1,0 0,21.21226018497290 a 10.60613009248640,10.60613009248640 0 1,0 0,-21.21226018497290 Z @dp} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=84, center=Point(84, 84)}, RoundedCorner{position=TopRight, radius=84, center=Point(996, 84)}, RoundedCorner{position=BottomRight, radius=84, center=Point(996, 2316)}, RoundedCorner{position=BottomLeft, radius=84, center=Point(84, 2316)}]}  mRoundedCornerFrame=Rect(0, 0 - 1080, 2400), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(964, 0 - 1080, 87) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,2361][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][130,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[950,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][1080,120], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,2316][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,0][0,0], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_IME, mFrame=[0,0][0,0], mVisibleFrame=[0,1409][1080,2400], mVisible=false, mInsetsRoundedCornerFrame=false} } host=com.lagradost.cloudstream3/com.lagradost.cloudstream3.MainActivity from=android.view.ViewRootImpl.setView:1732
+10-11 21:06:53.985  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]: setView = com.android.internal.policy.DecorView@3daf093 TM=true
+10-11 21:06:54.000  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]: performTraversals params={(0,0)(fillxfill) gr=CENTER sim={adjust=resize forwardNavigation} ty=APPLICATION fmt=TRANSPARENT wanim=0x7f14000b
+10-11 21:06:54.000  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]:   fl=85810100
+10-11 21:06:54.000  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]:   pfl=12020040
+10-11 21:06:54.000  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]:   vsysui=500
+10-11 21:06:54.000  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]:   bhv=DEFAULT
+10-11 21:06:54.000  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:54.003  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]: performTraversals mFirst=true windowShouldResize=true viewVisibilityChanged=false mForceNextWindowRelayout=false params={(0,0)(fillxfill) gr=CENTER sim={adjust=resize forwardNavigation} ty=APPLICATION fmt=TRANSPARENT wanim=0x7f14000b
+10-11 21:06:54.003  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]:   fl=85810100
+10-11 21:06:54.003  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]:   pfl=12020040
+10-11 21:06:54.003  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]:   vsysui=500
+10-11 21:06:54.003  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]:   bhv=DEFAULT
+10-11 21:06:54.003  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:54.017  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]: updateBlastSurfaceIfNeeded mBlastBufferQueue=null isSameSurfaceControl=false
+10-11 21:06:54.018  5255  5255 I BLASTBufferQueue: new BLASTBufferQueue, mName= ViewRootImpl@bbdeea6[MainActivity] mNativeObject= 0x7bed685300 sc.mNativeObject= 0x7ae80c56e0 caller= android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:2909 android.view.ViewRootImpl.relayoutWindow:9847 android.view.ViewRootImpl.performTraversals:3884 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 android.view.Choreographer$CallbackRecord.run:1301 android.view.Choreographer$CallbackRecord.run:1309 android.view.Choreographer.doCallbacks:923 android.view.Choreographer.doFrame:852 android.view.Choreographer$FrameDisplayEventReceiver.run:1283 
+10-11 21:06:54.019  5255  5255 I BLASTBufferQueue: update, w= 1080 h= 2400 mName = ViewRootImpl@bbdeea6[MainActivity] mNativeObject= 0x7bed685300 sc.mNativeObject= 0x7ae80c56e0 format= -2 caller= android.graphics.BLASTBufferQueue.<init>:84 android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:2909 android.view.ViewRootImpl.relayoutWindow:9847 android.view.ViewRootImpl.performTraversals:3884 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 
+10-11 21:06:54.020  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]: Relayout returned: old=(0,0,1080,2400) new=(0,0,1080,2400) req=(1080,2400)0 dur=14 res=0x3 s={true 0x7b42f63800} ch=true seqId=0
+10-11 21:06:54.021  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]: mThreadedRenderer.initialize() mSurface={isValid=true 0x7b42f63800} hwInitialized=true
+10-11 21:06:54.022  5255  5281 D OpenGLRenderer: eglCreateWindowSurface
+10-11 21:06:54.033  5255  5255 D AbsListView:  in onLayout changed 
+10-11 21:06:54.035  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]: reportNextDraw android.view.ViewRootImpl.performTraversals:4438 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 android.view.Choreographer$CallbackRecord.run:1301 android.view.Choreographer$CallbackRecord.run:1309 
+10-11 21:06:54.035  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]: Setup new sync id=0
+10-11 21:06:54.035  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]: Setting syncFrameCallback
+10-11 21:06:54.035  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]: registerCallbacksForSync syncBuffer=false
+10-11 21:06:54.039  5255  5481 I ViewRootImpl@bbdeea6[MainActivity]: Received frameDrawingCallback syncResult=0 frameNum=1.
+10-11 21:06:54.039  5255  5481 I ViewRootImpl@bbdeea6[MainActivity]: Setting up sync and frameCommitCallback
+10-11 21:06:54.044  5255  5281 I BLASTBufferQueue: [ViewRootImpl@bbdeea6[MainActivity]#10](f:0,a:0) onFrameAvailable the first frame is available
+10-11 21:06:54.045  5255  5281 I ViewRootImpl@bbdeea6[MainActivity]: Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true
+10-11 21:06:54.047  5255  5281 D OpenGLRenderer: CFMS:: SetUp Pid : 5255    Tid : 5281
+10-11 21:06:54.052  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]: onSyncComplete
+10-11 21:06:54.052  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]: setupSync seqId=0 mSyncId=0 fn=1 caller=android.view.ViewRootImpl$$ExternalSyntheticLambda11.accept:6 android.window.SurfaceSyncer.lambda$setupSync$1$android-window-SurfaceSyncer:128 android.window.SurfaceSyncer$$ExternalSyntheticLambda1.accept:8 android.window.SurfaceSyncer$SyncSet.checkIfSyncIsComplete:382 android.window.SurfaceSyncer$SyncSet.markSyncReady:359 android.window.SurfaceSyncer.markSyncReady:151 android.view.ViewRootImpl.performTraversals:4503 
+10-11 21:06:54.053  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]: reportDrawFinished seqId=0 mSyncId=-1 fn=1 mSurfaceChangedTransaction=0x7b42f81b00
+10-11 21:06:54.054  5255  5255 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 1080, 2400), mDisplayCutout=DisplayCutout{insets=Rect(0, 88 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(512, 0 - 568, 88), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=1080 displayHeight=2400 physicalDisplayWidth=1080 physicalDisplayHeight=2400 density={2.625} cutoutSpec={M 0,0 M 0,12.25101276465640 a 10.60613009248640,10.60613009248640 0 1,0 0,21.21226018497290 a 10.60613009248640,10.60613009248640 0 1,0 0,-21.21226018497290 Z @dp} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=84, center=Point(84, 84)}, RoundedCorner{position=TopRight, radius=84, center=Point(996, 84)}, RoundedCorner{position=BottomRight, radius=84, center=Point(996, 2316)}, RoundedCorner{position=BottomLeft, radius=84, center=Point(84, 2316)}]}  mRoundedCornerFrame=Rect(0, 0 - 1080, 2400), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(964, 0 - 1080, 87) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,2361][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][130,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[950,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][1080,120], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,2316][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,0][0,0], mVisible=true, mInsetsRoundedCornerFrame=false} } host=com.lagradost.cloudstream3/com.lagradost.cloudstream3.MainActivity from=android.view.ViewRootImpl$ViewRootHandler.handleMessageImpl:6740
+10-11 21:06:54.057  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: MSG_WINDOW_FOCUS_CHANGED 0 0
+10-11 21:06:54.064  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: MSG_WINDOW_FOCUS_CHANGED 0 0
+10-11 21:06:54.102  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]: MSG_WINDOW_FOCUS_CHANGED 1 0
+10-11 21:06:54.102  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]: mThreadedRenderer.initializeIfNeeded()#2 mSurface={isValid=true 0x7b42f63800}
+10-11 21:06:54.103  5255  5255 D InputMethodManager: startInputInner - Id : 0
+10-11 21:06:54.103  5255  5255 I InputMethodManager: startInputInner - mService.startInputOrWindowGainedFocus
+10-11 21:06:54.962  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:55.002  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]: ViewPostIme pointer 1
+10-11 21:06:55.007  5255  5255 I MSHandlerLifeCycle: removeMultiSplitHandler: no exist. decor=DecorView@3daf093[MainActivity]
+10-11 21:06:55.008  5255  5281 D OpenGLRenderer: setSurface called with nullptr
+10-11 21:06:55.008  5255  5281 D OpenGLRenderer: setSurface() destroyed EGLSurface
+10-11 21:06:55.008  5255  5281 D OpenGLRenderer: destroyEglSurface
+10-11 21:06:55.010  5255  5255 I ViewRootImpl@bbdeea6[MainActivity]: dispatchDetachedFromWindow
+10-11 21:06:55.037  5255  5255 D InputTransport: Input channel destroyed: '8dc81c6', fd=125
+10-11 21:06:55.042  5255  5255 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 1080, 2400), mDisplayCutout=DisplayCutout{insets=Rect(0, 88 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(512, 0 - 568, 88), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=1080 displayHeight=2400 physicalDisplayWidth=1080 physicalDisplayHeight=2400 density={2.625} cutoutSpec={M 0,0 M 0,12.25101276465640 a 10.60613009248640,10.60613009248640 0 1,0 0,21.21226018497290 a 10.60613009248640,10.60613009248640 0 1,0 0,-21.21226018497290 Z @dp} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=84, center=Point(84, 84)}, RoundedCorner{position=TopRight, radius=84, center=Point(996, 84)}, RoundedCorner{position=BottomRight, radius=84, center=Point(996, 2316)}, RoundedCorner{position=BottomLeft, radius=84, center=Point(84, 2316)}]}  mRoundedCornerFrame=Rect(0, 0 - 1080, 2400), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(964, 0 - 1080, 87) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,2361][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][130,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[950,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][1080,120], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,2316][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,0][0,0], mVisible=true, mInsetsRoundedCornerFrame=false} } host=com.lagradost.cloudstream3/com.lagradost.cloudstream3.MainActivity from=android.view.ViewRootImpl$ViewRootHandler.handleMessageImpl:6740
+10-11 21:06:55.071  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: MSG_WINDOW_FOCUS_CHANGED 1 0
+10-11 21:06:55.071  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: mThreadedRenderer.initializeIfNeeded()#2 mSurface={isValid=true 0x7b5aa34800}
+10-11 21:06:55.079  5255  5255 D InputMethodManager: startInputInner - Id : 0
+10-11 21:06:55.079  5255  5255 I InputMethodManager: startInputInner - mService.startInputOrWindowGainedFocus
+10-11 21:06:56.193  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:56.286  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:56.298  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:56.315  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:56.333  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:56.348  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:56.365  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:56.382  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:56.398  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:56.415  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:56.431  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:56.448  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:56.465  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:56.481  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:56.498  5255  5255 W PanelsChildGestureRegionObserver: failed to register view with ID 2131362800. already registered
+10-11 21:06:56.526  5255  5255 D WindowOnBackDispatcher: onBackInvoked, viewRoot=ViewRootImpl@bbdeea6[MainActivity], callback=androidx.activity.OnBackPressedDispatcher$Api33Impl$$ExternalSyntheticLambda0@c867560
+10-11 21:06:56.534  5255  5255 I IMM_LC  : hsifw() - flag : 0
+10-11 21:06:56.534  5255  5255 I IMM_LC  : hsifw() - mService.hideSoftInput
+10-11 21:06:56.539  5255  5255 I CS3ExoPlayer: onStop
+10-11 21:06:56.539  5255  5255 I CS3ExoPlayer: saveData
+10-11 21:06:56.539  5255  5255 I CS3ExoPlayer: handleEvent Pause
+10-11 21:06:56.762  5255  5480 D SurfaceView@67b93a4: updateSurfacePosition RenderWorker, frameNr = 672, position = [47, 302, 1033, 782] surfaceSize = 1080x525
+10-11 21:06:56.762  5255  5480 I SurfaceView@67b93a4: uSP: rtp = Rect(47, 302 - 1033, 782) rtsw = 1080 rtsh = 525
+10-11 21:06:56.763  5255  5480 I SurfaceView@67b93a4: onSSPAndSRT: pl = 47 pt = 302 sx = 0.912963 sy = 0.9142857
+10-11 21:06:56.763  5255  5480 I SurfaceView@67b93a4: aOrMT: ViewRootImpl@fd04a9[MainActivity] t = android.view.SurfaceControl$Transaction@71ef290 fN = 672 android.view.SurfaceView.-$$Nest$mapplyOrMergeTransaction:0 android.view.SurfaceView$SurfaceViewPositionUpdateListener.positionChanged:1537 android.graphics.RenderNode$CompositePositionUpdateListener.positionChanged:373 
+10-11 21:06:56.763  5255  5480 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7b2b97b500 mBlastBufferQueue=0x7b42be6300 fn= 672 caller= android.view.SurfaceView.applyOrMergeTransaction:1455 android.view.SurfaceView.-$$Nest$mapplyOrMergeTransaction:0 android.view.SurfaceView$SurfaceViewPositionUpdateListener.positionChanged:1537 
+10-11 21:06:56.813  5255  5481 D SurfaceView@67b93a4: updateSurfacePosition RenderWorker, frameNr = 673, position = [52, 311, 1028, 786] surfaceSize = 1080x525
+10-11 21:06:56.814  5255  5481 I SurfaceView@67b93a4: uSP: rtp = Rect(52, 311 - 1028, 786) rtsw = 1080 rtsh = 525
+10-11 21:06:56.815  5255  5481 I SurfaceView@67b93a4: onSSPAndSRT: pl = 52 pt = 311 sx = 0.9037037 sy = 0.9047619
+10-11 21:06:56.815  5255  5481 I SurfaceView@67b93a4: aOrMT: ViewRootImpl@fd04a9[MainActivity] t = android.view.SurfaceControl$Transaction@71ef290 fN = 673 android.view.SurfaceView.-$$Nest$mapplyOrMergeTransaction:0 android.view.SurfaceView$SurfaceViewPositionUpdateListener.positionChanged:1537 android.graphics.RenderNode$CompositePositionUpdateListener.positionChanged:373 
+10-11 21:06:56.816  5255  5481 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7b2b97b500 mBlastBufferQueue=0x7b42be6300 fn= 673 caller= android.view.SurfaceView.applyOrMergeTransaction:1455 android.view.SurfaceView.-$$Nest$mapplyOrMergeTransaction:0 android.view.SurfaceView$SurfaceViewPositionUpdateListener.positionChanged:1537 
+10-11 21:06:56.829  5255  5480 D SurfaceView@67b93a4: updateSurfacePosition RenderWorker, frameNr = 674, position = [54, 314, 1026, 787] surfaceSize = 1080x525
+10-11 21:06:56.829  5255  5480 I SurfaceView@67b93a4: uSP: rtp = Rect(54, 314 - 1026, 787) rtsw = 1080 rtsh = 525
+10-11 21:06:56.829  5255  5480 I SurfaceView@67b93a4: onSSPAndSRT: pl = 54 pt = 314 sx = 0.9 sy = 0.9009524
+10-11 21:06:56.830  5255  5480 I SurfaceView@67b93a4: aOrMT: ViewRootImpl@fd04a9[MainActivity] t = android.view.SurfaceControl$Transaction@71ef290 fN = 674 android.view.SurfaceView.-$$Nest$mapplyOrMergeTransaction:0 android.view.SurfaceView$SurfaceViewPositionUpdateListener.positionChanged:1537 android.graphics.RenderNode$CompositePositionUpdateListener.positionChanged:373 
+10-11 21:06:56.830  5255  5480 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7b2b97b500 mBlastBufferQueue=0x7b42be6300 fn= 674 caller= android.view.SurfaceView.applyOrMergeTransaction:1455 android.view.SurfaceView.-$$Nest$mapplyOrMergeTransaction:0 android.view.SurfaceView$SurfaceViewPositionUpdateListener.positionChanged:1537 
+10-11 21:06:56.830  5255  5255 I SurfaceView@67b93a4: onWindowVisibilityChanged(8) false android.view.SurfaceView{67b93a4 V.E..V... ........ 0,0-1080,525} of ViewRootImpl@fd04a9[MainActivity]
+10-11 21:06:56.830  5255  5255 I SurfaceView@67b93a4: Changes: creating=false format=false size=false visible=true alpha=false hint=false mUseAlpha=false visible=true left=false top=false
+10-11 21:06:56.831  5255  5255 I SurfaceView@67b93a4: 108762020 Cur surface: Surface(name=null)/@0xff463b6
+10-11 21:06:56.831  5255  5255 I SurfaceView@67b93a4: applyTransactionOnVriDraw: vri = ViewRootImpl@fd04a9[MainActivity] fRS = false t = 0x7b2bd5e500 android.view.SurfaceView.performSurfaceTransaction:959 android.view.SurfaceView.updateSurface:1105 android.view.SurfaceView.onWindowVisibilityChanged:371 
+10-11 21:06:56.831  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: applyTransactionOnDraw: mRemoved = false isHardwareEnabled = true t = 0x7b2bd5e500android.view.SurfaceView.applyTransactionOnVriDraw:2048 android.view.SurfaceView.performSurfaceTransaction:959 android.view.SurfaceView.updateSurface:1105 android.view.SurfaceView.onWindowVisibilityChanged:371 android.view.View.dispatchDetachedFromWindow:22529 
+10-11 21:06:56.831  5255  5255 I SurfaceView@67b93a4: surfaceDestroyed
+10-11 21:06:56.831  5255  5255 I SurfaceView@67b93a4: surfaceDestroyed callback.size 0 #2 android.view.SurfaceView{67b93a4 V.E..V... ........ 0,0-1080,525}
+10-11 21:06:56.831  5255  5255 I SurfaceView@67b93a4: updateSurface: mVisible = false mSurface.isValid() = true
+10-11 21:06:56.832  5255  5255 I SurfaceView@67b93a4: releaseSurfaces: viewRoot = ViewRootImpl@fd04a9[MainActivity]
+10-11 21:06:56.832  5255  5255 I SurfaceView@67b93a4: applyTransactionOnVriDraw: vri = ViewRootImpl@fd04a9[MainActivity] fRS = true t = 0x7b2bd5e600 android.view.SurfaceView.releaseSurfaces:858 android.view.SurfaceView.updateSurface:1172 android.view.SurfaceView.onWindowVisibilityChanged:371 
+10-11 21:06:56.832  5255  5255 I SurfaceView@67b93a4: applyTransactionOnVriDraw: viewRoot.applyTransactionOnDrawFromReleaseSurfaces
+10-11 21:06:56.832  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: applyTransactionOnDraw: mRemoved = false isHardwareEnabled = true t = 0x7b2bd5e600android.view.ViewRootImpl.applyTransactionOnDrawFromReleaseSurfaces:12850 android.view.SurfaceView.applyTransactionOnVriDraw:2046 android.view.SurfaceView.releaseSurfaces:858 android.view.SurfaceView.updateSurface:1172 android.view.SurfaceView.onWindowVisibilityChanged:371 
+10-11 21:06:56.832  5255  5255 V SurfaceView@67b93a4: Layout: x=0 y=218 w=1080 h=525, frame=Rect(0, 0 - 1080, 525)
+10-11 21:06:56.832  5255  5255 I SurfaceView@67b93a4: onDetachedFromWindow: tryReleaseSurfaces()
+10-11 21:06:56.832  5255  5255 I SurfaceView@67b93a4: releaseSurfaces: viewRoot = ViewRootImpl@fd04a9[MainActivity]
+10-11 21:06:56.833  5255  5255 I SurfaceView@67b93a4: applyTransactionOnVriDraw: vri = ViewRootImpl@fd04a9[MainActivity] fRS = true t = 0x7b2bd5e700 android.view.SurfaceView.releaseSurfaces:858 android.view.SurfaceView.onDetachedFromWindow:500 android.view.View.dispatchDetachedFromWindow:22538 
+10-11 21:06:56.833  5255  5255 I SurfaceView@67b93a4: applyTransactionOnVriDraw: viewRoot.applyTransactionOnDrawFromReleaseSurfaces
+10-11 21:06:56.833  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: applyTransactionOnDraw: mRemoved = false isHardwareEnabled = true t = 0x7b2bd5e700android.view.ViewRootImpl.applyTransactionOnDrawFromReleaseSurfaces:12850 android.view.SurfaceView.applyTransactionOnVriDraw:2046 android.view.SurfaceView.releaseSurfaces:858 android.view.SurfaceView.onDetachedFromWindow:500 android.view.View.dispatchDetachedFromWindow:22538 
+10-11 21:06:56.838  5255  5255 I DecorView: notifyKeepScreenOnChanged: keepScreenOn=false
+10-11 21:06:56.839  5255  5255 I CS3ExoPlayer: releasePlayer
+10-11 21:06:56.839  5255  5255 I CS3ExoPlayer: Handle event: PlayerAttachedEvent(player=null, source=Player)
+10-11 21:06:56.840  5255  5255 I DecorView: notifyKeepScreenOnChanged: keepScreenOn=false
+10-11 21:06:56.841  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: performTraversals params={(0,0)(fillxfill) sim={state=always_hidden adjust=resize} ty=BASE_APPLICATION wanim=0x1030309
+10-11 21:06:56.841  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   fl=85810100
+10-11 21:06:56.841  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   pfl=12020040
+10-11 21:06:56.841  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   vsysui=500
+10-11 21:06:56.841  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   bhv=DEFAULT
+10-11 21:06:56.841  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:56.842  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: performTraversals mFirst=false windowShouldResize=false viewVisibilityChanged=false mForceNextWindowRelayout=false params={(0,0)(fillxfill) sim={state=always_hidden adjust=resize} ty=BASE_APPLICATION fmt=TRANSLUCENT wanim=0x1030309
+10-11 21:06:56.842  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   fl=85810100
+10-11 21:06:56.842  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   pfl=12020040
+10-11 21:06:56.842  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   vsysui=500
+10-11 21:06:56.842  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   bhv=DEFAULT
+10-11 21:06:56.842  5255  5255 I ViewRootImpl@fd04a9[MainActivity]:   fitSides= naviIconColor=0}
+10-11 21:06:56.849  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: updateBlastSurfaceIfNeeded mBlastBufferQueue=0x7b42be6300 isSameSurfaceControl=true
+10-11 21:06:56.849  5255  5255 I BLASTBufferQueue: update, w= 1080 h= 2400 mName = ViewRootImpl@fd04a9[MainActivity] mNativeObject= 0x7b42be6300 sc.mNativeObject= 0x7b1682dc20 format= -3 caller= android.view.ViewRootImpl.updateBlastSurfaceIfNeeded:2898 android.view.ViewRootImpl.relayoutWindow:9847 android.view.ViewRootImpl.performTraversals:3884 android.view.ViewRootImpl.doTraversal:3116 android.view.ViewRootImpl$TraversalRunnable.run:10885 android.view.Choreographer$CallbackRecord.run:1301 
+10-11 21:06:56.849  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: Relayout returned: old=(0,0,1080,2400) new=(0,0,1080,2400) req=(1080,2400)0 dur=7 res=0x0 s={true 0x7b5aa34800} ch=false seqId=0
+10-11 21:06:56.849  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: updateBoundsLayer: t = android.view.SurfaceControl$Transaction@d926069 sc = Surface(name=Bounds for - com.lagradost.cloudstream3/com.lagradost.cloudstream3.MainActivity@0)/@0xae93aee frame = 675
+10-11 21:06:56.850  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7b5ab6f500 mBlastBufferQueue=0x7b42be6300 fn= 675 caller= android.view.ViewRootImpl.prepareSurfaces:2985 android.view.ViewRootImpl.performTraversals:4233 android.view.ViewRootImpl.doTraversal:3116 
+10-11 21:06:56.852  5255  5281 D SurfaceView@67b93a4: windowPositionLost, frameNr = 675
+10-11 21:06:56.853  5255  5481 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7b2bd5e500 mBlastBufferQueue=0x7b42be6300 fn= 675 caller= android.view.ViewRootImpl.lambda$applyTransactionOnDraw$11$android-view-ViewRootImpl:12865 android.view.ViewRootImpl$$ExternalSyntheticLambda1.onFrameDraw:4 android.graphics.HardwareRenderer$FrameDrawingCallback.onFrameDraw:924 
+10-11 21:06:56.853  5255  5481 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7b2bd5e600 mBlastBufferQueue=0x7b42be6300 fn= 675 caller= android.view.ViewRootImpl.lambda$applyTransactionOnDraw$11$android-view-ViewRootImpl:12865 android.view.ViewRootImpl$$ExternalSyntheticLambda1.onFrameDraw:4 android.graphics.HardwareRenderer$FrameDrawingCallback.onFrameDraw:924 
+10-11 21:06:56.853  5255  5481 I ViewRootImpl@fd04a9[MainActivity]: mWNT: t=0x7b2bd5e700 mBlastBufferQueue=0x7b42be6300 fn= 675 caller= android.view.ViewRootImpl.lambda$applyTransactionOnDraw$11$android-view-ViewRootImpl:12865 android.view.ViewRootImpl$$ExternalSyntheticLambda1.onFrameDraw:4 android.graphics.HardwareRenderer$FrameDrawingCallback.onFrameDraw:924 
+10-11 21:06:57.367  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:57.400  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 1
+10-11 21:06:57.421  5255  5255 I IMM_LC  : hsifw() - flag : 0
+10-11 21:06:57.421  5255  5255 I IMM_LC  : hsifw() - mService.hideSoftInput
+10-11 21:06:57.505  5255  5255 I PLG     : updatePluginList = https://raw.githubusercontent.com/adamwolker21/DZ/refs/heads/master/repo.json
+10-11 21:06:57.506  5255  5255 I PLG     : getPlugins = https://raw.githubusercontent.com/adamwolker21/DZ/refs/heads/master/repo.json
+10-11 21:06:58.573  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:58.649  5255  5255 D WindowOnBackDispatcher: onBackInvoked, viewRoot=ViewRootImpl@bbdeea6[MainActivity], callback=androidx.activity.OnBackPressedDispatcher$Api33Impl$$ExternalSyntheticLambda0@c867560
+10-11 21:06:58.653  5255  5255 I IMM_LC  : hsifw() - flag : 0
+10-11 21:06:58.653  5255  5255 I IMM_LC  : hsifw() - mService.hideSoftInput
+10-11 21:06:59.241  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:06:59.483  5255  5255 D WindowOnBackDispatcher: onBackInvoked, viewRoot=ViewRootImpl@bbdeea6[MainActivity], callback=androidx.activity.OnBackPressedDispatcher$Api33Impl$$ExternalSyntheticLambda0@c867560
+10-11 21:06:59.488  5255  5255 I IMM_LC  : hsifw() - flag : 0
+10-11 21:06:59.488  5255  5255 I IMM_LC  : hsifw() - mService.hideSoftInput
+10-11 21:06:59.493  5255  5255 D ScrollView: initGoToTop
+10-11 21:06:59.522  5255  5255 E CoilImgLoader: Error loading image: coil3.request.NullRequestDataException: The request's data is null.
+10-11 21:06:59.530  5255  5255 D ScrollView:  onsize change changed 
+10-11 21:07:00.258  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:07:00.307  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 1
+10-11 21:07:00.315  5255  5255 I NavComponent: Navigating to fragment: 2131361884
+10-11 21:07:00.317  5255  5255 I IMM_LC  : hsifw() - flag : 0
+10-11 21:07:00.317  5255  5255 I IMM_LC  : hsifw() - mService.hideSoftInput
+10-11 21:07:01.002  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:07:01.060  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 1
+10-11 21:07:02.541  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 0
+10-11 21:07:02.598  5255  5255 I ViewRootImpl@fd04a9[MainActivity]: ViewPostIme pointer 1
+10-11 21:07:02.624  5255  5255 I Dialog  : mIsDeviceDefault = false, mIsSamsungBasicInteraction = false, isMetaDataInActivity = false
+10-11 21:07:02.629  5255  5255 I DecorView: [INFO] isPopOver=false config=false
+10-11 21:07:02.629  5255  5255 I DecorView: updateCaptionType: isFloating=true isApplication=true hasWindowDecorCaption=false this=DecorView@d4631c[]
+10-11 21:07:02.629  5255  5255 D DecorView: setCaptionType = 0, this = DecorView@d4631c[]
+10-11 21:07:02.631  5255  5255 I DecorView: setWindowBackground: isPopOver=false color=ff010101 d=android.graphics.drawable.InsetDrawable@e4f94fa
+10-11 21:07:02.653  5255  5255 D ScrollView: initGoToTop
+10-11 21:07:02.668  5255  5281 D NativeCustomFrequencyManager: [NativeCFMS] BpCustomFrequencyManager::BpCustomFrequencyManager()
+10-11 21:07:02.668  5255  5255 I DecorView: onImmersiveModeChanged: isStatusBarHidden=true
+10-11 21:07:02.678  5255  5255 D InsetsController: onStateChanged: InsetsState: {mDisplayFrame=Rect(0, 0 - 1080, 2400), mDisplayCutout=DisplayCutout{insets=Rect(0, 88 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(512, 0 - 568, 88), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=1080 displayHeight=2400 physicalDisplayWidth=1080 physicalDisplayHeight=2400 density={2.625} cutoutSpec={M 0,0 M 0,12.25101276465640 a 10.60613009248640,10.60613009248640 0 1,0 0,21.21226018497290 a 10.60613009248640,10.60613009248640 0 1,0 0,-21.21226018497290 Z @dp} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=84, center=Point(84, 84)}, RoundedCorner{position=TopRight, radius=84, center=Point(996, 84)}, RoundedCorner{position=BottomRight, radius=84, center=Point(996, 2316)}, RoundedCorner{position=BottomLeft, radius=84, center=Point(84, 2316)}]}  mRoundedCornerFrame=Rect(0, 0 - 1080, 2400), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(964, 0 - 1080, 87) rotation=0}, mSources= { InsetsSource: {mType=ITYPE_STATUS_BAR, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_NAVIGATION_BAR, mFrame=[0,2361][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_GESTURES, mFrame=[0,0][130,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_GESTURES, mFrame=[950,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_MANDATORY_GESTURES, mFrame=[0,0][1080,120], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_MANDATORY_GESTURES, mFrame=[0,2316][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_LEFT_DISPLAY_CUTOUT, mFrame=[0,0][-100000,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_DISPLAY_CUTOUT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_RIGHT_DISPLAY_CUTOUT, mFrame=[100000,0][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_DISPLAY_CUTOUT, mFrame=[0,100000][1080,2400], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_TOP_TAPPABLE_ELEMENT, mFrame=[0,0][1080,88], mVisible=true, mInsetsRoundedCornerFrame=false}, InsetsSource: {mType=ITYPE_BOTTOM_TAPPABLE_ELEMENT, mFrame=[0,0][0,0], mVisible=true, mInsetsRoundedCornerFrame=false} } host=com.lagradost.cloudstream3/com.lagradost.cloudstream3.MainActivity from=android.view.ViewRootImpl.setView:1732
+10-11 21:07:02.679  5255  5255 I ViewRootImpl@c86811[MainActivity]: setView = com.android.internal.policy.DecorView@d4631c TM=true
+10-11 21:07:02.827  5255  5260 I st.cloudstream3: Background concurrent copying GC freed 17MB AllocSpace bytes, 134(7432KB) LOS objects, 47% free, 26MB/50MB, paused 343us,64us total 190.290ms
+10-11 21:07:02.838  5255  5281 D OpenGLRenderer: setSurface called with nullptr
+10-11 21:07:02.838  5255  5261 D InputTransport: Input channel destroyed: 'ClientS', fd=185
+10-11 21:07:02.841  5255  5281 D OpenGLRenderer: setSurface called with nullptr
+10-11 21:07:02.841  5255  5261 D InputTransport: Input channel destroyed: 'ClientS', fd=148
+10-11 21:07:02.841  5255  5261 D InputTransport: Input channel destroyed: 'ClientS', fd=125
