@@ -4,23 +4,22 @@ import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
-import org.json.JSONObject
 
 class WeCimaExtractor : ExtractorApi() {
     override var name = "WeCima"
-    // V6 Update: Changed the mainUrl to the new domain.
     override var mainUrl = "https://cima.wecima.show"
     override val requiresReferer = true
 
     private val interceptor = CloudflareKiller()
 
     private suspend fun getFinalUrl(url: String, referer: String): String {
+        // This function follows redirects (3xx) to find the final video URL.
         try {
             val response = app.get(
                 url,
                 referer = referer,
                 interceptor = interceptor,
-                allowRedirects = false
+                allowRedirects = false // We handle the redirect manually to get the location header.
             )
             if (response.code in 300..399) {
                 return response.headers["Location"] ?: url
@@ -41,21 +40,21 @@ class WeCimaExtractor : ExtractorApi() {
 
         val sources = tryParseJson<List<VideoSource>>(sourcesJson) ?: return null
 
+        // V7 Update: Switched to the direct ExtractorLink constructor to reliably send the Referer.
         return sources.mapNotNull { source ->
             source.src?.let { intermediateUrl ->
+                // This gets the final video URL after any redirects.
                 val finalVideoUrl = getFinalUrl(intermediateUrl, mainUrl)
                 
-                // The Referer is now correctly set to the new domain thanks to the mainUrl update.
-                val playerHeaders = mapOf(
-                    "Referer" to mainUrl,
-                    "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"
-                )
-                val urlWithHeaders = "$finalVideoUrl#headers=${JSONObject(playerHeaders)}"
-
-                newExtractorLink(
+                // We no longer append headers to the URL string.
+                // Instead, we pass them directly to the ExtractorLink constructor.
+                // This is the most reliable way to ensure headers are sent.
+                ExtractorLink(
                     source = this.name,
                     name = "${this.name} - ${source.label ?: "${source.size}p"}",
-                    url = urlWithHeaders
+                    url = finalVideoUrl, // The clean video URL
+                    referer = this.mainUrl, // The correct referer, passed as a dedicated parameter
+                    quality = Qualities.Unknown.value
                 )
             }
         }
