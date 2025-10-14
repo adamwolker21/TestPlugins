@@ -35,10 +35,11 @@ class WeCimaProvider : MainAPI() {
         page: Int,
         request: MainPageRequest
     ): HomePageResponse {
+        // V12 Update: Fixed pagination logic to match the new URL structure (/page/2/).
         val url = if (page == 1) {
             "$mainUrl${request.data.removePrefix("/")}"
         } else {
-            "$mainUrl${request.data.removePrefix("/")}?page=$page"
+            "$mainUrl${request.data.removePrefix("/")}page/$page/"
         }
         val document = app.get(url, interceptor = interceptor).document
         val home = document.select("div.media-card").mapNotNull {
@@ -97,8 +98,6 @@ class WeCimaProvider : MainAPI() {
         val duration = document.selectFirst("li:has(span:contains(المدة)) p")
             ?.text()?.filter { it.isDigit() }?.toIntOrNull()
     
-        // V10 Update: Rewrote rating logic to be more robust.
-        // It now uses Double for precision and roundToInt for safer conversion.
         val ratingText = document.selectFirst("li:has(span:contains(التقييم)) p")?.text()
         val rating = ratingText?.let {
             Regex("""(\d+\.?\d*)""").find(it)?.groupValues?.getOrNull(1)?.toDoubleOrNull()
