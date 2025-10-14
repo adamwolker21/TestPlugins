@@ -4,9 +4,8 @@ import com.lagradost.cloudstream3.USER_AGENT
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.JsUnpacker
-import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import org.json.JSONObject
 
 open class VidbomExtractor : ExtractorApi() {
@@ -25,29 +24,13 @@ open class VidbomExtractor : ExtractorApi() {
         val headersJson = JSONObject(headers).toString()
         val finalUrlWithHeaders = "$videoLink#headers=$headersJson"
         
-        // V4 Update: Use different constructors for M3U8 and MP4 to resolve build error.
-        return if (videoLink.contains(".m3u8")) {
-            listOf(
-                ExtractorLink(
-                    source = this.name,
-                    name = this.name,
-                    url = finalUrlWithHeaders,
-                    referer = referer ?: url,
-                    quality = Qualities.Unknown.value,
-                    type = ExtractorLinkType.M3U8
-                )
+        // V5 Update: Reverting to the original, simple structure that was confirmed to be working.
+        return listOf(
+            newExtractorLink(
+                this.name,
+                this.name,
+                finalUrlWithHeaders
             )
-        } else {
-            // For MP4 or other direct links, use the constructor without the 'type' parameter.
-            listOf(
-                ExtractorLink(
-                    source = this.name,
-                    name = this.name,
-                    url = finalUrlWithHeaders,
-                    referer = referer ?: url,
-                    quality = Qualities.Unknown.value
-                )
-            )
-        }
+        )
     }
 }
