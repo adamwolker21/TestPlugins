@@ -11,6 +11,7 @@ import com.example.extractors.WeCimaExtractor
 import org.jsoup.nodes.Element
 
 class WeCimaProvider : MainAPI() {
+    // V6 Update: Changed the mainUrl to the new domain.
     override var mainUrl = "https://cima.wecima.show/"
     override var name = "WeCima"
     override val hasMainPage = true
@@ -90,15 +91,12 @@ class WeCimaProvider : MainAPI() {
         val plot = document.selectFirst("div.story__content")?.text()?.trim()
         val tags = document.select("li:has(span:contains(النوع)) p a").map { it.text() }
 
-        // Updated year extraction
         val year = document.selectFirst("li:has(span:contains(السنة)) p a")?.text()?.toIntOrNull()
             ?: document.selectFirst("h1[itemprop=name] a.unline")?.text()?.toIntOrNull()
 
-        // New: Extract duration
         val duration = document.selectFirst("li:has(span:contains(المدة)) p")
             ?.text()?.filter { it.isDigit() }?.toIntOrNull()
     
-        // New: Extract rating and convert to a 1-1000 scale
         val rating = document.selectFirst("li:has(span:contains(التقييم)) p")
             ?.text()?.let {
                 Regex("""(\d+\.?\d*)""").find(it)?.groupValues?.getOrNull(1)?.toFloatOrNull()?.times(100)
@@ -175,9 +173,9 @@ class WeCimaProvider : MainAPI() {
 
                 val decodedUrl = String(Base64.decode(encodedUrl, Base64.DEFAULT))
                 
-                // Manual routing based on domain
+                // V6 Update: Changed the condition to match the new domain structure.
                 when {
-                    decodedUrl.contains("cima.wecima.show/run/watch/") -> {
+                    decodedUrl.contains("wecima.show/run/watch/") -> {
                         WeCimaExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
                     decodedUrl.contains("vdbtm.shop") -> {
@@ -187,7 +185,6 @@ class WeCimaProvider : MainAPI() {
                         GeneralPackedExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
                     else -> {
-                        // Fallback for other servers like DoodStream
                         loadExtractor(decodedUrl, data, subtitleCallback, callback)
                     }
                 }
