@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.JsUnpacker
+import com.lagradost.cloudstream3.utils.newExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import org.json.JSONObject
 
@@ -31,27 +32,27 @@ open class GeneralPackedExtractor : ExtractorApi() {
         val headersJson = JSONObject(headers).toString()
         val finalUrlWithHeaders = "$videoLink#headers=$headersJson"
         
-        // V4 Update: Use different constructors for M3U8 and MP4 to resolve build error.
+        // V5 Update: Correctly use newExtractorLink based on user feedback and final error logs.
         return if (videoLink.contains(".m3u8")) {
+            // Use the specific newExtractorLink builder for M3U8 streams with trailing lambda.
             listOf(
-                ExtractorLink(
+                newExtractorLink(
                     source = serverName,
                     name = serverName,
                     url = finalUrlWithHeaders,
-                    referer = referer ?: url,
-                    quality = Qualities.Unknown.value,
                     type = ExtractorLinkType.M3U8
-                )
+                ) {
+                    this.referer = url
+                    this.quality = Qualities.Unknown.value
+                }
             )
         } else {
-            // For MP4 or other direct links, use the constructor without the 'type' parameter.
+            // For MP4 files, use the simpler 3-argument newExtractorLink function.
             listOf(
-                ExtractorLink(
-                    source = serverName,
-                    name = serverName,
-                    url = finalUrlWithHeaders,
-                    referer = referer ?: url,
-                    quality = Qualities.Unknown.value
+                newExtractorLink(
+                    serverName,
+                    serverName,
+                    finalUrlWithHeaders
                 )
             )
         }
