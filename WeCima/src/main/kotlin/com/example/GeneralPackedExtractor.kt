@@ -31,14 +31,11 @@ open class GeneralPackedExtractor : ExtractorApi() {
         val finalUrlWithHeaders = "$videoLink#headers=$headersJson"
         
         return listOf(
-                newExtractorLink(
-                    source = this.name,
-                    name = this.name,
-                    url = finalUrlWithHeaders,
-                    type = ExtractorLinkType.M3U8
-                ) {
-                    this.referer = url
-                }
+            newExtractorLink(
+                serverName,
+                serverName,
+                finalUrlWithHeaders
             )
+        )
     }
 }
