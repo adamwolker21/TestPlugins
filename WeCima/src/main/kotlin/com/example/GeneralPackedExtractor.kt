@@ -31,18 +31,29 @@ open class GeneralPackedExtractor : ExtractorApi() {
         val headersJson = JSONObject(headers).toString()
         val finalUrlWithHeaders = "$videoLink#headers=$headersJson"
         
-        // V3 Update: Fix build error by using the correct constructor with `type`.
-        val type = if (videoLink.contains(".m3u8")) ExtractorLinkType.M3U8 else ExtractorLinkType.URL
-
-        return listOf(
-            ExtractorLink(
-                source = serverName,
-                name = serverName,
-                url = finalUrlWithHeaders,
-                referer = referer ?: url,
-                quality = Qualities.Unknown.value,
-                type = type
+        // V4 Update: Use different constructors for M3U8 and MP4 to resolve build error.
+        return if (videoLink.contains(".m3u8")) {
+            listOf(
+                ExtractorLink(
+                    source = serverName,
+                    name = serverName,
+                    url = finalUrlWithHeaders,
+                    referer = referer ?: url,
+                    quality = Qualities.Unknown.value,
+                    type = ExtractorLinkType.M3U8
+                )
             )
-        )
+        } else {
+            // For MP4 or other direct links, use the constructor without the 'type' parameter.
+            listOf(
+                ExtractorLink(
+                    source = serverName,
+                    name = serverName,
+                    url = finalUrlWithHeaders,
+                    referer = referer ?: url,
+                    quality = Qualities.Unknown.value
+                )
+            )
+        }
     }
 }
