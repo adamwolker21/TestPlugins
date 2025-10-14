@@ -9,6 +9,7 @@ import com.example.extractors.GeneralPackedExtractor
 import com.example.extractors.VidbomExtractor
 import com.example.extractors.WeCimaExtractor
 import org.jsoup.nodes.Element
+import kotlin.math.roundToInt
 
 class WeCimaProvider : MainAPI() {
     override var mainUrl = "https://cima.wecima.show/"
@@ -96,12 +97,13 @@ class WeCimaProvider : MainAPI() {
         val duration = document.selectFirst("li:has(span:contains(المدة)) p")
             ?.text()?.filter { it.isDigit() }?.toIntOrNull()
     
-
-        val rating = document.selectFirst("li:has(span:contains(التقييم)) p")
-            ?.text()?.let {
-                Regex("""(\d+\.?\d*)""").find(it)?.groupValues?.getOrNull(1)?.toFloatOrNull()?.times(100)
-                    ?.toInt()
-            }
+        // V10 Update: Rewrote rating logic to be more robust.
+        // It now uses Double for precision and roundToInt for safer conversion.
+        val ratingText = document.selectFirst("li:has(span:contains(التقييم)) p")?.text()
+        val rating = ratingText?.let {
+            Regex("""(\d+\.?\d*)""").find(it)?.groupValues?.getOrNull(1)?.toDoubleOrNull()
+                ?.let { value -> (value * 100).roundToInt() }
+        }
 
         val arabicName = document.selectFirst("li:has(span:contains(الإسم بالعربي)) p")?.text()?.trim()
         val country = document.selectFirst("li:has(span:contains(الدولة)) p a")?.text()?.trim()
