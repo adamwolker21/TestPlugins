@@ -6,11 +6,10 @@ import com.lagradost.cloudstream3.network.CloudflareKiller
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import org.json.JSONObject
 
-// The final, definitive extractor for the WeCima server.
-// This version provides the player with a complete and correct browser fingerprint.
 class WeCimaExtractor : ExtractorApi() {
     override var name = "WeCima"
-    override var mainUrl = "https://wecima.now"
+    // V6 Update: Changed the mainUrl to the new domain.
+    override var mainUrl = "https://cima.wecima.show"
     override val requiresReferer = true
 
     private val interceptor = CloudflareKiller()
@@ -45,9 +44,8 @@ class WeCimaExtractor : ExtractorApi() {
         return sources.mapNotNull { source ->
             source.src?.let { intermediateUrl ->
                 val finalVideoUrl = getFinalUrl(intermediateUrl, mainUrl)
-
-                // THE FINAL FIX: Create a complete fingerprint for the player.
-                // This includes the correct Referer AND a matching User-Agent.
+                
+                // The Referer is now correctly set to the new domain thanks to the mainUrl update.
                 val playerHeaders = mapOf(
                     "Referer" to mainUrl,
                     "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"
