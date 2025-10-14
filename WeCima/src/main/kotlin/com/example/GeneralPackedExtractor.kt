@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.utils.ExtractorApi
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.JsUnpacker
 import com.lagradost.cloudstream3.utils.newExtractorLink
+import com.lagradost.cloudstream3.utils.Qualities
 import org.json.JSONObject
 
 open class GeneralPackedExtractor : ExtractorApi() {
@@ -30,11 +31,16 @@ open class GeneralPackedExtractor : ExtractorApi() {
         val headersJson = JSONObject(headers).toString()
         val finalUrlWithHeaders = "$videoLink#headers=$headersJson"
         
+        // V2 Update: Explicitly identify HLS (m3u8) streams for the player.
+        val isM3u8 = videoLink.contains(".m3u8")
+
         return listOf(
             newExtractorLink(
-                serverName,
-                serverName,
-                finalUrlWithHeaders
+                source = serverName,
+                name = serverName,
+                url = finalUrlWithHeaders,
+                isM3u8 = isM3u8,
+                quality = Qualities.Unknown.value
             )
         )
     }
