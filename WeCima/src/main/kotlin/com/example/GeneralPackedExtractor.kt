@@ -12,7 +12,7 @@ import org.json.JSONObject
 
 open class GeneralPackedExtractor : ExtractorApi() {
     override var name = "GeneralPacked"
-    // V6 Update: Updated the placeholder URL to the new domain for consistency.
+
     override var mainUrl = "https://cima.wecima.show"
     override val requiresReferer = true
 
