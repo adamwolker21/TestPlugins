@@ -25,18 +25,29 @@ open class VidbomExtractor : ExtractorApi() {
         val headersJson = JSONObject(headers).toString()
         val finalUrlWithHeaders = "$videoLink#headers=$headersJson"
         
-        // V3 Update: Fix build error and explicitly handle as URL type based on your feedback.
-        val type = if (videoLink.contains(".m3u8")) ExtractorLinkType.M3U8 else ExtractorLinkType.URL
-
-        return listOf(
-            ExtractorLink(
-                source = this.name,
-                name = this.name,
-                url = finalUrlWithHeaders,
-                referer = referer ?: url,
-                quality = Qualities.Unknown.value,
-                type = type
+        // V4 Update: Use different constructors for M3U8 and MP4 to resolve build error.
+        return if (videoLink.contains(".m3u8")) {
+            listOf(
+                ExtractorLink(
+                    source = this.name,
+                    name = this.name,
+                    url = finalUrlWithHeaders,
+                    referer = referer ?: url,
+                    quality = Qualities.Unknown.value,
+                    type = ExtractorLinkType.M3U8
+                )
             )
-        )
+        } else {
+            // For MP4 or other direct links, use the constructor without the 'type' parameter.
+            listOf(
+                ExtractorLink(
+                    source = this.name,
+                    name = this.name,
+                    url = finalUrlWithHeaders,
+                    referer = referer ?: url,
+                    quality = Qualities.Unknown.value
+                )
+            )
+        }
     }
 }
