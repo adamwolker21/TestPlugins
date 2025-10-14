@@ -11,7 +11,7 @@ import com.example.extractors.WeCimaExtractor
 import org.jsoup.nodes.Element
 
 class WeCimaProvider : MainAPI() {
-    override var mainUrl = "https://wecima.now/"
+    override var mainUrl = "https://cima.wecima.show/"
     override var name = "WeCima"
     override val hasMainPage = true
     override var lang = "ar"
@@ -177,7 +177,7 @@ class WeCimaProvider : MainAPI() {
                 
                 // Manual routing based on domain
                 when {
-                    decodedUrl.contains("wecima.now/run/watch/") -> {
+                    decodedUrl.contains("cima.wecima.show/run/watch/") -> {
                         WeCimaExtractor().getUrl(decodedUrl, data)?.forEach(callback)
                     }
                     decodedUrl.contains("vdbtm.shop") -> {
