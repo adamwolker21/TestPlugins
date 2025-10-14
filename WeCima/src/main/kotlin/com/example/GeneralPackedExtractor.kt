@@ -12,7 +12,8 @@ import org.json.JSONObject
 
 open class GeneralPackedExtractor : ExtractorApi() {
     override var name = "GeneralPacked"
-    override var mainUrl = "https://wecima.now" // Placeholder
+    // V6 Update: Updated the placeholder URL to the new domain for consistency.
+    override var mainUrl = "https://cima.wecima.show"
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
@@ -32,9 +33,7 @@ open class GeneralPackedExtractor : ExtractorApi() {
         val headersJson = JSONObject(headers).toString()
         val finalUrlWithHeaders = "$videoLink#headers=$headersJson"
         
-        // V5 Update: Correctly use newExtractorLink based on user feedback and final error logs.
         return if (videoLink.contains(".m3u8")) {
-            // Use the specific newExtractorLink builder for M3U8 streams with trailing lambda.
             listOf(
                 newExtractorLink(
                     source = serverName,
@@ -47,7 +46,6 @@ open class GeneralPackedExtractor : ExtractorApi() {
                 }
             )
         } else {
-            // For MP4 files, use the simpler 3-argument newExtractorLink function.
             listOf(
                 newExtractorLink(
                     serverName,
