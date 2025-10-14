@@ -102,7 +102,7 @@ class WeCimaProvider : MainAPI() {
         val ratingText = document.selectFirst("li:has(span:contains(التقييم)) p")?.text()
         val rating = ratingText?.let {
             Regex("""(\d+\.?\d*)""").find(it)?.groupValues?.getOrNull(1)?.toDoubleOrNull()
-                ?.let { value -> (value * 10).roundToInt() }
+                ?.let { value -> (value * 1000).roundToInt() }
         }
 
         val arabicName = document.selectFirst("li:has(span:contains(الإسم بالعربي)) p")?.text()?.trim()
