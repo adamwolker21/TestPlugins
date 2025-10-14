@@ -11,7 +11,6 @@ import com.example.extractors.WeCimaExtractor
 import org.jsoup.nodes.Element
 
 class WeCimaProvider : MainAPI() {
-    // V6 Update: Changed the mainUrl to the new domain.
     override var mainUrl = "https://cima.wecima.show/"
     override var name = "WeCima"
     override val hasMainPage = true
@@ -88,20 +87,38 @@ class WeCimaProvider : MainAPI() {
             Regex("""url\(['"]?(.*?)['"]?\)""").find(it)?.groupValues?.get(1)
         }
 
-        val plot = document.selectFirst("div.story__content")?.text()?.trim()
+        val originalPlot = document.selectFirst("div.story__content")?.text()?.trim()
         val tags = document.select("li:has(span:contains(النوع)) p a").map { it.text() }
 
         val year = document.selectFirst("li:has(span:contains(السنة)) p a")?.text()?.toIntOrNull()
             ?: document.selectFirst("h1[itemprop=name] a.unline")?.text()?.toIntOrNull()
-
+        
         val duration = document.selectFirst("li:has(span:contains(المدة)) p")
             ?.text()?.filter { it.isDigit() }?.toIntOrNull()
     
+
         val rating = document.selectFirst("li:has(span:contains(التقييم)) p")
             ?.text()?.let {
                 Regex("""(\d+\.?\d*)""").find(it)?.groupValues?.getOrNull(1)?.toFloatOrNull()?.times(100)
                     ?.toInt()
             }
+
+        val arabicName = document.selectFirst("li:has(span:contains(الإسم بالعربي)) p")?.text()?.trim()
+        val country = document.selectFirst("li:has(span:contains(الدولة)) p a")?.text()?.trim()
+
+        val finalPlot = buildString {
+            append(originalPlot)
+            val additionalInfo = mutableListOf<String>()
+            if (!arabicName.isNullOrBlank()) {
+                additionalInfo.add("الإسم بالعربي: $arabicName")
+            }
+            if (!country.isNullOrBlank()) {
+                additionalInfo.add("الدولة: $country")
+            }
+            if (additionalInfo.isNotEmpty()) {
+                append("<br><br>${additionalInfo.joinToString(" | ")}")
+            }
+        }
 
         val seasons = document.select("div.seasons__list li a")
         val isTvSeries = seasons.isNotEmpty() || document.select("div.episodes__list").isNotEmpty()
@@ -140,7 +157,7 @@ class WeCimaProvider : MainAPI() {
             
             return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.distinctBy { it.data }.sortedWith(compareBy({ it.season }, { it.episode }))) {
                 this.posterUrl = posterUrl
-                this.plot = plot
+                this.plot = finalPlot
                 this.year = year
                 this.tags = tags
                 this.rating = rating
@@ -149,7 +166,7 @@ class WeCimaProvider : MainAPI() {
         } else {
             return newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = posterUrl
-                this.plot = plot
+                this.plot = finalPlot
                 this.year = year
                 this.tags = tags
                 this.rating = rating
@@ -173,7 +190,6 @@ class WeCimaProvider : MainAPI() {
 
                 val decodedUrl = String(Base64.decode(encodedUrl, Base64.DEFAULT))
                 
-                // V6 Update: Changed the condition to match the new domain structure.
                 when {
                     decodedUrl.contains("wecima.show/run/watch/") -> {
                         WeCimaExtractor().getUrl(decodedUrl, data)?.forEach(callback)
