@@ -121,68 +121,72 @@ class Asia2Tv : MainAPI() {
             plot
         }
 
-        // --- تم التعديل هنا ---
-        // قائمة قابلة للتعديل لتخزين جميع الحلقات
-        val episodes = mutableListOf<Episode>()
+        // --- V2: Logic to fetch all episodes ---
 
-        // جلب الحلقات من الصفحة الأولية
-        document.select("div.box-loop-episode a").mapNotNull { a ->
-            val href = a.attr("href") ?: return@mapNotNull null
-            val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
-            val epNum = epNumText?.toIntOrNull()
+        // Helper function to parse episode elements from a given document/element
+        fun parseEpisodes(doc: Element): List<Episode> {
+            return doc.select("a.colorsw").mapNotNull { a ->
+                val href = a.attr("href").ifBlank { return@mapNotNull null }
+                val name = a.selectFirst(".titlepisode")?.text()?.trim()
+                val epNum = name?.replace(Regex("[^0-9]"), "")?.toIntOrNull()
 
-            newEpisode(href) {
-                name = a.selectFirst(".titlepisode")?.text()?.trim()
-                episode = epNum
+                newEpisode(href) {
+                    this.name = name
+                    this.episode = epNum
+                }
             }
-        }.toCollection(episodes)
+        }
 
-        // التحقق من وجود زر "مشاهدة المزيد" وجلب الحلقات الإضافية
-        val moreButton = document.selectFirst("a.more-episode")
-        val postId = document.selectFirst("link[rel=shortlink]")?.attr("href")?.split("?p=")?.getOrNull(1)
+        val allEpisodes = mutableListOf<Episode>()
 
-        if (moreButton != null && postId != null) {
-            var page = 2
-            while (true) {
+        // 1. Get initial episodes from the main page document
+        document.selectFirst("div.loop-episode")?.let {
+            allEpisodes.addAll(parseEpisodes(it))
+        }
+
+        // 2. Check for the "more episodes" button and load them via AJAX
+        val postId = document.selectFirst("link[rel=shortlink]")?.attr("href")?.substringAfter("?p=")
+        if (document.selectFirst("a.more-episode") != null && postId != null) {
+            var currentPage = 2
+            var hasMore = true
+
+            while (hasMore) {
                 try {
-                    // إرسال طلب POST لجلب المزيد من الحلقات
-                    val response = app.post(
+                    val responseText = app.post(
                         "$mainUrl/ajaxGetRequest",
                         data = mapOf(
                             "action" to "load_more_episodes",
                             "post_id" to postId,
-                            "page" to page.toString()
+                            "page" to currentPage.toString()
                         ),
                         referer = url,
                         headers = mapOf("X-Requested-With" to "XMLHttpRequest")
-                    ).document // الاستجابة عبارة عن HTML
+                    ).text
 
-                    val newEpisodes = response.select("a").mapNotNull { a ->
-                        val href = a.attr("href") ?: return@mapNotNull null
-                        val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
-                        val epNum = epNumText?.toIntOrNull()
-
-                        newEpisode(href) {
-                            name = a.selectFirst(".titlepisode")?.text()?.trim()
-                            episode = epNum
-                        }
+                    if (responseText.isBlank()) {
+                        hasMore = false
+                        continue
                     }
 
+                    val responseDoc = Jsoup.parse(responseText)
+                    val newEpisodes = parseEpisodes(responseDoc)
+
                     if (newEpisodes.isNotEmpty()) {
-                        episodes.addAll(newEpisodes)
-                        page++
+                        allEpisodes.addAll(newEpisodes)
+                        currentPage++
                     } else {
-                        break // لا توجد حلقات أخرى، الخروج من الحلقة
+                        hasMore = false // No more episodes returned, stop looping
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    break // الخروج من الحلقة في حالة حدوث خطأ
+                    hasMore = false // Stop on any error
                 }
             }
         }
-        // --- نهاية التعديل ---
 
-        val finalEpisodes = episodes.reversed()
+        val finalEpisodes = allEpisodes.distinctBy { it.url }.reversed()
+        
+        // --- End of V2 logic ---
 
         return if (finalEpisodes.isNotEmpty()) {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, finalEpisodes) {
