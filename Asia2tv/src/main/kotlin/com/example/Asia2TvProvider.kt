@@ -1,4 +1,4 @@
-package com.example
+package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -109,26 +109,26 @@ class Asia2Tv : MainAPI() {
                 }
             }
         }
-
-        // --- V12: Final Build-Safe Logic ---
+        
         val seenUrls = mutableSetOf<String>()
         val finalEpisodes = mutableListOf<Episode>()
 
-        // Helper function to add episodes one by one, ensuring uniqueness
         fun addUniqueEpisodes(episodes: List<Episode>) {
+            // كود مفصل جدًا لمساعدة المترجم
             for (ep in episodes) {
-                if (seenUrls.add(ep.url)) {
+                // الخطوة 1: استخراج الرابط في متغير خاص
+                val currentUrl = ep.url
+                // الخطوة 2: استخدام المتغير في التحقق
+                if (seenUrls.add(currentUrl)) {
                     finalEpisodes.add(ep)
                 }
             }
         }
 
-        // Add initial episodes from the page
         document.selectFirst("div.loop-episode")?.let {
             addUniqueEpisodes(parseEpisodes(it))
         }
 
-        // Fetch and add episodes from AJAX
         val serieId = document.select("script").mapNotNull { script ->
             script.data().let {
                 Regex("""'serie_id':\s*'(\d+)'""").find(it)?.groupValues?.get(1)
@@ -175,7 +175,7 @@ class Asia2Tv : MainAPI() {
     }
     
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).document
+        val document = app.get(.data).document
         document.select("ul.dropdown-menu li a").apmap { server ->
             try {
                 val code = server.attr("data-code").ifBlank { return@apmap }
