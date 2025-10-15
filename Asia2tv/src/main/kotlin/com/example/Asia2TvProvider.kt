@@ -3,12 +3,20 @@ package com.example // تم التعديل ليطابق مسار البناء
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
 data class NewPlayerAjaxResponse(
     val status: Boolean,
     val codeplay: String
+)
+
+// بنية بيانات جديدة لرد الحلقات الإضافية
+data class MoreEpisodesResponse(
+    val status: Boolean,
+    val html: String,
+    val showmore: Boolean
 )
 
 class Asia2Tv : MainAPI() {
@@ -77,7 +85,6 @@ class Asia2Tv : MainAPI() {
         val tags = detailsContainer?.select("div.post_tags a")?.map { it.text() }
         val status = getStatus(document.selectFirst("span.serie-isstatus"))
 
-        // --- استخراج معلومات إضافية ---
         var country: String? = null
         var totalEpisodes: String? = null
         detailsContainer?.select("ul.mb-2 li")?.forEach { li ->
@@ -109,24 +116,40 @@ class Asia2Tv : MainAPI() {
         val allEpisodes = mutableListOf<Episode>()
         document.selectFirst("div.loop-episode")?.let { allEpisodes.addAll(parseEpisodes(it)) }
 
-        val postId = document.selectFirst("link[rel=shortlink]")?.attr("href")?.substringAfter("?p=")
-        if (document.selectFirst("a.more-episode") != null && postId != null) {
+        // --- V9: The Real Fix ---
+        // 1. العثور على serieid بالطريقة الصحيحة والمؤكدة
+        val serieId = document.select("script").mapNotNull { script ->
+            script.data().let {
+                Regex("""'serie_id':\s*'(\d+)'""").find(it)?.groupValues?.get(1)
+            }
+        }.firstOrNull()
+
+
+        if (document.selectFirst("a.more-episode") != null && serieId != null) {
             var currentPage = 2
             var hasMore = true
             while (hasMore) {
                 try {
-                    val responseText = app.post(
+                    // 2. استخدام البيانات الصحيحة في الطلب
+                    val response = app.post(
                         "$mainUrl/ajaxGetRequest",
-                        data = mapOf("action" to "load_more_episodes", "post_id" to postId, "page" to currentPage.toString()),
+                        data = mapOf(
+                            "action" to "moreepisode",
+                            "serieid" to serieId,
+                            "page" to currentPage.toString()
+                        ),
                         referer = url,
                         headers = mapOf("X-Requested-With" to "XMLHttpRequest")
-                    ).text
-                    if (responseText.isBlank()) {
-                        hasMore = false; continue
-                    }
-                    val newEpisodes = parseEpisodes(Jsoup.parse(responseText))
-                    if (newEpisodes.isNotEmpty()) {
-                        allEpisodes.addAll(newEpisodes); currentPage++
+                    ).parsedSafe<MoreEpisodesResponse>()
+
+                    if (response != null && response.status) {
+                        val newEpisodes = parseEpisodes(Jsoup.parse(response.html))
+                        if (newEpisodes.isNotEmpty()) {
+                            allEpisodes.addAll(newEpisodes)
+                        }
+                        // 3. التوقف بناءً على رد الخادم
+                        hasMore = response.showmore
+                        currentPage++
                     } else {
                         hasMore = false
                     }
@@ -136,47 +159,7 @@ class Asia2Tv : MainAPI() {
             }
         }
         
-        // =================================================================================
-        // V8: جرب بناء كل طريقة على حدة. قم بتعطيل الطريقة الحالية وتفعيل التالية إذا فشل البناء
-        // =================================================================================
-
-        // --- الطريقة الأولى: حلقة تكرار مع تحديد النوع صراحةً (المستخدمة في V7) ---
-        val uniqueEpisodes = mutableListOf<Episode>()
-        val seenUrls = mutableSetOf<String>()
-        for (episode: Episode in allEpisodes) {
-            if (seenUrls.add(episode.url)) {
-                uniqueEpisodes.add(episode)
-            }
-        }
-        val finalEpisodes = uniqueEpisodes.reversed()
-
-
-        
-        // --- الطريقة الثانية: استخدام associateBy (طريقة فعالة لإزالة التكرار) ---
-        val finalEpisodes = allEpisodes
-            .associateBy { it.url }
-            .values
-            .toList()
-            .reversed()
-        
-
-        
-        // --- الطريقة الثالثة: استخدام groupBy ---
-        val finalEpisodes = allEpisodes
-            .groupBy { it.url }
-            .map { it.value.first() }
-            .reversed()
-        
-
-        
-        // --- الطريقة الرابعة: استخدام filter مع Set ---
-        val seenUrls = mutableSetOf<String>()
-        val finalEpisodes = allEpisodes
-            .filter { seenUrls.add(it.url) }
-            .reversed()
-        
-
-        // =================================================================================
+        val finalEpisodes = allEpisodes.distinctBy { it.url }.reversed()
 
         return if (finalEpisodes.isNotEmpty()) {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, finalEpisodes) {
