@@ -105,7 +105,7 @@ class Asia2Tv : MainAPI() {
         val episodes = ArrayList<Episode>()
         val seenUrls = HashSet<String>()
 
-        // Helper function to add unique episodes to the list
+        // Helper function to add unique episodes to the list in a build-safe way
         fun addUniqueEpisodes(elements: List<Element>) {
             for (element in elements) {
                 val href = element.attr("href")
