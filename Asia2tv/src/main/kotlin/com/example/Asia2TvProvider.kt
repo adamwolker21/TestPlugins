@@ -182,8 +182,15 @@ class Asia2Tv : MainAPI() {
             }
         }
         
-        // --- V5 Fix: Use a function reference for distinctBy ---
-        val finalEpisodes = allEpisodes.distinctBy(Episode::url).reversed()
+        // --- V6 Fix: Replace distinctBy with a manual loop to prevent build errors ---
+        val uniqueEpisodes = mutableListOf<Episode>()
+        val seenUrls = mutableSetOf<String>()
+        for (episode in allEpisodes) {
+            if (seenUrls.add(episode.url)) {
+                uniqueEpisodes.add(episode)
+            }
+        }
+        val finalEpisodes = uniqueEpisodes.reversed()
 
         return if (finalEpisodes.isNotEmpty()) {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, finalEpisodes) {
