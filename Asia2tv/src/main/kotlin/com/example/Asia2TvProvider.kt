@@ -5,8 +5,6 @@ import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 
 // بنية بيانات جديدة لتناسب الرد الجديد من الموقع
 data class NewPlayerAjaxResponse(
@@ -183,9 +181,10 @@ class Asia2Tv : MainAPI() {
                 }
             }
         }
-
-        val finalEpisodes = allEpisodes.distinctBy { it: Episode -> it.url }.reversed()
         
+        // --- V5 Fix: Use a function reference for distinctBy ---
+        val finalEpisodes = allEpisodes.distinctBy(Episode::url).reversed()
+
         return if (finalEpisodes.isNotEmpty()) {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, finalEpisodes) {
                 this.posterUrl = posterUrl
@@ -213,38 +212,34 @@ class Asia2Tv : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data).document
+        
         val servers = document.select("ul.dropdown-menu li a")
         
-        // V4: Replace deprecated apmap with modern coroutines
-        coroutineScope {
-            servers.map { server ->
-                async {
-                    try {
-                        val code = server.attr("data-code")
-                        if (code.isBlank()) return@async
+        servers.apmap { server ->
+            try {
+                val code = server.attr("data-code")
+                if (code.isBlank()) return@apmap
 
-                        val ajaxUrl = "$mainUrl/ajaxGetRequest"
-                        val response = app.post(
-                            ajaxUrl,
-                            data = mapOf("action" to "iframe_server", "code" to code),
-                            referer = data,
-                            headers = mapOf("X-Requested-With" to "XMLHttpRequest")
-                        ).text
+                val ajaxUrl = "$mainUrl/ajaxGetRequest"
+                val response = app.post(
+                    ajaxUrl,
+                    data = mapOf("action" to "iframe_server", "code" to code),
+                    referer = data,
+                    headers = mapOf("X-Requested-With" to "XMLHttpRequest")
+                ).text
 
-                        val jsonResponse = parseJson<NewPlayerAjaxResponse>(response)
-                        if (!jsonResponse.status) return@async
+                val jsonResponse = parseJson<NewPlayerAjaxResponse>(response)
+                if (!jsonResponse.status) return@apmap
 
-                        val iframeHtml = jsonResponse.codeplay
-                        val iframeSrc = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src")
-                        if (iframeSrc.isNullOrBlank()) return@async
-                        
-                        loadExtractor(iframeSrc, data, subtitleCallback, callback)
+                val iframeHtml = jsonResponse.codeplay
+                val iframeSrc = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src")
+                if (iframeSrc.isNullOrBlank()) return@apmap
+                
+                loadExtractor(iframeSrc, data, subtitleCallback, callback)
 
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            }.forEach { it.await() }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
         return true
     }
