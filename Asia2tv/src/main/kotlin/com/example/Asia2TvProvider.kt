@@ -5,6 +5,8 @@ import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 
 // بنية بيانات جديدة لتناسب الرد الجديد من الموقع
 data class NewPlayerAjaxResponse(
@@ -121,9 +123,7 @@ class Asia2Tv : MainAPI() {
             plot
         }
 
-        // --- V2 Logic (with V3 fix) ---
-
-        // Helper function to parse episode elements from a given document/element
+        // Helper function to parse episode elements
         fun parseEpisodes(doc: Element): List<Episode> {
             return doc.select("a.colorsw").mapNotNull { a ->
                 val href = a.attr("href").ifBlank { return@mapNotNull null }
@@ -139,12 +139,12 @@ class Asia2Tv : MainAPI() {
 
         val allEpisodes = mutableListOf<Episode>()
 
-        // 1. Get initial episodes from the main page document
+        // 1. Get initial episodes
         document.selectFirst("div.loop-episode")?.let {
             allEpisodes.addAll(parseEpisodes(it))
         }
 
-        // 2. Check for the "more episodes" button and load them via AJAX
+        // 2. Load more episodes via AJAX if available
         val postId = document.selectFirst("link[rel=shortlink]")?.attr("href")?.substringAfter("?p=")
         if (document.selectFirst("a.more-episode") != null && postId != null) {
             var currentPage = 2
@@ -175,20 +175,17 @@ class Asia2Tv : MainAPI() {
                         allEpisodes.addAll(newEpisodes)
                         currentPage++
                     } else {
-                        hasMore = false // No more episodes returned, stop looping
+                        hasMore = false
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    hasMore = false // Stop on any error
+                    hasMore = false
                 }
             }
         }
 
-        // --- V3 Fix: Explicitly define the type for 'it' ---
         val finalEpisodes = allEpisodes.distinctBy { it: Episode -> it.url }.reversed()
         
-        // --- End of logic ---
-
         return if (finalEpisodes.isNotEmpty()) {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, finalEpisodes) {
                 this.posterUrl = posterUrl
@@ -216,34 +213,38 @@ class Asia2Tv : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data).document
-        
         val servers = document.select("ul.dropdown-menu li a")
         
-        servers.apmap { server ->
-            try {
-                val code = server.attr("data-code")
-                if (code.isBlank()) return@apmap
+        // V4: Replace deprecated apmap with modern coroutines
+        coroutineScope {
+            servers.map { server ->
+                async {
+                    try {
+                        val code = server.attr("data-code")
+                        if (code.isBlank()) return@async
 
-                val ajaxUrl = "$mainUrl/ajaxGetRequest"
-                val response = app.post(
-                    ajaxUrl,
-                    data = mapOf("action" to "iframe_server", "code" to code),
-                    referer = data,
-                    headers = mapOf("X-Requested-With" to "XMLHttpRequest")
-                ).text
+                        val ajaxUrl = "$mainUrl/ajaxGetRequest"
+                        val response = app.post(
+                            ajaxUrl,
+                            data = mapOf("action" to "iframe_server", "code" to code),
+                            referer = data,
+                            headers = mapOf("X-Requested-With" to "XMLHttpRequest")
+                        ).text
 
-                val jsonResponse = parseJson<NewPlayerAjaxResponse>(response)
-                if (!jsonResponse.status) return@apmap
+                        val jsonResponse = parseJson<NewPlayerAjaxResponse>(response)
+                        if (!jsonResponse.status) return@async
 
-                val iframeHtml = jsonResponse.codeplay
-                val iframeSrc = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src")
-                if (iframeSrc.isNullOrBlank()) return@apmap
-                
-                loadExtractor(iframeSrc, data, subtitleCallback, callback)
+                        val iframeHtml = jsonResponse.codeplay
+                        val iframeSrc = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src")
+                        if (iframeSrc.isNullOrBlank()) return@async
+                        
+                        loadExtractor(iframeSrc, data, subtitleCallback, callback)
 
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }.forEach { it.await() }
         }
         return true
     }
