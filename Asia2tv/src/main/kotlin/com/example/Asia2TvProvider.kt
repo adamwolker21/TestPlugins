@@ -1,4 +1,4 @@
-package com.wolker.asia2tv
+package com.example
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -109,24 +109,16 @@ class Asia2Tv : MainAPI() {
                 }
             }
         }
-        
-        val seenUrls = mutableSetOf<String>()
-        val finalEpisodes = mutableListOf<Episode>()
 
-        fun addUniqueEpisodes(episodes: List<Episode>) {
-            // كود مفصل جدًا لمساعدة المترجم
-            for (ep in episodes) {
-                // الخطوة 1: استخراج الرابط في متغير خاص
-                val currentUrl = ep.url
-                // الخطوة 2: استخدام المتغير في التحقق
-                if (seenUrls.add(currentUrl)) {
-                    finalEpisodes.add(ep)
+        val uniqueEpisodes = mutableListOf<Episode>()
+        val seenUrls = mutableSetOf<String>()
+
+        document.selectFirst("div.loop-episode")?.let { container ->
+            parseEpisodes(container).forEach { ep ->
+                if (seenUrls.add(ep.url)) {
+                    uniqueEpisodes.add(ep)
                 }
             }
-        }
-
-        document.selectFirst("div.loop-episode")?.let {
-            addUniqueEpisodes(parseEpisodes(it))
         }
 
         val serieId = document.select("script").mapNotNull { script ->
@@ -150,7 +142,11 @@ class Asia2Tv : MainAPI() {
                     if (response != null && response.status) {
                         val newEpisodes = parseEpisodes(Jsoup.parse(response.html))
                         if (newEpisodes.isNotEmpty()) {
-                            addUniqueEpisodes(newEpisodes)
+                            newEpisodes.forEach { ep ->
+                                if (seenUrls.add(ep.url)) {
+                                    uniqueEpisodes.add(ep)
+                                }
+                            }
                         }
                         hasMore = response.showmore
                         currentPage++
@@ -163,8 +159,8 @@ class Asia2Tv : MainAPI() {
             }
         }
 
-        return if (finalEpisodes.isNotEmpty()) {
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, finalEpisodes.reversed()) {
+        return if (uniqueEpisodes.isNotEmpty()) {
+            newTvSeriesLoadResponse(title, url, TvType.TvSeries, uniqueEpisodes.reversed()) {
                 this.posterUrl = posterUrl; this.year = year; this.plot = plot; this.tags = tags; this.rating = rating; this.showStatus = status
             }
         } else {
@@ -175,7 +171,7 @@ class Asia2Tv : MainAPI() {
     }
     
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(.data).document
+        val document = app.get(data).document
         document.select("ul.dropdown-menu li a").apmap { server ->
             try {
                 val code = server.attr("data-code").ifBlank { return@apmap }
