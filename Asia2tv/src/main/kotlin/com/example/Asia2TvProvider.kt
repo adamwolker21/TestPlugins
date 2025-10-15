@@ -121,7 +121,6 @@ class Asia2Tv : MainAPI() {
             plot
         }
 
-        // Helper function to parse episode elements
         fun parseEpisodes(doc: Element): List<Episode> {
             return doc.select("a.colorsw").mapNotNull { a ->
                 val href = a.attr("href").ifBlank { return@mapNotNull null }
@@ -137,12 +136,10 @@ class Asia2Tv : MainAPI() {
 
         val allEpisodes = mutableListOf<Episode>()
 
-        // 1. Get initial episodes
         document.selectFirst("div.loop-episode")?.let {
             allEpisodes.addAll(parseEpisodes(it))
         }
 
-        // 2. Load more episodes via AJAX if available
         val postId = document.selectFirst("link[rel=shortlink]")?.attr("href")?.substringAfter("?p=")
         if (document.selectFirst("a.more-episode") != null && postId != null) {
             var currentPage = 2
@@ -182,10 +179,10 @@ class Asia2Tv : MainAPI() {
             }
         }
         
-        // --- V6 Fix: Replace distinctBy with a manual loop to prevent build errors ---
         val uniqueEpisodes = mutableListOf<Episode>()
         val seenUrls = mutableSetOf<String>()
-        for (episode in allEpisodes) {
+        // --- V7 Fix: Explicitly define the type for the loop variable ---
+        for (episode: Episode in allEpisodes) {
             if (seenUrls.add(episode.url)) {
                 uniqueEpisodes.add(episode)
             }
