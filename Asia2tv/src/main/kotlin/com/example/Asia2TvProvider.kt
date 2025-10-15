@@ -6,15 +6,17 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
-data class NewPlayerAjaxResponse(
-    val status: Boolean,
-    val codeplay: String
-)
-
+// Data class for the AJAX response when fetching more episodes
 data class MoreEpisodesResponse(
     val status: Boolean,
     val html: String,
     val showmore: Boolean
+)
+
+// Data class for the AJAX response when fetching server iframes
+data class PlayerAjaxResponse(
+    val status: Boolean,
+    val codeplay: String
 )
 
 class Asia2Tv : MainAPI() {
@@ -24,7 +26,8 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    private val userAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"
+    // Set a consistent User-Agent for all requests
+    private val userAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Mobile Safari/537.36"
     private val baseHeaders
         get() = mapOf(
             "User-Agent" to userAgent,
@@ -78,88 +81,88 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url, headers = baseHeaders).document
-        val detailsContainer = document.selectFirst("div.info-detail-single")
-        val title = detailsContainer?.selectFirst("h1")?.text()?.trim() ?: "No Title"
-        var plot = detailsContainer?.selectFirst("p")?.text()?.trim()
+        val title = document.selectFirst("div.info-detail-single h1")?.text()?.trim() ?: "No Title"
+        var plot = document.selectFirst("div.info-detail-single p")?.text()?.trim()
         val posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
-        val year = detailsContainer?.select("ul.mb-2 li")
-            ?.find { it.text().contains("سنة العرض") }
-            ?.selectFirst("a")?.text()?.toIntOrNull()
-        val rating = detailsContainer?.selectFirst("div.post_review_avg")?.text()?.trim()
-            ?.toFloatOrNull()?.times(100)?.toInt()
-        val tags = detailsContainer?.select("div.post_tags a")?.map { it.text() }
+        val year = document.select("ul.mb-2 li:contains(سنة العرض) a")?.text()?.toIntOrNull()
+        val rating = document.selectFirst("div.post_review_avg")?.text()?.trim()?.toFloatOrNull()?.times(100)?.toInt()
+        val tags = document.select("div.post_tags a")?.map { it.text() }
         val status = getStatus(document.selectFirst("span.serie-isstatus"))
 
-        var country: String? = null
-        var totalEpisodes: String? = null
-        detailsContainer?.select("ul.mb-2 li")?.forEach { li ->
-            val text = li.text()
-            if (text.contains("البلد المنتج")) country = li.selectFirst("a")?.text()?.trim()
-            else if (text.contains("عدد الحلقات")) totalEpisodes = li.ownText().trim().removePrefix(": ")
-        }
+        // Extract and format extra info
+        val country = document.select("ul.mb-2 li:contains(البلد المنتج) a")?.text()?.trim()
+        val totalEpisodes = document.selectFirst("ul.mb-2 li:contains(عدد الحلقات)")?.ownText()?.trim()?.removePrefix(": ")
         val statusText = document.selectFirst("span.serie-isstatus")?.text()?.trim()
         val extraInfo = listOfNotNull(
             statusText?.let { "الحالة: $it" },
             country?.let { "البلد: $it" },
             totalEpisodes?.let { "عدد الحلقات: $it" }
         ).joinToString(" | ")
-        plot = if (extraInfo.isNotBlank()) listOfNotNull(plot, extraInfo).joinToString("<br><br>") else plot
+        if (extraInfo.isNotBlank()) {
+            plot = listOfNotNull(plot, extraInfo).joinToString("\n\n")
+        }
 
-        // V19: Final Build-Safe Logic
         val episodes = ArrayList<Episode>()
         val seenUrls = HashSet<String>()
 
+        // Helper function to add unique episodes to the list
         fun addUniqueEpisodes(elements: List<Element>) {
-            elements.forEach { a ->
-                val href = a.attr("href")
+            for (element in elements) {
+                val href = element.attr("href")
                 if (href.isNotBlank() && seenUrls.add(href)) {
-                    val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
-                    val epNum = epNumText?.toIntOrNull()
                     val episode = newEpisode(href) {
-                        name = a.selectFirst(".titlepisode")?.text()?.trim()
-                        episode = epNum
+                        name = element.selectFirst(".titlepisode")?.text()?.trim()
+                        this.episode = name?.replace(Regex("[^0-9]"), "")?.toIntOrNull()
                     }
                     episodes.add(episode)
                 }
             }
         }
 
-        // Process initial episodes
-        addUniqueEpisodes(document.select("div.box-loop-episode a"))
+        // 1. Add initial episodes from the page
+        addUniqueEpisodes(document.select("div.box-loop-episode a.colorsw"))
 
-        // Process AJAX episodes
+        // 2. The correct way to find the Serie ID, as you discovered
         val serieId = document.select("script").mapNotNull { script ->
-            script.data().let {
-                Regex("""'serie_id':\s*'(\d+)'""").find(it)?.groupValues?.get(1)
+            script.data().let { scriptData ->
+                Regex("""single_id\s*=\s*"(\d+)"""").find(scriptData)?.groupValues?.get(1)
             }
         }.firstOrNull()
+
+        // 3. Find the CSRF token
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content")
 
-        if (document.selectFirst("a.more-episode") != null && serieId != null && csrfToken != null) {
+        // 4. Loop to fetch all remaining episodes
+        if (serieId != null && csrfToken != null) {
             var currentPage = 2
             var hasMore = true
             while (hasMore) {
                 try {
                     val ajaxHeaders = baseHeaders + mapOf(
-                        "x-csrf-token" to csrfToken,
-                        "x-requested-with" to "XMLHttpRequest",
+                        "X-CSRF-TOKEN" to csrfToken,
+                        "X-Requested-With" to "XMLHttpRequest",
                         "Referer" to url
                     )
                     val response = app.post(
-                        "$mainUrl/wp-admin/admin-ajax.php",
-                        data = mapOf("action" to "moreepisode", "serieid" to serieId, "page" to currentPage.toString()),
-                        headers = ajaxHeaders
+                        "$mainUrl/ajaxGetRequest", // The correct URL, as you pointed out
+                        headers = ajaxHeaders,
+                        data = mapOf(
+                            "action" to "moreepisode",
+                            "serieid" to serieId,
+                            "page" to currentPage.toString()
+                        )
                     ).parsedSafe<MoreEpisodesResponse>()
 
-                    if (response != null && response.status) {
+                    if (response?.status == true) {
                         addUniqueEpisodes(Jsoup.parse(response.html).select("a.colorsw"))
-                        hasMore = response.showmore
+                        hasMore = response.showmore // Rely on the server to tell us when to stop
                         currentPage++
                     } else {
-                        hasMore = false
+                        hasMore = false // Stop if status is false or response is null
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace(); hasMore = false
+                    e.printStackTrace()
+                    hasMore = false // Stop on any error
                 }
             }
         }
@@ -178,9 +181,10 @@ class Asia2Tv : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data, headers = baseHeaders).document
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
+
         val ajaxHeaders = baseHeaders + mapOf(
-            "x-csrf-token" to csrfToken,
-            "x-requested-with" to "XMLHttpRequest",
+            "X-CSRF-TOKEN" to csrfToken,
+            "X-Requested-With" to "XMLHttpRequest",
             "Referer" to data
         )
 
@@ -188,18 +192,21 @@ class Asia2Tv : MainAPI() {
             try {
                 val code = server.attr("data-code").ifBlank { return@apmap }
                 val response = app.post(
-                    "$mainUrl/wp-admin/admin-ajax.php",
-                    data = mapOf("action" to "iframe_server", "code" to code),
-                    headers = ajaxHeaders
-                ).text
-                val jsonResponse = parseJson<NewPlayerAjaxResponse>(response)
-                if (!jsonResponse.status) return@apmap
-                val iframeSrc = Jsoup.parse(jsonResponse.codeplay).selectFirst("iframe")?.attr("src")?.ifBlank { return@apmap }
-                loadExtractor(iframeSrc!!, data, subtitleCallback, callback)
+                    "$mainUrl/ajaxGetRequest", // Use the correct URL here as well
+                    headers = ajaxHeaders,
+                    data = mapOf("action" to "iframe_server", "code" to code)
+                ).parsedSafe<PlayerAjaxResponse>()
+
+                if (response?.status == true) {
+                    val iframeSrc = Jsoup.parse(response.codeplay).selectFirst("iframe")?.attr("src")
+                    if (!iframeSrc.isNullOrBlank()) {
+                        loadExtractor(iframeSrc, data, subtitleCallback, callback)
+                    }
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
         return true
     }
-}
+                      }
