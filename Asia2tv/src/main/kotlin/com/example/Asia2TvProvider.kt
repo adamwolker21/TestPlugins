@@ -110,9 +110,25 @@ class Asia2Tv : MainAPI() {
             }
         }
 
-        val allEpisodes = mutableListOf<Episode>()
-        document.selectFirst("div.loop-episode")?.let { allEpisodes.addAll(parseEpisodes(it)) }
+        // --- V12: Final Build-Safe Logic ---
+        val seenUrls = mutableSetOf<String>()
+        val finalEpisodes = mutableListOf<Episode>()
 
+        // Helper function to add episodes one by one, ensuring uniqueness
+        fun addUniqueEpisodes(episodes: List<Episode>) {
+            for (ep in episodes) {
+                if (seenUrls.add(ep.url)) {
+                    finalEpisodes.add(ep)
+                }
+            }
+        }
+
+        // Add initial episodes from the page
+        document.selectFirst("div.loop-episode")?.let {
+            addUniqueEpisodes(parseEpisodes(it))
+        }
+
+        // Fetch and add episodes from AJAX
         val serieId = document.select("script").mapNotNull { script ->
             script.data().let {
                 Regex("""'serie_id':\s*'(\d+)'""").find(it)?.groupValues?.get(1)
@@ -133,7 +149,9 @@ class Asia2Tv : MainAPI() {
 
                     if (response != null && response.status) {
                         val newEpisodes = parseEpisodes(Jsoup.parse(response.html))
-                        if (newEpisodes.isNotEmpty()) allEpisodes.addAll(newEpisodes)
+                        if (newEpisodes.isNotEmpty()) {
+                            addUniqueEpisodes(newEpisodes)
+                        }
                         hasMore = response.showmore
                         currentPage++
                     } else {
@@ -144,20 +162,9 @@ class Asia2Tv : MainAPI() {
                 }
             }
         }
-        
-        // --- V11: Final build-safe method with explicit casting ---
-        val uniqueEpisodes = mutableListOf<Episode>()
-        val seenUrls = mutableSetOf<String>()
-        for (episode in allEpisodes) {
-            val episodeUrl = (episode as Episode).url // Explicit cast to help the compiler
-            if (seenUrls.add(episodeUrl)) {
-                uniqueEpisodes.add(episode)
-            }
-        }
-        val finalEpisodes = uniqueEpisodes.reversed()
 
         return if (finalEpisodes.isNotEmpty()) {
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, finalEpisodes) {
+            newTvSeriesLoadResponse(title, url, TvType.TvSeries, finalEpisodes.reversed()) {
                 this.posterUrl = posterUrl; this.year = year; this.plot = plot; this.tags = tags; this.rating = rating; this.showStatus = status
             }
         } else {
