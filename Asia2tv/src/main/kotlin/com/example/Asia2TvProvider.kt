@@ -6,14 +6,13 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
-// Data class for the AJAX response when fetching more episodes
+// V22 Fix: Make showmore nullable and provide a default value to handle missing JSON keys
 data class MoreEpisodesResponse(
     val status: Boolean,
     val html: String,
-    val showmore: Boolean
+    val showmore: Boolean? = false // The ? makes it nullable, = false is the default
 )
 
-// Data class for the AJAX response when fetching server iframes
 data class PlayerAjaxResponse(
     val status: Boolean,
     val codeplay: String
@@ -26,7 +25,6 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    // Set a consistent User-Agent for all requests
     private val userAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Mobile Safari/537.36"
     private val baseHeaders
         get() = mapOf(
@@ -89,7 +87,6 @@ class Asia2Tv : MainAPI() {
         val tags = document.select("div.post_tags a")?.map { it.text() }
         val status = getStatus(document.selectFirst("span.serie-isstatus"))
 
-        // Extract and format extra info
         val country = document.select("ul.mb-2 li:contains(البلد المنتج) a")?.text()?.trim()
         val totalEpisodes = document.selectFirst("ul.mb-2 li:contains(عدد الحلقات)")?.ownText()?.trim()?.removePrefix(": ")
         val statusText = document.selectFirst("span.serie-isstatus")?.text()?.trim()
@@ -105,7 +102,6 @@ class Asia2Tv : MainAPI() {
         val episodes = ArrayList<Episode>()
         val seenUrls = HashSet<String>()
 
-        // Helper function to add unique episodes to the list in a build-safe way
         fun addUniqueEpisodes(elements: List<Element>) {
             for (element in elements) {
                 val href = element.attr("href")
@@ -119,20 +115,15 @@ class Asia2Tv : MainAPI() {
             }
         }
 
-        // 1. Add initial episodes from the page
         addUniqueEpisodes(document.select("div.box-loop-episode a.colorsw"))
 
-        // 2. The correct way to find the Serie ID, as you discovered
         val serieId = document.select("script").mapNotNull { script ->
             script.data().let { scriptData ->
                 Regex("""single_id\s*=\s*"(\d+)"""").find(scriptData)?.groupValues?.get(1)
             }
         }.firstOrNull()
-
-        // 3. Find the CSRF token
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content")
 
-        // 4. Loop to fetch all remaining episodes
         if (serieId != null && csrfToken != null) {
             var currentPage = 2
             var hasMore = true
@@ -144,7 +135,7 @@ class Asia2Tv : MainAPI() {
                         "Referer" to url
                     )
                     val response = app.post(
-                        "$mainUrl/ajaxGetRequest", // The correct URL, as you pointed out
+                        "$mainUrl/ajaxGetRequest",
                         headers = ajaxHeaders,
                         data = mapOf(
                             "action" to "moreepisode",
@@ -155,14 +146,15 @@ class Asia2Tv : MainAPI() {
 
                     if (response?.status == true) {
                         addUniqueEpisodes(Jsoup.parse(response.html).select("a.colorsw"))
-                        hasMore = response.showmore // Rely on the server to tell us when to stop
+                        // V22 Fix: Safely handle nullable showmore with the Elvis operator (?:)
+                        hasMore = response.showmore ?: false
                         currentPage++
                     } else {
-                        hasMore = false // Stop if status is false or response is null
+                        hasMore = false
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    hasMore = false // Stop on any error
+                    hasMore = false
                 }
             }
         }
@@ -192,7 +184,7 @@ class Asia2Tv : MainAPI() {
             try {
                 val code = server.attr("data-code").ifBlank { return@apmap }
                 val response = app.post(
-                    "$mainUrl/ajaxGetRequest", // Use the correct URL here as well
+                    "$mainUrl/ajaxGetRequest",
                     headers = ajaxHeaders,
                     data = mapOf("action" to "iframe_server", "code" to code)
                 ).parsedSafe<PlayerAjaxResponse>()
