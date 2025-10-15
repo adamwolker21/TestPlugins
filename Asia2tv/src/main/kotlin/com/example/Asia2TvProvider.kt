@@ -151,30 +151,30 @@ class Asia2Tv : MainAPI() {
         val finalEpisodes = uniqueEpisodes.reversed()
 
 
-        /*
+        
         // --- الطريقة الثانية: استخدام associateBy (طريقة فعالة لإزالة التكرار) ---
         val finalEpisodes = allEpisodes
             .associateBy { it.url }
             .values
             .toList()
             .reversed()
-        */
+        
 
-        /*
+        
         // --- الطريقة الثالثة: استخدام groupBy ---
         val finalEpisodes = allEpisodes
             .groupBy { it.url }
             .map { it.value.first() }
             .reversed()
-        */
+        
 
-        /*
+        
         // --- الطريقة الرابعة: استخدام filter مع Set ---
         val seenUrls = mutableSetOf<String>()
         val finalEpisodes = allEpisodes
             .filter { seenUrls.add(it.url) }
             .reversed()
-        */
+        
 
         // =================================================================================
 
