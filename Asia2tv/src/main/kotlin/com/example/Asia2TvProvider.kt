@@ -121,7 +121,12 @@ class Asia2Tv : MainAPI() {
             plot
         }
 
-        val episodes = document.select("div.box-loop-episode a").mapNotNull { a ->
+        // --- تم التعديل هنا ---
+        // قائمة قابلة للتعديل لتخزين جميع الحلقات
+        val episodes = mutableListOf<Episode>()
+
+        // جلب الحلقات من الصفحة الأولية
+        document.select("div.box-loop-episode a").mapNotNull { a ->
             val href = a.attr("href") ?: return@mapNotNull null
             val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
             val epNum = epNumText?.toIntOrNull()
@@ -130,10 +135,57 @@ class Asia2Tv : MainAPI() {
                 name = a.selectFirst(".titlepisode")?.text()?.trim()
                 episode = epNum
             }
-        }.reversed()
+        }.toCollection(episodes)
 
-        return if (episodes.isNotEmpty()) {
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+        // التحقق من وجود زر "مشاهدة المزيد" وجلب الحلقات الإضافية
+        val moreButton = document.selectFirst("a.more-episode")
+        val postId = document.selectFirst("link[rel=shortlink]")?.attr("href")?.split("?p=")?.getOrNull(1)
+
+        if (moreButton != null && postId != null) {
+            var page = 2
+            while (true) {
+                try {
+                    // إرسال طلب POST لجلب المزيد من الحلقات
+                    val response = app.post(
+                        "$mainUrl/ajaxGetRequest",
+                        data = mapOf(
+                            "action" to "load_more_episodes",
+                            "post_id" to postId,
+                            "page" to page.toString()
+                        ),
+                        referer = url,
+                        headers = mapOf("X-Requested-With" to "XMLHttpRequest")
+                    ).document // الاستجابة عبارة عن HTML
+
+                    val newEpisodes = response.select("a").mapNotNull { a ->
+                        val href = a.attr("href") ?: return@mapNotNull null
+                        val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
+                        val epNum = epNumText?.toIntOrNull()
+
+                        newEpisode(href) {
+                            name = a.selectFirst(".titlepisode")?.text()?.trim()
+                            episode = epNum
+                        }
+                    }
+
+                    if (newEpisodes.isNotEmpty()) {
+                        episodes.addAll(newEpisodes)
+                        page++
+                    } else {
+                        break // لا توجد حلقات أخرى، الخروج من الحلقة
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    break // الخروج من الحلقة في حالة حدوث خطأ
+                }
+            }
+        }
+        // --- نهاية التعديل ---
+
+        val finalEpisodes = episodes.reversed()
+
+        return if (finalEpisodes.isNotEmpty()) {
+            newTvSeriesLoadResponse(title, url, TvType.TvSeries, finalEpisodes) {
                 this.posterUrl = posterUrl
                 this.year = year
                 this.plot = plot
@@ -181,9 +233,7 @@ class Asia2Tv : MainAPI() {
                 val iframeHtml = jsonResponse.codeplay
                 val iframeSrc = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src")
                 if (iframeSrc.isNullOrBlank()) return@apmap
-
-                // --- تم التعديل هنا ---
-                // العودة إلى الطريقة الصحيحة والمجربة
+                
                 loadExtractor(iframeSrc, data, subtitleCallback, callback)
 
             } catch (e: Exception) {
