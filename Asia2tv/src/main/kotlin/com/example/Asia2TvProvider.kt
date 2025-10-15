@@ -24,7 +24,6 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    // V18: Add User-Agent to all requests
     private val userAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"
     private val baseHeaders
         get() = mapOf(
@@ -106,23 +105,34 @@ class Asia2Tv : MainAPI() {
         ).joinToString(" | ")
         plot = if (extraInfo.isNotBlank()) listOfNotNull(plot, extraInfo).joinToString("<br><br>") else plot
 
+        // V19: Final Build-Safe Logic
         val episodes = ArrayList<Episode>()
-        document.select("div.box-loop-episode a").mapNotNullTo(episodes) { a ->
-            val href = a.attr("href") ?: return@mapNotNullTo null
-            val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
-            val epNum = epNumText?.toIntOrNull()
-            newEpisode(href) {
-                name = a.selectFirst(".titlepisode")?.text()?.trim()
-                episode = epNum
+        val seenUrls = HashSet<String>()
+
+        fun addUniqueEpisodes(elements: List<Element>) {
+            elements.forEach { a ->
+                val href = a.attr("href")
+                if (href.isNotBlank() && seenUrls.add(href)) {
+                    val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
+                    val epNum = epNumText?.toIntOrNull()
+                    val episode = newEpisode(href) {
+                        name = a.selectFirst(".titlepisode")?.text()?.trim()
+                        episode = epNum
+                    }
+                    episodes.add(episode)
+                }
             }
         }
 
+        // Process initial episodes
+        addUniqueEpisodes(document.select("div.box-loop-episode a"))
+
+        // Process AJAX episodes
         val serieId = document.select("script").mapNotNull { script ->
             script.data().let {
                 Regex("""'serie_id':\s*'(\d+)'""").find(it)?.groupValues?.get(1)
             }
         }.firstOrNull()
-
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content")
 
         if (document.selectFirst("a.more-episode") != null && serieId != null && csrfToken != null) {
@@ -142,15 +152,7 @@ class Asia2Tv : MainAPI() {
                     ).parsedSafe<MoreEpisodesResponse>()
 
                     if (response != null && response.status) {
-                        Jsoup.parse(response.html).select("a.colorsw").mapNotNullTo(episodes) { a ->
-                            val href = a.attr("href") ?: return@mapNotNullTo null
-                            val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
-                            val epNum = epNumText?.toIntOrNull()
-                            newEpisode(href) {
-                                name = a.selectFirst(".titlepisode")?.text()?.trim()
-                                episode = epNum
-                            }
-                        }
+                        addUniqueEpisodes(Jsoup.parse(response.html).select("a.colorsw"))
                         hasMore = response.showmore
                         currentPage++
                     } else {
@@ -161,17 +163,9 @@ class Asia2Tv : MainAPI() {
                 }
             }
         }
-        
+
         return if (episodes.isNotEmpty()) {
-            // V18: Final build-safe method to remove duplicates
-            val uniqueEpisodes = ArrayList<Episode>()
-            val seenUrls = HashSet<String>()
-            for (episode in episodes) {
-                if (seenUrls.add(episode.url)) {
-                    uniqueEpisodes.add(episode)
-                }
-            }
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, uniqueEpisodes.reversed()) {
+            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.reversed()) {
                 this.posterUrl = posterUrl; this.year = year; this.plot = plot; this.tags = tags; this.rating = rating; this.showStatus = status
             }
         } else {
@@ -180,7 +174,7 @@ class Asia2Tv : MainAPI() {
             }
         }
     }
-    
+
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data, headers = baseHeaders).document
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
