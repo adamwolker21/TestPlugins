@@ -98,26 +98,16 @@ class Asia2Tv : MainAPI() {
         ).joinToString(" | ")
         plot = if (extraInfo.isNotBlank()) listOfNotNull(plot, extraInfo).joinToString("<br><br>") else plot
 
-        fun parseEpisodes(doc: Element): List<Episode> {
-            return doc.select("a.colorsw").mapNotNull { a ->
-                val href = a.attr("href").ifBlank { return@mapNotNull null }
-                val name = a.selectFirst(".titlepisode")?.text()?.trim()
-                val epNum = name?.replace(Regex("[^0-9]"), "")?.toIntOrNull()
-                newEpisode(href) {
-                    this.name = name
-                    this.episode = epNum
-                }
-            }
-        }
+        // V16: Final build-safe logic
+        val episodes = ArrayList<Episode>()
+        document.select("div.box-loop-episode a").mapNotNullTo(episodes) { a ->
+            val href = a.attr("href") ?: return@mapNotNullTo null
+            val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
+            val epNum = epNumText?.toIntOrNull()
 
-        val uniqueEpisodes = mutableListOf<Episode>()
-        val seenUrls = mutableSetOf<String>()
-
-        document.selectFirst("div.loop-episode")?.let { container ->
-            parseEpisodes(container).forEach { ep ->
-                if (seenUrls.add(ep.url)) {
-                    uniqueEpisodes.add(ep)
-                }
+            newEpisode(href) {
+                name = a.selectFirst(".titlepisode")?.text()?.trim()
+                episode = epNum
             }
         }
 
@@ -140,12 +130,13 @@ class Asia2Tv : MainAPI() {
                     ).parsedSafe<MoreEpisodesResponse>()
 
                     if (response != null && response.status) {
-                        val newEpisodes = parseEpisodes(Jsoup.parse(response.html))
-                        if (newEpisodes.isNotEmpty()) {
-                            newEpisodes.forEach { ep ->
-                                if (seenUrls.add(ep.url)) {
-                                    uniqueEpisodes.add(ep)
-                                }
+                        Jsoup.parse(response.html).select("a.colorsw").mapNotNullTo(episodes) { a ->
+                            val href = a.attr("href") ?: return@mapNotNullTo null
+                            val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
+                            val epNum = epNumText?.toIntOrNull()
+                            newEpisode(href) {
+                                name = a.selectFirst(".titlepisode")?.text()?.trim()
+                                episode = epNum
                             }
                         }
                         hasMore = response.showmore
@@ -158,9 +149,9 @@ class Asia2Tv : MainAPI() {
                 }
             }
         }
-
-        return if (uniqueEpisodes.isNotEmpty()) {
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, uniqueEpisodes.reversed()) {
+        
+        return if (episodes.isNotEmpty()) {
+            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.reversed()) {
                 this.posterUrl = posterUrl; this.year = year; this.plot = plot; this.tags = tags; this.rating = rating; this.showStatus = status
             }
         } else {
