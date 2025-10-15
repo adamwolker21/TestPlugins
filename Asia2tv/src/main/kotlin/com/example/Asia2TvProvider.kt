@@ -1,9 +1,8 @@
-package com.example // تم التعديل ليطابق مسار البناء
+package com.example 
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
-import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
@@ -12,7 +11,6 @@ data class NewPlayerAjaxResponse(
     val codeplay: String
 )
 
-// بنية بيانات جديدة لرد الحلقات الإضافية
 data class MoreEpisodesResponse(
     val status: Boolean,
     val html: String,
@@ -100,7 +98,6 @@ class Asia2Tv : MainAPI() {
         ).joinToString(" | ")
         plot = if (extraInfo.isNotBlank()) listOfNotNull(plot, extraInfo).joinToString("<br><br>") else plot
 
-        // --- جلب الحلقات ---
         fun parseEpisodes(doc: Element): List<Episode> {
             return doc.select("a.colorsw").mapNotNull { a ->
                 val href = a.attr("href").ifBlank { return@mapNotNull null }
@@ -116,21 +113,17 @@ class Asia2Tv : MainAPI() {
         val allEpisodes = mutableListOf<Episode>()
         document.selectFirst("div.loop-episode")?.let { allEpisodes.addAll(parseEpisodes(it)) }
 
-        // --- V9: The Real Fix ---
-        // 1. العثور على serieid بالطريقة الصحيحة والمؤكدة
         val serieId = document.select("script").mapNotNull { script ->
             script.data().let {
                 Regex("""'serie_id':\s*'(\d+)'""").find(it)?.groupValues?.get(1)
             }
         }.firstOrNull()
 
-
         if (document.selectFirst("a.more-episode") != null && serieId != null) {
             var currentPage = 2
             var hasMore = true
             while (hasMore) {
                 try {
-                    // 2. استخدام البيانات الصحيحة في الطلب
                     val response = app.post(
                         "$mainUrl/ajaxGetRequest",
                         data = mapOf(
@@ -147,7 +140,6 @@ class Asia2Tv : MainAPI() {
                         if (newEpisodes.isNotEmpty()) {
                             allEpisodes.addAll(newEpisodes)
                         }
-                        // 3. التوقف بناءً على رد الخادم
                         hasMore = response.showmore
                         currentPage++
                     } else {
@@ -159,7 +151,15 @@ class Asia2Tv : MainAPI() {
             }
         }
         
-        val finalEpisodes = allEpisodes.distinctBy { it.url }.reversed()
+        // --- V10: Build-safe method to remove duplicates ---
+        val uniqueEpisodes = mutableListOf<Episode>()
+        val seenUrls = mutableSetOf<String>()
+        for (episode in allEpisodes) {
+            if (seenUrls.add(episode.url)) {
+                uniqueEpisodes.add(episode)
+            }
+        }
+        val finalEpisodes = uniqueEpisodes.reversed()
 
         return if (finalEpisodes.isNotEmpty()) {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, finalEpisodes) {
