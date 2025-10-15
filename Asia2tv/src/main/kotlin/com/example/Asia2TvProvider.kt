@@ -121,7 +121,7 @@ class Asia2Tv : MainAPI() {
             plot
         }
 
-        // --- V2: Logic to fetch all episodes ---
+        // --- V2 Logic (with V3 fix) ---
 
         // Helper function to parse episode elements from a given document/element
         fun parseEpisodes(doc: Element): List<Episode> {
@@ -184,9 +184,10 @@ class Asia2Tv : MainAPI() {
             }
         }
 
-        val finalEpisodes = allEpisodes.distinctBy { it.url }.reversed()
+        // --- V3 Fix: Explicitly define the type for 'it' ---
+        val finalEpisodes = allEpisodes.distinctBy { it: Episode -> it.url }.reversed()
         
-        // --- End of V2 logic ---
+        // --- End of logic ---
 
         return if (finalEpisodes.isNotEmpty()) {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, finalEpisodes) {
