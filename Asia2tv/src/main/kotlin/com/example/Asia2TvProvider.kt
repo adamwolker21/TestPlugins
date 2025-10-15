@@ -98,7 +98,6 @@ class Asia2Tv : MainAPI() {
         ).joinToString(" | ")
         plot = if (extraInfo.isNotBlank()) listOfNotNull(plot, extraInfo).joinToString("<br><br>") else plot
 
-        // V16: Final build-safe logic
         val episodes = ArrayList<Episode>()
         document.select("div.box-loop-episode a").mapNotNullTo(episodes) { a ->
             val href = a.attr("href") ?: return@mapNotNullTo null
@@ -122,8 +121,9 @@ class Asia2Tv : MainAPI() {
             var hasMore = true
             while (hasMore) {
                 try {
+                    // V17: Corrected the AJAX URL
                     val response = app.post(
-                        "$mainUrl/ajaxGetRequest",
+                        "$mainUrl/wp-admin/admin-ajax.php",
                         data = mapOf("action" to "moreepisode", "serieid" to serieId, "page" to currentPage.toString()),
                         referer = url,
                         headers = mapOf("X-Requested-With" to "XMLHttpRequest")
@@ -151,7 +151,7 @@ class Asia2Tv : MainAPI() {
         }
         
         return if (episodes.isNotEmpty()) {
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.reversed()) {
+            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.distinctBy { it.url }.reversed()) {
                 this.posterUrl = posterUrl; this.year = year; this.plot = plot; this.tags = tags; this.rating = rating; this.showStatus = status
             }
         } else {
@@ -167,7 +167,7 @@ class Asia2Tv : MainAPI() {
             try {
                 val code = server.attr("data-code").ifBlank { return@apmap }
                 val response = app.post(
-                    "$mainUrl/ajaxGetRequest",
+                    "$mainUrl/wp-admin/admin-ajax.php", // Corrected URL here as well
                     data = mapOf("action" to "iframe_server", "code" to code),
                     referer = data,
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest")
