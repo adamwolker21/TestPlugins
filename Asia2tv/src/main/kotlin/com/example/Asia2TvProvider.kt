@@ -1,4 +1,4 @@
-package com.example 
+package com.example
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -126,20 +126,14 @@ class Asia2Tv : MainAPI() {
                 try {
                     val response = app.post(
                         "$mainUrl/ajaxGetRequest",
-                        data = mapOf(
-                            "action" to "moreepisode",
-                            "serieid" to serieId,
-                            "page" to currentPage.toString()
-                        ),
+                        data = mapOf("action" to "moreepisode", "serieid" to serieId, "page" to currentPage.toString()),
                         referer = url,
                         headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                     ).parsedSafe<MoreEpisodesResponse>()
 
                     if (response != null && response.status) {
                         val newEpisodes = parseEpisodes(Jsoup.parse(response.html))
-                        if (newEpisodes.isNotEmpty()) {
-                            allEpisodes.addAll(newEpisodes)
-                        }
+                        if (newEpisodes.isNotEmpty()) allEpisodes.addAll(newEpisodes)
                         hasMore = response.showmore
                         currentPage++
                     } else {
@@ -151,11 +145,12 @@ class Asia2Tv : MainAPI() {
             }
         }
         
-        // --- V10: Build-safe method to remove duplicates ---
+        // --- V11: Final build-safe method with explicit casting ---
         val uniqueEpisodes = mutableListOf<Episode>()
         val seenUrls = mutableSetOf<String>()
         for (episode in allEpisodes) {
-            if (seenUrls.add(episode.url)) {
+            val episodeUrl = (episode as Episode).url // Explicit cast to help the compiler
+            if (seenUrls.add(episodeUrl)) {
                 uniqueEpisodes.add(episode)
             }
         }
