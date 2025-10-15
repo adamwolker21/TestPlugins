@@ -1,4 +1,4 @@
-package com.wolker.asia2tv
+package com.example // تم التعديل ليطابق مسار البناء
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
@@ -6,7 +6,6 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
-// بنية بيانات جديدة لتناسب الرد الجديد من الموقع
 data class NewPlayerAjaxResponse(
     val status: Boolean,
     val codeplay: String
@@ -31,11 +30,9 @@ class Asia2Tv : MainAPI() {
         val titleElement = this.selectFirst("h4 a") ?: return null
         val href = fixUrlNull(titleElement.attr("href")) ?: return null
         val title = titleElement.text()
-
         val posterUrl = fixUrlNull(this.selectFirst("div.postmovie-photo img")?.let {
             it.attr("data-src").ifBlank { it.attr("src") }
         })
-
         val isMovie = href.contains("/movie/")
 
         return if (isMovie) {
@@ -55,78 +52,53 @@ class Asia2Tv : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val url = "$mainUrl${request.data}?page=$page"
-        val document = app.get(url).document
-
-        val items = document.select("div.postmovie").mapNotNull {
-            it.toSearchResponse()
-        }
-
+        val document = app.get("$mainUrl${request.data}?page=$page").document
+        val items = document.select("div.postmovie").mapNotNull { it.toSearchResponse() }
         val hasNext = document.selectFirst("a.next.page-numbers, a[rel=next]") != null
         return newHomePageResponse(request.name, items, hasNext)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val url = "$mainUrl/search?s=$query"
-        val document = app.get(url).document
-
+        val document = app.get("$mainUrl/search?s=$query").document
         return document.select("div.postmovie").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
-
         val detailsContainer = document.selectFirst("div.info-detail-single")
-
         val title = detailsContainer?.selectFirst("h1")?.text()?.trim() ?: "No Title"
         var plot = detailsContainer?.selectFirst("p")?.text()?.trim()
-
         val posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
-
         val year = detailsContainer?.select("ul.mb-2 li")
             ?.find { it.text().contains("سنة العرض") }
             ?.selectFirst("a")?.text()?.toIntOrNull()
-
         val rating = detailsContainer?.selectFirst("div.post_review_avg")?.text()?.trim()
             ?.toFloatOrNull()?.times(100)?.toInt()
-
         val tags = detailsContainer?.select("div.post_tags a")?.map { it.text() }
-
         val status = getStatus(document.selectFirst("span.serie-isstatus"))
 
+        // --- استخراج معلومات إضافية ---
         var country: String? = null
         var totalEpisodes: String? = null
-
         detailsContainer?.select("ul.mb-2 li")?.forEach { li ->
             val text = li.text()
-            if (text.contains("البلد المنتج")) {
-                country = li.selectFirst("a")?.text()?.trim()
-            } else if (text.contains("عدد الحلقات")) {
-                totalEpisodes = li.ownText().trim().removePrefix(": ")
-            }
+            if (text.contains("البلد المنتج")) country = li.selectFirst("a")?.text()?.trim()
+            else if (text.contains("عدد الحلقات")) totalEpisodes = li.ownText().trim().removePrefix(": ")
         }
-
         val statusText = document.selectFirst("span.serie-isstatus")?.text()?.trim()
-        
-        val extraInfoList = listOfNotNull(
+        val extraInfo = listOfNotNull(
             statusText?.let { "الحالة: $it" },
             country?.let { "البلد: $it" },
             totalEpisodes?.let { "عدد الحلقات: $it" }
-        )
-        val extraInfo = extraInfoList.joinToString(" | ")
+        ).joinToString(" | ")
+        plot = if (extraInfo.isNotBlank()) listOfNotNull(plot, extraInfo).joinToString("<br><br>") else plot
 
-        plot = if (extraInfo.isNotBlank()) {
-            listOfNotNull(plot, extraInfo).joinToString("<br><br>")
-        } else {
-            plot
-        }
-
+        // --- جلب الحلقات ---
         fun parseEpisodes(doc: Element): List<Episode> {
             return doc.select("a.colorsw").mapNotNull { a ->
                 val href = a.attr("href").ifBlank { return@mapNotNull null }
                 val name = a.selectFirst(".titlepisode")?.text()?.trim()
                 val epNum = name?.replace(Regex("[^0-9]"), "")?.toIntOrNull()
-
                 newEpisode(href) {
                     this.name = name
                     this.episode = epNum
@@ -135,53 +107,42 @@ class Asia2Tv : MainAPI() {
         }
 
         val allEpisodes = mutableListOf<Episode>()
-
-        document.selectFirst("div.loop-episode")?.let {
-            allEpisodes.addAll(parseEpisodes(it))
-        }
+        document.selectFirst("div.loop-episode")?.let { allEpisodes.addAll(parseEpisodes(it)) }
 
         val postId = document.selectFirst("link[rel=shortlink]")?.attr("href")?.substringAfter("?p=")
         if (document.selectFirst("a.more-episode") != null && postId != null) {
             var currentPage = 2
             var hasMore = true
-
             while (hasMore) {
                 try {
                     val responseText = app.post(
                         "$mainUrl/ajaxGetRequest",
-                        data = mapOf(
-                            "action" to "load_more_episodes",
-                            "post_id" to postId,
-                            "page" to currentPage.toString()
-                        ),
+                        data = mapOf("action" to "load_more_episodes", "post_id" to postId, "page" to currentPage.toString()),
                         referer = url,
                         headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                     ).text
-
                     if (responseText.isBlank()) {
-                        hasMore = false
-                        continue
+                        hasMore = false; continue
                     }
-
-                    val responseDoc = Jsoup.parse(responseText)
-                    val newEpisodes = parseEpisodes(responseDoc)
-
+                    val newEpisodes = parseEpisodes(Jsoup.parse(responseText))
                     if (newEpisodes.isNotEmpty()) {
-                        allEpisodes.addAll(newEpisodes)
-                        currentPage++
+                        allEpisodes.addAll(newEpisodes); currentPage++
                     } else {
                         hasMore = false
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
-                    hasMore = false
+                    e.printStackTrace(); hasMore = false
                 }
             }
         }
         
+        // =================================================================================
+        // V8: جرب بناء كل طريقة على حدة. قم بتعطيل الطريقة الحالية وتفعيل التالية إذا فشل البناء
+        // =================================================================================
+
+        // --- الطريقة الأولى: حلقة تكرار مع تحديد النوع صراحةً (المستخدمة في V7) ---
         val uniqueEpisodes = mutableListOf<Episode>()
         val seenUrls = mutableSetOf<String>()
-        // --- V7 Fix: Explicitly define the type for the loop variable ---
         for (episode: Episode in allEpisodes) {
             if (seenUrls.add(episode.url)) {
                 uniqueEpisodes.add(episode)
@@ -189,58 +150,60 @@ class Asia2Tv : MainAPI() {
         }
         val finalEpisodes = uniqueEpisodes.reversed()
 
+
+        /*
+        // --- الطريقة الثانية: استخدام associateBy (طريقة فعالة لإزالة التكرار) ---
+        val finalEpisodes = allEpisodes
+            .associateBy { it.url }
+            .values
+            .toList()
+            .reversed()
+        */
+
+        /*
+        // --- الطريقة الثالثة: استخدام groupBy ---
+        val finalEpisodes = allEpisodes
+            .groupBy { it.url }
+            .map { it.value.first() }
+            .reversed()
+        */
+
+        /*
+        // --- الطريقة الرابعة: استخدام filter مع Set ---
+        val seenUrls = mutableSetOf<String>()
+        val finalEpisodes = allEpisodes
+            .filter { seenUrls.add(it.url) }
+            .reversed()
+        */
+
+        // =================================================================================
+
         return if (finalEpisodes.isNotEmpty()) {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, finalEpisodes) {
-                this.posterUrl = posterUrl
-                this.year = year
-                this.plot = plot
-                this.tags = tags
-                this.rating = rating
-                this.showStatus = status
+                this.posterUrl = posterUrl; this.year = year; this.plot = plot; this.tags = tags; this.rating = rating; this.showStatus = status
             }
         } else {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
-                this.posterUrl = posterUrl
-                this.year = year
-                this.plot = plot
-                this.tags = tags
-                this.rating = rating
+                this.posterUrl = posterUrl; this.year = year; this.plot = plot; this.tags = tags; this.rating = rating
             }
         }
     }
     
-    override suspend fun loadLinks(
-        data: String,
-        isCasting: Boolean,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ): Boolean {
+    override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data).document
-        
-        val servers = document.select("ul.dropdown-menu li a")
-        
-        servers.apmap { server ->
+        document.select("ul.dropdown-menu li a").apmap { server ->
             try {
-                val code = server.attr("data-code")
-                if (code.isBlank()) return@apmap
-
-                val ajaxUrl = "$mainUrl/ajaxGetRequest"
+                val code = server.attr("data-code").ifBlank { return@apmap }
                 val response = app.post(
-                    ajaxUrl,
+                    "$mainUrl/ajaxGetRequest",
                     data = mapOf("action" to "iframe_server", "code" to code),
                     referer = data,
                     headers = mapOf("X-Requested-With" to "XMLHttpRequest")
                 ).text
-
                 val jsonResponse = parseJson<NewPlayerAjaxResponse>(response)
                 if (!jsonResponse.status) return@apmap
-
-                val iframeHtml = jsonResponse.codeplay
-                val iframeSrc = Jsoup.parse(iframeHtml).selectFirst("iframe")?.attr("src")
-                if (iframeSrc.isNullOrBlank()) return@apmap
-                
-                loadExtractor(iframeSrc, data, subtitleCallback, callback)
-
+                val iframeSrc = Jsoup.parse(jsonResponse.codeplay).selectFirst("iframe")?.attr("src")?.ifBlank { return@apmap }
+                loadExtractor(iframeSrc!!, data, subtitleCallback, callback)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
