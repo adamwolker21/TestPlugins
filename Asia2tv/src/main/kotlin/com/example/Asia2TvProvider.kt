@@ -1,4 +1,3 @@
-// v46: The final fix, reverting to loadExtractor as the correct approach.
 package com.wolker.asia2tv
 
 import com.lagradost.cloudstream3.*
