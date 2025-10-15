@@ -24,6 +24,14 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
+    // V18: Add User-Agent to all requests
+    private val userAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"
+    private val baseHeaders
+        get() = mapOf(
+            "User-Agent" to userAgent,
+            "Referer" to "$mainUrl/"
+        )
+
     private fun getStatus(element: Element?): ShowStatus {
         return when {
             element?.hasClass("live") == true -> ShowStatus.Ongoing
@@ -58,19 +66,19 @@ class Asia2Tv : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl${request.data}?page=$page").document
+        val document = app.get("$mainUrl${request.data}?page=$page", headers = baseHeaders).document
         val items = document.select("div.postmovie").mapNotNull { it.toSearchResponse() }
         val hasNext = document.selectFirst("a.next.page-numbers, a[rel=next]") != null
         return newHomePageResponse(request.name, items, hasNext)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/search?s=$query").document
+        val document = app.get("$mainUrl/search?s=$query", headers = baseHeaders).document
         return document.select("div.postmovie").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = app.get(url).document
+        val document = app.get(url, headers = baseHeaders).document
         val detailsContainer = document.selectFirst("div.info-detail-single")
         val title = detailsContainer?.selectFirst("h1")?.text()?.trim() ?: "No Title"
         var plot = detailsContainer?.selectFirst("p")?.text()?.trim()
@@ -103,7 +111,6 @@ class Asia2Tv : MainAPI() {
             val href = a.attr("href") ?: return@mapNotNullTo null
             val epNumText = a.selectFirst(".titlepisode")?.text()?.replace(Regex("[^0-9]"), "")
             val epNum = epNumText?.toIntOrNull()
-
             newEpisode(href) {
                 name = a.selectFirst(".titlepisode")?.text()?.trim()
                 episode = epNum
@@ -116,17 +123,22 @@ class Asia2Tv : MainAPI() {
             }
         }.firstOrNull()
 
-        if (document.selectFirst("a.more-episode") != null && serieId != null) {
+        val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content")
+
+        if (document.selectFirst("a.more-episode") != null && serieId != null && csrfToken != null) {
             var currentPage = 2
             var hasMore = true
             while (hasMore) {
                 try {
-                    // V17: Corrected the AJAX URL
+                    val ajaxHeaders = baseHeaders + mapOf(
+                        "x-csrf-token" to csrfToken,
+                        "x-requested-with" to "XMLHttpRequest",
+                        "Referer" to url
+                    )
                     val response = app.post(
                         "$mainUrl/wp-admin/admin-ajax.php",
                         data = mapOf("action" to "moreepisode", "serieid" to serieId, "page" to currentPage.toString()),
-                        referer = url,
-                        headers = mapOf("X-Requested-With" to "XMLHttpRequest")
+                        headers = ajaxHeaders
                     ).parsedSafe<MoreEpisodesResponse>()
 
                     if (response != null && response.status) {
@@ -151,7 +163,15 @@ class Asia2Tv : MainAPI() {
         }
         
         return if (episodes.isNotEmpty()) {
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.distinctBy { it.url }.reversed()) {
+            // V18: Final build-safe method to remove duplicates
+            val uniqueEpisodes = ArrayList<Episode>()
+            val seenUrls = HashSet<String>()
+            for (episode in episodes) {
+                if (seenUrls.add(episode.url)) {
+                    uniqueEpisodes.add(episode)
+                }
+            }
+            newTvSeriesLoadResponse(title, url, TvType.TvSeries, uniqueEpisodes.reversed()) {
                 this.posterUrl = posterUrl; this.year = year; this.plot = plot; this.tags = tags; this.rating = rating; this.showStatus = status
             }
         } else {
@@ -162,15 +182,21 @@ class Asia2Tv : MainAPI() {
     }
     
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data).document
+        val document = app.get(data, headers = baseHeaders).document
+        val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
+        val ajaxHeaders = baseHeaders + mapOf(
+            "x-csrf-token" to csrfToken,
+            "x-requested-with" to "XMLHttpRequest",
+            "Referer" to data
+        )
+
         document.select("ul.dropdown-menu li a").apmap { server ->
             try {
                 val code = server.attr("data-code").ifBlank { return@apmap }
                 val response = app.post(
-                    "$mainUrl/wp-admin/admin-ajax.php", // Corrected URL here as well
+                    "$mainUrl/wp-admin/admin-ajax.php",
                     data = mapOf("action" to "iframe_server", "code" to code),
-                    referer = data,
-                    headers = mapOf("X-Requested-With" to "XMLHttpRequest")
+                    headers = ajaxHeaders
                 ).text
                 val jsonResponse = parseJson<NewPlayerAjaxResponse>(response)
                 if (!jsonResponse.status) return@apmap
