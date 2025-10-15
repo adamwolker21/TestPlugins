@@ -2,7 +2,7 @@
 
 # `Cloudstream3 Plugin Repo Template`
 
-Template for a [Cloudstream3](https://github.com/recloudstream) plugin repo
+Template for a [Cloudstream3](https://raw.githubusercontent.com/adamwolker21/TestPlugins/refs/heads/master/repo.json) plugin repo
 
 **⚠️ Make sure you check "Include all branches" when using this template**
 
