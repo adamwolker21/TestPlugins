@@ -152,7 +152,6 @@ class Asia2Tv : MainAPI() {
                 try {
                     val ajaxHeaders = getAjaxHeaders(url, csrfToken)
                     val postData = "action=moreepisode&serieid=$serieId&page=$currentPage"
-                    // V29: Convert the string to a RequestBody
                     val requestBody = postData.toRequestBody("application/x-www-form-urlencoded".toMediaType())
                     
                     val responseText = app.post(
@@ -207,7 +206,6 @@ class Asia2Tv : MainAPI() {
             try {
                 val code = server.attr("data-code").ifBlank { return@apmap }
                 val postData = "action=iframe_server&code=$code"
-                // V29: Convert the string to a RequestBody here as well
                 val requestBody = postData.toRequestBody("application/x-www-form-urlencoded".toMediaType())
 
                 val responseText = app.post(
