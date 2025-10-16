@@ -7,7 +7,7 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import android.util.Log
 
-// V22: Make showmore nullable
+// Data classes for AJAX responses
 data class MoreEpisodesResponse(
     val status: Boolean,
     val html: String,
@@ -26,16 +26,21 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    // V24: Create a complete set of headers to mimic a real browser request perfectly
-    private fun getAjaxHeaders(referer: String, csrfToken: String): Map<String, String> {
-        return mapOf(
+    // V25 Fix: Correctly define headers so they are accessible throughout the class
+    private val baseHeaders: Map<String, String>
+        get() = mapOf(
             "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Mobile Safari/537.36",
-            "Referer" to referer,
+            "Referer" to "$mainUrl/",
             "Origin" to mainUrl,
-            "Accept" to "*/*",
+            "Accept" to "*/*"
+        )
+
+    private fun getAjaxHeaders(referer: String, csrfToken: String): Map<String, String> {
+        return baseHeaders + mapOf(
             "X-CSRF-TOKEN" to csrfToken,
             "X-Requested-With" to "XMLHttpRequest",
-            "Content-Type" to "application/x-www-form-urlencoded; charset=UTF-8"
+            "Content-Type" to "application/x-www-form-urlencoded; charset=UTF-8",
+            "Referer" to referer // Override the base referer with the specific page URL
         )
     }
 
