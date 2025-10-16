@@ -2,7 +2,7 @@ package com.example
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson // V27: Use tryParseJson for safer parsing
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
@@ -28,7 +28,6 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    // V27: Add accept-language to be even closer to a real browser request
     private val baseHeaders: Map<String, String>
         get() = mapOf(
             "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Mobile Safari/537.36",
@@ -150,15 +149,13 @@ class Asia2Tv : MainAPI() {
                 Log.d("Asia2Tv", "Fetching page $currentPage...")
                 try {
                     val ajaxHeaders = getAjaxHeaders(url, csrfToken)
-                    // V27: Get the raw text first for debugging, then parse it
+                    // V28: Send data as a raw string to perfectly match the browser request
+                    val postData = "action=moreepisode&serieid=$serieId&page=$currentPage"
+                    
                     val responseText = app.post(
                         "$mainUrl/ajaxGetRequest",
                         headers = ajaxHeaders,
-                        data = mapOf(
-                            "action" to "moreepisode",
-                            "serieid" to serieId,
-                            "page" to currentPage.toString()
-                        )
+                        requestBody = postData
                     ).text
                     Log.d("Asia2Tv", "Raw response for page $currentPage: $responseText")
 
@@ -206,10 +203,12 @@ class Asia2Tv : MainAPI() {
         document.select("ul.dropdown-menu li a").apmap { server ->
             try {
                 val code = server.attr("data-code").ifBlank { return@apmap }
+                // V28: Send data as a raw string here as well
+                val postData = "action=iframe_server&code=$code"
                 val responseText = app.post(
                     "$mainUrl/ajaxGetRequest",
                     headers = ajaxHeaders,
-                    data = mapOf("action" to "iframe_server", "code" to code)
+                    requestBody = postData
                 ).text
                 Log.d("Asia2Tv", "Raw server response for code $code: $responseText")
                 val response = tryParseJson<PlayerAjaxResponse>(responseText)
