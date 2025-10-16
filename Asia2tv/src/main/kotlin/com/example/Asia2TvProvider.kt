@@ -7,6 +7,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import android.util.Log
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MoreEpisodesResponse(
@@ -149,13 +151,14 @@ class Asia2Tv : MainAPI() {
                 Log.d("Asia2Tv", "Fetching page $currentPage...")
                 try {
                     val ajaxHeaders = getAjaxHeaders(url, csrfToken)
-                    // V28: Send data as a raw string to perfectly match the browser request
                     val postData = "action=moreepisode&serieid=$serieId&page=$currentPage"
+                    // V29: Convert the string to a RequestBody
+                    val requestBody = postData.toRequestBody("application/x-www-form-urlencoded".toMediaType())
                     
                     val responseText = app.post(
                         "$mainUrl/ajaxGetRequest",
                         headers = ajaxHeaders,
-                        requestBody = postData
+                        requestBody = requestBody
                     ).text
                     Log.d("Asia2Tv", "Raw response for page $currentPage: $responseText")
 
@@ -203,12 +206,14 @@ class Asia2Tv : MainAPI() {
         document.select("ul.dropdown-menu li a").apmap { server ->
             try {
                 val code = server.attr("data-code").ifBlank { return@apmap }
-                // V28: Send data as a raw string here as well
                 val postData = "action=iframe_server&code=$code"
+                // V29: Convert the string to a RequestBody here as well
+                val requestBody = postData.toRequestBody("application/x-www-form-urlencoded".toMediaType())
+
                 val responseText = app.post(
                     "$mainUrl/ajaxGetRequest",
                     headers = ajaxHeaders,
-                    requestBody = postData
+                    requestBody = requestBody
                 ).text
                 Log.d("Asia2Tv", "Raw server response for code $code: $responseText")
                 val response = tryParseJson<PlayerAjaxResponse>(responseText)
