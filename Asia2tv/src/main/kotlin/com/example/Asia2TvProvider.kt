@@ -2,13 +2,12 @@ package com.example
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.AppUtils.parseJson
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties // V26: Import the necessary annotation
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson // V27: Use tryParseJson for safer parsing
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import android.util.Log
 
-// V26: Add annotation to ignore any unexpected fields from the server (like "newpage")
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MoreEpisodesResponse(
     val status: Boolean,
@@ -29,12 +28,14 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
+    // V27: Add accept-language to be even closer to a real browser request
     private val baseHeaders: Map<String, String>
         get() = mapOf(
             "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Mobile Safari/537.36",
             "Referer" to "$mainUrl/",
             "Origin" to mainUrl,
-            "Accept" to "*/*"
+            "Accept" to "*/*",
+            "Accept-Language" to "en-US,en;q=0.9"
         )
 
     private fun getAjaxHeaders(referer: String, csrfToken: String): Map<String, String> {
@@ -149,7 +150,8 @@ class Asia2Tv : MainAPI() {
                 Log.d("Asia2Tv", "Fetching page $currentPage...")
                 try {
                     val ajaxHeaders = getAjaxHeaders(url, csrfToken)
-                    val response = app.post(
+                    // V27: Get the raw text first for debugging, then parse it
+                    val responseText = app.post(
                         "$mainUrl/ajaxGetRequest",
                         headers = ajaxHeaders,
                         data = mapOf(
@@ -157,7 +159,10 @@ class Asia2Tv : MainAPI() {
                             "serieid" to serieId,
                             "page" to currentPage.toString()
                         )
-                    ).parsedSafe<MoreEpisodesResponse>()
+                    ).text
+                    Log.d("Asia2Tv", "Raw response for page $currentPage: $responseText")
+
+                    val response = tryParseJson<MoreEpisodesResponse>(responseText)
 
                     if (response?.status == true) {
                         val initialCount = episodes.size
@@ -169,7 +174,7 @@ class Asia2Tv : MainAPI() {
                         Log.d("Asia2Tv", "Server says hasMore is $hasMore")
                         currentPage++
                     } else {
-                        Log.d("Asia2Tv", "Response status was false or response was null. Stopping loop.")
+                        Log.d("Asia2Tv", "Response status was false or response was null/invalid. Stopping loop.")
                         hasMore = false
                     }
                 } catch (e: Exception) {
@@ -201,11 +206,13 @@ class Asia2Tv : MainAPI() {
         document.select("ul.dropdown-menu li a").apmap { server ->
             try {
                 val code = server.attr("data-code").ifBlank { return@apmap }
-                val response = app.post(
+                val responseText = app.post(
                     "$mainUrl/ajaxGetRequest",
                     headers = ajaxHeaders,
                     data = mapOf("action" to "iframe_server", "code" to code)
-                ).parsedSafe<PlayerAjaxResponse>()
+                ).text
+                Log.d("Asia2Tv", "Raw server response for code $code: $responseText")
+                val response = tryParseJson<PlayerAjaxResponse>(responseText)
 
                 if (response?.status == true) {
                     val iframeSrc = Jsoup.parse(response.codeplay).selectFirst("iframe")?.attr("src")
