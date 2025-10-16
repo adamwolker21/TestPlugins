@@ -3,17 +3,20 @@ package com.example
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties // V26: Import the necessary annotation
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import android.util.Log
 
-// Data classes for AJAX responses
+// V26: Add annotation to ignore any unexpected fields from the server (like "newpage")
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class MoreEpisodesResponse(
     val status: Boolean,
     val html: String,
     val showmore: Boolean? = false
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class PlayerAjaxResponse(
     val status: Boolean,
     val codeplay: String
@@ -26,7 +29,6 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    // V25 Fix: Correctly define headers so they are accessible throughout the class
     private val baseHeaders: Map<String, String>
         get() = mapOf(
             "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Mobile Safari/537.36",
@@ -40,7 +42,7 @@ class Asia2Tv : MainAPI() {
             "X-CSRF-TOKEN" to csrfToken,
             "X-Requested-With" to "XMLHttpRequest",
             "Content-Type" to "application/x-www-form-urlencoded; charset=UTF-8",
-            "Referer" to referer // Override the base referer with the specific page URL
+            "Referer" to referer
         )
     }
 
