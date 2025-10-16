@@ -5,8 +5,9 @@ import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
+import android.util.Log
 
-// V22 Fix: Make showmore nullable and provide a default value
+// V22: Make showmore nullable
 data class MoreEpisodesResponse(
     val status: Boolean,
     val html: String,
@@ -25,14 +26,18 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    // V23: Add all necessary headers to mimic a real browser
-    private val baseHeaders
-        get() = mapOf(
+    // V24: Create a complete set of headers to mimic a real browser request perfectly
+    private fun getAjaxHeaders(referer: String, csrfToken: String): Map<String, String> {
+        return mapOf(
             "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Mobile Safari/537.36",
-            "Referer" to "$mainUrl/",
+            "Referer" to referer,
             "Origin" to mainUrl,
-            "Accept" to "*/*"
+            "Accept" to "*/*",
+            "X-CSRF-TOKEN" to csrfToken,
+            "X-Requested-With" to "XMLHttpRequest",
+            "Content-Type" to "application/x-www-form-urlencoded; charset=UTF-8"
         )
+    }
 
     private fun getStatus(element: Element?): ShowStatus {
         return when {
@@ -80,6 +85,7 @@ class Asia2Tv : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
+        Log.d("Asia2Tv", "Load function started for url: $url")
         val document = app.get(url, headers = baseHeaders).document
         val title = document.selectFirst("div.info-detail-single h1")?.text()?.trim() ?: "No Title"
         var plot = document.selectFirst("div.info-detail-single p")?.text()?.trim()
@@ -118,25 +124,24 @@ class Asia2Tv : MainAPI() {
         }
 
         addUniqueEpisodes(document.select("div.box-loop-episode a.colorsw"))
+        Log.d("Asia2Tv", "Found ${episodes.size} initial episodes.")
 
         val serieId = document.select("script").mapNotNull { script ->
             script.data().let { scriptData ->
-                Regex("""single_id\s*=\s*"(\d+)"""").find(scriptData)?.groupValues?.get(1)
+                Regex("""single_id\s*=\s*["'](\d+)["']""").find(scriptData)?.groupValues?.get(1)
             }
         }.firstOrNull()
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content")
+
+        Log.d("Asia2Tv", "Found Serie ID: $serieId, CSRF Token: ${csrfToken != null}")
 
         if (serieId != null && csrfToken != null) {
             var currentPage = 2
             var hasMore = true
             while (hasMore) {
+                Log.d("Asia2Tv", "Fetching page $currentPage...")
                 try {
-                    // V23: Add all necessary headers for AJAX requests
-                    val ajaxHeaders = baseHeaders + mapOf(
-                        "X-CSRF-TOKEN" to csrfToken,
-                        "X-Requested-With" to "XMLHttpRequest",
-                        "Referer" to url
-                    )
+                    val ajaxHeaders = getAjaxHeaders(url, csrfToken)
                     val response = app.post(
                         "$mainUrl/ajaxGetRequest",
                         headers = ajaxHeaders,
@@ -148,19 +153,28 @@ class Asia2Tv : MainAPI() {
                     ).parsedSafe<MoreEpisodesResponse>()
 
                     if (response?.status == true) {
+                        val initialCount = episodes.size
                         addUniqueEpisodes(Jsoup.parse(response.html).select("a.colorsw"))
+                        val newCount = episodes.size - initialCount
+                        Log.d("Asia2Tv", "Page $currentPage success. Found $newCount new episodes.")
+                        
                         hasMore = response.showmore ?: false
+                        Log.d("Asia2Tv", "Server says hasMore is $hasMore")
                         currentPage++
                     } else {
+                        Log.d("Asia2Tv", "Response status was false or response was null. Stopping loop.")
                         hasMore = false
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e("Asia2Tv", "Error fetching page $currentPage", e)
                     hasMore = false
                 }
             }
+        } else {
+            Log.d("Asia2Tv", "Could not find serieId or csrfToken. Skipping AJAX.")
         }
 
+        Log.d("Asia2Tv", "Load function finished. Total episodes found: ${episodes.size}")
         return if (episodes.isNotEmpty()) {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.reversed()) {
                 this.posterUrl = posterUrl; this.year = year; this.plot = plot; this.tags = tags; this.rating = rating; this.showStatus = status
@@ -175,13 +189,7 @@ class Asia2Tv : MainAPI() {
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val document = app.get(data, headers = baseHeaders).document
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
-
-        // V23: Add all necessary headers for AJAX requests
-        val ajaxHeaders = baseHeaders + mapOf(
-            "X-CSRF-TOKEN" to csrfToken,
-            "X-Requested-With" to "XMLHttpRequest",
-            "Referer" to data
-        )
+        val ajaxHeaders = getAjaxHeaders(data, csrfToken)
 
         document.select("ul.dropdown-menu li a").apmap { server ->
             try {
@@ -204,4 +212,4 @@ class Asia2Tv : MainAPI() {
         }
         return true
     }
-                      }
+}
