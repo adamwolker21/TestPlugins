@@ -30,8 +30,10 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
+    // V33: Add the final crucial header 'Authority'
     private val baseHeaders: Map<String, String>
         get() = mapOf(
+            "Authority" to mainUrl.substringAfter("://").substringBefore("/"),
             "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Mobile Safari/537.36",
             "Referer" to "$mainUrl/",
             "Origin" to mainUrl,
@@ -151,10 +153,9 @@ class Asia2Tv : MainAPI() {
                 Log.d("Asia2Tv", "Fetching page $currentPage...")
                 try {
                     val ajaxHeaders = getAjaxHeaders(url, csrfToken)
-                    // V32: Revert to requestBody with the correct syntax to ensure a perfect match
                     val postData = "action=moreepisode&serieid=$serieId&page=$currentPage"
                     val requestBody = postData.toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaType())
-
+                    
                     val responseText = app.post(
                         "$mainUrl/ajaxGetRequest",
                         headers = ajaxHeaders,
@@ -164,7 +165,7 @@ class Asia2Tv : MainAPI() {
 
                     val response = tryParseJson<MoreEpisodesResponse>(responseText)
 
-                    if (response?.status == true) {
+                    if (response?.status == true && response.html.isNotBlank()) {
                         val initialCount = episodes.size
                         addUniqueEpisodes(Jsoup.parse(response.html).select("a.colorsw"))
                         val newCount = episodes.size - initialCount
@@ -174,7 +175,7 @@ class Asia2Tv : MainAPI() {
                         Log.d("Asia2Tv", "Server says hasMore is $hasMore")
                         currentPage++
                     } else {
-                        Log.d("Asia2Tv", "Response status was false or response was null/invalid. Stopping loop.")
+                        Log.d("Asia2Tv", "Response was empty, status false, or response null. Stopping loop.")
                         hasMore = false
                     }
                 } catch (e: Exception) {
@@ -206,7 +207,6 @@ class Asia2Tv : MainAPI() {
         document.select("ul.dropdown-menu li a").apmap { server ->
             try {
                 val code = server.attr("data-code").ifBlank { return@apmap }
-                // V32: Use requestBody here as well for consistency
                 val postData = "action=iframe_server&code=$code"
                 val requestBody = postData.toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaType())
                 
