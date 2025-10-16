@@ -6,11 +6,11 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 
-// V22 Fix: Make showmore nullable and provide a default value to handle missing JSON keys
+// V22 Fix: Make showmore nullable and provide a default value
 data class MoreEpisodesResponse(
     val status: Boolean,
     val html: String,
-    val showmore: Boolean? = false // The ? makes it nullable, = false is the default
+    val showmore: Boolean? = false
 )
 
 data class PlayerAjaxResponse(
@@ -25,11 +25,13 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    private val userAgent = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Mobile Safari/537.36"
+    // V23: Add all necessary headers to mimic a real browser
     private val baseHeaders
         get() = mapOf(
-            "User-Agent" to userAgent,
-            "Referer" to "$mainUrl/"
+            "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Mobile Safari/537.36",
+            "Referer" to "$mainUrl/",
+            "Origin" to mainUrl,
+            "Accept" to "*/*"
         )
 
     private fun getStatus(element: Element?): ShowStatus {
@@ -129,6 +131,7 @@ class Asia2Tv : MainAPI() {
             var hasMore = true
             while (hasMore) {
                 try {
+                    // V23: Add all necessary headers for AJAX requests
                     val ajaxHeaders = baseHeaders + mapOf(
                         "X-CSRF-TOKEN" to csrfToken,
                         "X-Requested-With" to "XMLHttpRequest",
@@ -146,7 +149,6 @@ class Asia2Tv : MainAPI() {
 
                     if (response?.status == true) {
                         addUniqueEpisodes(Jsoup.parse(response.html).select("a.colorsw"))
-                        // V22 Fix: Safely handle nullable showmore with the Elvis operator (?:)
                         hasMore = response.showmore ?: false
                         currentPage++
                     } else {
@@ -174,6 +176,7 @@ class Asia2Tv : MainAPI() {
         val document = app.get(data, headers = baseHeaders).document
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
 
+        // V23: Add all necessary headers for AJAX requests
         val ajaxHeaders = baseHeaders + mapOf(
             "X-CSRF-TOKEN" to csrfToken,
             "X-Requested-With" to "XMLHttpRequest",
