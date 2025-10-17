@@ -100,14 +100,20 @@ class Asia2Tv : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        Log.d("Asia2Tv", "Load function started for url: $url")
         val response = app.get(url)
         val cookies = response.cookies
         val document = Jsoup.parse(response.text)
 
         val title = document.selectFirst("div.info-detail-single h1")?.text()?.trim() ?: "No Title"
         var plot = document.selectFirst("div.info-detail-single p")?.text()?.trim()
-        val posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
+        
+        // V39: Improved poster fetching logic with a fallback
+        val posterUrl = fixUrlNull(
+            document.selectFirst("meta[property=og:image]")?.attr("content").ifNullOrBlank {
+                document.selectFirst("div.single-thumb-bg img")?.attr("src")
+            }
+        )
+        
         val year = document.select("ul.mb-2 li:contains(سنة العرض) a")?.text()?.toIntOrNull()
         val rating = document.selectFirst("div.post_review_avg")?.text()?.trim()?.toFloatOrNull()?.times(100)?.toInt()
         val tags = document.select("div.post_tags a")?.map { it.text() }
@@ -121,8 +127,10 @@ class Asia2Tv : MainAPI() {
             country?.let { "البلد: $it" },
             totalEpisodes?.let { "عدد الحلقات: $it" }
         ).joinToString(" | ")
+        
+        // V39: Improved plot formatting with HTML line breaks
         if (extraInfo.isNotBlank()) {
-            plot = listOfNotNull(plot, extraInfo).joinToString("\n\n")
+            plot = listOfNotNull(plot, "<br><br>${extraInfo}").joinToString("")
         }
 
         val episodes = ArrayList<Episode>()
@@ -142,7 +150,6 @@ class Asia2Tv : MainAPI() {
         }
 
         addUniqueEpisodes(document.select("div.box-loop-episode a.colorsw"))
-        Log.d("Asia2Tv", "Found ${episodes.size} initial episodes.")
 
         val serieId = document.select("script").mapNotNull { script ->
             script.data().let { scriptData ->
@@ -151,13 +158,10 @@ class Asia2Tv : MainAPI() {
         }.firstOrNull()
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content")
 
-        Log.d("Asia2Tv", "Found Serie ID: $serieId, CSRF Token: ${csrfToken != null}")
-
         if (serieId != null && csrfToken != null) {
             var currentPage = 2
             var hasMore = true
             while (hasMore) {
-                Log.d("Asia2Tv", "Fetching page $currentPage...")
                 try {
                     val ajaxHeaders = getAjaxHeaders(url, csrfToken, cookies)
                     val postData = "action=moreepisode&serieid=$serieId&page=$currentPage"
@@ -168,30 +172,22 @@ class Asia2Tv : MainAPI() {
                         headers = ajaxHeaders,
                         requestBody = requestBody
                     ).text
-                    Log.d("Asia2Tv", "Raw response for page $currentPage: $responseText")
 
                     val ajaxResponse = tryParseJson<MoreEpisodesResponse>(responseText)
 
                     if (ajaxResponse?.status == true && ajaxResponse.html.isNotBlank()) {
                         addUniqueEpisodes(Jsoup.parse(ajaxResponse.html).select("a.colorsw"))
-                        Log.d("Asia2Tv", "Success on page $currentPage.")
-                        // Rely on the server to tell us when to stop
                         hasMore = ajaxResponse.showmore ?: false
                         currentPage++
                     } else {
-                        Log.d("Asia2Tv", "Response was empty, status false, or response null. Stopping loop.")
                         hasMore = false
                     }
                 } catch (e: Exception) {
-                    Log.e("Asia2Tv", "An error occurred while fetching page $currentPage.", e)
                     hasMore = false
                 }
             }
-        } else {
-            Log.d("Asia2Tv", "Could not find serieId or csrfToken. Skipping AJAX.")
         }
 
-        Log.d("Asia2Tv", "Load function finished. Total episodes found: ${episodes.size}")
         return if (episodes.isNotEmpty()) {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.reversed()) {
                 this.posterUrl = posterUrl; this.year = year; this.plot = plot; this.tags = tags; this.rating = rating; this.showStatus = status
@@ -235,5 +231,10 @@ class Asia2Tv : MainAPI() {
             }
         }
         return true
+    }
+
+    // Helper function to handle null or blank strings
+    private fun String?.ifNullOrBlank(defaultValue: () -> String?): String? {
+        return if (this.isNullOrBlank()) defaultValue() else this
     }
 }
