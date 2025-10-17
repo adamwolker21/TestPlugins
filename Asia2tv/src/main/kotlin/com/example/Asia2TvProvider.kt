@@ -12,7 +12,7 @@ import android.util.Log
 data class MoreEpisodesResponse(
     val status: Boolean,
     val html: String,
-    val showmore: Boolean? = false
+    // We don't need to read 'showmore' anymore, as status is more reliable
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -145,12 +145,11 @@ class Asia2Tv : MainAPI() {
 
         if (serieId != null && csrfToken != null) {
             var currentPage = 2
-            var hasMore = true
-            while (hasMore) {
+            var keepFetching = true // V35: Use a new variable for the loop
+            while (keepFetching) {
                 Log.d("Asia2Tv", "Fetching page $currentPage...")
                 try {
                     val ajaxHeaders = getAjaxHeaders(url, csrfToken)
-                    // V34: Revert to the standard 'data = mapOf(...)' method
                     val postData = mapOf(
                         "action" to "moreepisode",
                         "serieid" to serieId,
@@ -166,22 +165,21 @@ class Asia2Tv : MainAPI() {
 
                     val response = tryParseJson<MoreEpisodesResponse>(responseText)
 
+                    // V35: The loop now only stops if status is false or the response is invalid
                     if (response?.status == true && response.html.isNotBlank()) {
                         val initialCount = episodes.size
                         addUniqueEpisodes(Jsoup.parse(response.html).select("a.colorsw"))
                         val newCount = episodes.size - initialCount
                         Log.d("Asia2Tv", "Page $currentPage success. Found $newCount new episodes.")
                         
-                        hasMore = response.showmore ?: false
-                        Log.d("Asia2Tv", "Server says hasMore is $hasMore")
                         currentPage++
                     } else {
-                        Log.d("Asia2Tv", "Response was empty, status false, or response null. Stopping loop.")
-                        hasMore = false
+                        Log.d("Asia2Tv", "Response status was false or response was invalid. Stopping loop.")
+                        keepFetching = false
                     }
                 } catch (e: Exception) {
                     Log.e("Asia2Tv", "Error fetching page $currentPage", e)
-                    hasMore = false
+                    keepFetching = false
                 }
             }
         } else {
@@ -208,7 +206,6 @@ class Asia2Tv : MainAPI() {
         document.select("ul.dropdown-menu li a").apmap { server ->
             try {
                 val code = server.attr("data-code").ifBlank { return@apmap }
-                // V34: Use 'data = mapOf(...)' here as well for consistency
                 val postData = mapOf(
                     "action" to "iframe_server",
                     "code" to code
