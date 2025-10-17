@@ -132,7 +132,7 @@ class Asia2Tv : MainAPI() {
         val year = document.select("ul.mb-2 li:contains(سنة العرض) a")?.text()?.toIntOrNull()
         // V41: Correct rating calculation (multiply by 100)
         val rating = document.selectFirst("div.post_review_avg")?.text()?.trim()
-            ?.toFloatOrNull()?.times(100)?.toInt()
+            ?.toFloatOrNull()?.times(1000)?.toInt()
         
         val tags = document.select("div.post_tags a")?.map { it.text() }
         val status = getStatus(document.selectFirst("span.serie-isstatus"))
