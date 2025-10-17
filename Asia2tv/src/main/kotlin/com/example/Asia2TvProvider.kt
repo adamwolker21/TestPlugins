@@ -7,12 +7,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import android.util.Log
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MoreEpisodesResponse(
     val status: Boolean,
     val html: String,
-    // We don't need to read 'showmore' anymore, as status is more reliable
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -143,44 +144,33 @@ class Asia2Tv : MainAPI() {
 
         Log.d("Asia2Tv", "Found Serie ID: $serieId, CSRF Token: ${csrfToken != null}")
 
+        // V36: Simplified logic - fetch only one more page, as you suggested.
         if (serieId != null && csrfToken != null) {
-            var currentPage = 2
-            var keepFetching = true // V35: Use a new variable for the loop
-            while (keepFetching) {
-                Log.d("Asia2Tv", "Fetching page $currentPage...")
-                try {
-                    val ajaxHeaders = getAjaxHeaders(url, csrfToken)
-                    val postData = mapOf(
-                        "action" to "moreepisode",
-                        "serieid" to serieId,
-                        "page" to currentPage.toString()
-                    )
+            Log.d("Asia2Tv", "Attempting to fetch the single hidden page (page 2)...")
+            try {
+                val ajaxHeaders = getAjaxHeaders(url, csrfToken)
+                val postData = "action=moreepisode&serieid=$serieId&page=2"
+                val requestBody = postData.toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaType())
+                
+                val responseText = app.post(
+                    "$mainUrl/ajaxGetRequest",
+                    headers = ajaxHeaders,
+                    requestBody = requestBody
+                ).text
+                Log.d("Asia2Tv", "Raw response for the hidden page: $responseText")
 
-                    val responseText = app.post(
-                        "$mainUrl/ajaxGetRequest",
-                        headers = ajaxHeaders,
-                        data = postData
-                    ).text
-                    Log.d("Asia2Tv", "Raw response for page $currentPage: $responseText")
+                val response = tryParseJson<MoreEpisodesResponse>(responseText)
 
-                    val response = tryParseJson<MoreEpisodesResponse>(responseText)
-
-                    // V35: The loop now only stops if status is false or the response is invalid
-                    if (response?.status == true && response.html.isNotBlank()) {
-                        val initialCount = episodes.size
-                        addUniqueEpisodes(Jsoup.parse(response.html).select("a.colorsw"))
-                        val newCount = episodes.size - initialCount
-                        Log.d("Asia2Tv", "Page $currentPage success. Found $newCount new episodes.")
-                        
-                        currentPage++
-                    } else {
-                        Log.d("Asia2Tv", "Response status was false or response was invalid. Stopping loop.")
-                        keepFetching = false
-                    }
-                } catch (e: Exception) {
-                    Log.e("Asia2Tv", "Error fetching page $currentPage", e)
-                    keepFetching = false
+                if (response?.status == true && response.html.isNotBlank()) {
+                    val initialCount = episodes.size
+                    addUniqueEpisodes(Jsoup.parse(response.html).select("a.colorsw"))
+                    val newCount = episodes.size - initialCount
+                    Log.d("Asia2Tv", "Success. Found $newCount new episodes from the hidden page.")
+                } else {
+                    Log.d("Asia2Tv", "Response was empty, status false, or response null. No more episodes found.")
                 }
+            } catch (e: Exception) {
+                Log.e("Asia2Tv", "An error occurred while fetching the hidden page.", e)
             }
         } else {
             Log.d("Asia2Tv", "Could not find serieId or csrfToken. Skipping AJAX.")
@@ -206,15 +196,13 @@ class Asia2Tv : MainAPI() {
         document.select("ul.dropdown-menu li a").apmap { server ->
             try {
                 val code = server.attr("data-code").ifBlank { return@apmap }
-                val postData = mapOf(
-                    "action" to "iframe_server",
-                    "code" to code
-                )
-
+                val postData = "action=iframe_server&code=$code"
+                val requestBody = postData.toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaType())
+                
                 val responseText = app.post(
                     "$mainUrl/ajaxGetRequest",
                     headers = ajaxHeaders,
-                    data = postData
+                    requestBody = requestBody
                 ).text
                 Log.d("Asia2Tv", "Raw server response for code $code: $responseText")
                 val response = tryParseJson<PlayerAjaxResponse>(responseText)
