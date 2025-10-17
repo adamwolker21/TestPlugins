@@ -14,6 +14,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 data class MoreEpisodesResponse(
     val status: Boolean,
     val html: String,
+    val showmore: Boolean? = false
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -29,7 +30,6 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    // V37: Add cookies to the headers to perfectly mimic a browser
     private fun getBaseHeaders(cookies: Map<String, String>): Map<String, String> {
         return mapOf(
             "Authority" to mainUrl.substringAfter("://").substringBefore("/"),
@@ -43,7 +43,8 @@ class Asia2Tv : MainAPI() {
     }
 
     private fun getAjaxHeaders(referer: String, csrfToken: String, cookies: Map<String, String>): Map<String, String> {
-        return getBaseHeaders(cookies) + mapOf(
+        val base = getBaseHeaders(cookies)
+        return base + mapOf(
             "X-CSRF-TOKEN" to csrfToken,
             "X-Requested-With" to "XMLHttpRequest",
             "Content-Type" to "application/x-www-form-urlencoded; charset=UTF-8",
@@ -100,7 +101,6 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun load(url: String): LoadResponse {
         Log.d("Asia2Tv", "Load function started for url: $url")
-        // V37: Get the response object to access cookies
         val response = app.get(url)
         val cookies = response.cookies
         val document = Jsoup.parse(response.text)
@@ -154,30 +154,38 @@ class Asia2Tv : MainAPI() {
         Log.d("Asia2Tv", "Found Serie ID: $serieId, CSRF Token: ${csrfToken != null}")
 
         if (serieId != null && csrfToken != null) {
-            Log.d("Asia2Tv", "Attempting to fetch the single hidden page (page 2)...")
-            try {
-                // V37: Pass cookies to the AJAX headers
-                val ajaxHeaders = getAjaxHeaders(url, csrfToken, cookies)
-                val postData = "action=moreepisode&serieid=$serieId&page=2"
-                val requestBody = postData.toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaType())
-                
-                val responseText = app.post(
-                    "$mainUrl/ajaxGetRequest",
-                    headers = ajaxHeaders,
-                    requestBody = requestBody
-                ).text
-                Log.d("Asia2Tv", "Raw response for the hidden page: $responseText")
+            var currentPage = 2
+            var hasMore = true
+            while (hasMore) {
+                Log.d("Asia2Tv", "Fetching page $currentPage...")
+                try {
+                    val ajaxHeaders = getAjaxHeaders(url, csrfToken, cookies)
+                    val postData = "action=moreepisode&serieid=$serieId&page=$currentPage"
+                    val requestBody = postData.toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaType())
+                    
+                    val responseText = app.post(
+                        "$mainUrl/ajaxGetRequest",
+                        headers = ajaxHeaders,
+                        requestBody = requestBody
+                    ).text
+                    Log.d("Asia2Tv", "Raw response for page $currentPage: $responseText")
 
-                val ajaxResponse = tryParseJson<MoreEpisodesResponse>(responseText)
+                    val ajaxResponse = tryParseJson<MoreEpisodesResponse>(responseText)
 
-                if (ajaxResponse?.status == true && ajaxResponse.html.isNotBlank()) {
-                    addUniqueEpisodes(Jsoup.parse(ajaxResponse.html).select("a.colorsw"))
-                    Log.d("Asia2Tv", "Success. Found new episodes from the hidden page.")
-                } else {
-                    Log.d("Asia2Tv", "Response was empty, status false, or response null.")
+                    if (ajaxResponse?.status == true && ajaxResponse.html.isNotBlank()) {
+                        addUniqueEpisodes(Jsoup.parse(ajaxResponse.html).select("a.colorsw"))
+                        Log.d("Asia2Tv", "Success on page $currentPage.")
+                        // Rely on the server to tell us when to stop
+                        hasMore = ajaxResponse.showmore ?: false
+                        currentPage++
+                    } else {
+                        Log.d("Asia2Tv", "Response was empty, status false, or response null. Stopping loop.")
+                        hasMore = false
+                    }
+                } catch (e: Exception) {
+                    Log.e("Asia2Tv", "An error occurred while fetching page $currentPage.", e)
+                    hasMore = false
                 }
-            } catch (e: Exception) {
-                Log.e("Asia2Tv", "An error occurred while fetching the hidden page.", e)
             }
         } else {
             Log.d("Asia2Tv", "Could not find serieId or csrfToken. Skipping AJAX.")
@@ -196,7 +204,6 @@ class Asia2Tv : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        // V37: Get cookies for loadLinks as well
         val response = app.get(data)
         val cookies = response.cookies
         val document = Jsoup.parse(response.text)
