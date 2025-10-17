@@ -29,18 +29,21 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    private val baseHeaders: Map<String, String>
-        get() = mapOf(
+    // V37: Add cookies to the headers to perfectly mimic a browser
+    private fun getBaseHeaders(cookies: Map<String, String>): Map<String, String> {
+        return mapOf(
             "Authority" to mainUrl.substringAfter("://").substringBefore("/"),
             "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Mobile Safari/537.36",
             "Referer" to "$mainUrl/",
             "Origin" to mainUrl,
             "Accept" to "*/*",
-            "Accept-Language" to "en-US,en;q=0.9"
+            "Accept-Language" to "en-US,en;q=0.9",
+            "Cookie" to cookies.entries.joinToString("; ") { "${it.key}=${it.value}" }
         )
+    }
 
-    private fun getAjaxHeaders(referer: String, csrfToken: String): Map<String, String> {
-        return baseHeaders + mapOf(
+    private fun getAjaxHeaders(referer: String, csrfToken: String, cookies: Map<String, String>): Map<String, String> {
+        return getBaseHeaders(cookies) + mapOf(
             "X-CSRF-TOKEN" to csrfToken,
             "X-Requested-With" to "XMLHttpRequest",
             "Content-Type" to "application/x-www-form-urlencoded; charset=UTF-8",
@@ -82,20 +85,26 @@ class Asia2Tv : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val document = app.get("$mainUrl${request.data}?page=$page", headers = baseHeaders).document
+        val response = app.get("$mainUrl${request.data}?page=$page")
+        val document = Jsoup.parse(response.text)
         val items = document.select("div.postmovie").mapNotNull { it.toSearchResponse() }
         val hasNext = document.selectFirst("a.next.page-numbers, a[rel=next]") != null
         return newHomePageResponse(request.name, items, hasNext)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.get("$mainUrl/search?s=$query", headers = baseHeaders).document
+        val response = app.get("$mainUrl/search?s=$query")
+        val document = Jsoup.parse(response.text)
         return document.select("div.postmovie").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
         Log.d("Asia2Tv", "Load function started for url: $url")
-        val document = app.get(url, headers = baseHeaders).document
+        // V37: Get the response object to access cookies
+        val response = app.get(url)
+        val cookies = response.cookies
+        val document = Jsoup.parse(response.text)
+
         val title = document.selectFirst("div.info-detail-single h1")?.text()?.trim() ?: "No Title"
         var plot = document.selectFirst("div.info-detail-single p")?.text()?.trim()
         val posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
@@ -144,11 +153,11 @@ class Asia2Tv : MainAPI() {
 
         Log.d("Asia2Tv", "Found Serie ID: $serieId, CSRF Token: ${csrfToken != null}")
 
-        // V36: Simplified logic - fetch only one more page, as you suggested.
         if (serieId != null && csrfToken != null) {
             Log.d("Asia2Tv", "Attempting to fetch the single hidden page (page 2)...")
             try {
-                val ajaxHeaders = getAjaxHeaders(url, csrfToken)
+                // V37: Pass cookies to the AJAX headers
+                val ajaxHeaders = getAjaxHeaders(url, csrfToken, cookies)
                 val postData = "action=moreepisode&serieid=$serieId&page=2"
                 val requestBody = postData.toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaType())
                 
@@ -159,15 +168,13 @@ class Asia2Tv : MainAPI() {
                 ).text
                 Log.d("Asia2Tv", "Raw response for the hidden page: $responseText")
 
-                val response = tryParseJson<MoreEpisodesResponse>(responseText)
+                val ajaxResponse = tryParseJson<MoreEpisodesResponse>(responseText)
 
-                if (response?.status == true && response.html.isNotBlank()) {
-                    val initialCount = episodes.size
-                    addUniqueEpisodes(Jsoup.parse(response.html).select("a.colorsw"))
-                    val newCount = episodes.size - initialCount
-                    Log.d("Asia2Tv", "Success. Found $newCount new episodes from the hidden page.")
+                if (ajaxResponse?.status == true && ajaxResponse.html.isNotBlank()) {
+                    addUniqueEpisodes(Jsoup.parse(ajaxResponse.html).select("a.colorsw"))
+                    Log.d("Asia2Tv", "Success. Found new episodes from the hidden page.")
                 } else {
-                    Log.d("Asia2Tv", "Response was empty, status false, or response null. No more episodes found.")
+                    Log.d("Asia2Tv", "Response was empty, status false, or response null.")
                 }
             } catch (e: Exception) {
                 Log.e("Asia2Tv", "An error occurred while fetching the hidden page.", e)
@@ -189,9 +196,13 @@ class Asia2Tv : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val document = app.get(data, headers = baseHeaders).document
+        // V37: Get cookies for loadLinks as well
+        val response = app.get(data)
+        val cookies = response.cookies
+        val document = Jsoup.parse(response.text)
+        
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
-        val ajaxHeaders = getAjaxHeaders(data, csrfToken)
+        val ajaxHeaders = getAjaxHeaders(data, csrfToken, cookies)
 
         document.select("ul.dropdown-menu li a").apmap { server ->
             try {
@@ -204,11 +215,10 @@ class Asia2Tv : MainAPI() {
                     headers = ajaxHeaders,
                     requestBody = requestBody
                 ).text
-                Log.d("Asia2Tv", "Raw server response for code $code: $responseText")
-                val response = tryParseJson<PlayerAjaxResponse>(responseText)
+                val ajaxResponse = tryParseJson<PlayerAjaxResponse>(responseText)
 
-                if (response?.status == true) {
-                    val iframeSrc = Jsoup.parse(response.codeplay).selectFirst("iframe")?.attr("src")
+                if (ajaxResponse?.status == true) {
+                    val iframeSrc = Jsoup.parse(ajaxResponse.codeplay).selectFirst("iframe")?.attr("src")
                     if (!iframeSrc.isNullOrBlank()) {
                         loadExtractor(iframeSrc, data, subtitleCallback, callback)
                     }
