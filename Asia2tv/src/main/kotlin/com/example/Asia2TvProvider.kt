@@ -4,6 +4,7 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import android.util.Log
@@ -22,6 +23,18 @@ data class PlayerAjaxResponse(
     val status: Boolean,
     val codeplay: String
 )
+
+// V40: Data class to parse the JSON-LD script for a fallback poster
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class SchemaItem(
+    @JsonProperty("itemReviewed") val itemReviewed: SchemaImage? = null
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class SchemaImage(
+    @JsonProperty("image") val image: String? = null
+)
+
 
 class Asia2Tv : MainAPI() {
     override var name = "Asia2Tv"
@@ -64,6 +77,7 @@ class Asia2Tv : MainAPI() {
         val titleElement = this.selectFirst("h4 a") ?: return null
         val href = fixUrlNull(titleElement.attr("href")) ?: return null
         val title = titleElement.text()
+        // V40: Prioritize data-src for lazy-loaded images in search results
         val posterUrl = fixUrlNull(this.selectFirst("div.postmovie-photo img")?.let {
             it.attr("data-src").ifBlank { it.attr("src") }
         })
@@ -107,15 +121,20 @@ class Asia2Tv : MainAPI() {
         val title = document.selectFirst("div.info-detail-single h1")?.text()?.trim() ?: "No Title"
         var plot = document.selectFirst("div.info-detail-single p")?.text()?.trim()
         
-        // V39: Improved poster fetching logic with a fallback
+        // V40: Greatly improved poster fetching logic with multiple fallbacks
         val posterUrl = fixUrlNull(
             document.selectFirst("meta[property=og:image]")?.attr("content").ifNullOrBlank {
-                document.selectFirst("div.single-thumb-bg img")?.attr("src")
+                document.selectFirst("div.single-thumb-bg img")?.let { it.attr("data-src").ifBlank { it.attr("src") } }
+            }.ifNullOrBlank {
+                tryParseJson<SchemaItem>(document.selectFirst("script[type=\"application/ld+json\"]")?.data() ?: "")?.itemReviewed?.image
             }
         )
         
         val year = document.select("ul.mb-2 li:contains(سنة العرض) a")?.text()?.toIntOrNull()
-        val rating = document.selectFirst("div.post_review_avg")?.text()?.trim()?.toFloatOrNull()?.times(100)?.toInt()
+        // V40: Correctly parse float rating and multiply
+        val rating = document.selectFirst("div.post_review_avg")?.text()?.trim()
+            ?.toFloatOrNull()?.times(10)?.toInt()
+        
         val tags = document.select("div.post_tags a")?.map { it.text() }
         val status = getStatus(document.selectFirst("span.serie-isstatus"))
 
@@ -128,7 +147,6 @@ class Asia2Tv : MainAPI() {
             totalEpisodes?.let { "عدد الحلقات: $it" }
         ).joinToString(" | ")
         
-        // V39: Improved plot formatting with HTML line breaks
         if (extraInfo.isNotBlank()) {
             plot = listOfNotNull(plot, "<br><br>${extraInfo}").joinToString("")
         }
@@ -233,7 +251,6 @@ class Asia2Tv : MainAPI() {
         return true
     }
 
-    // Helper function to handle null or blank strings
     private fun String?.ifNullOrBlank(defaultValue: () -> String?): String? {
         return if (this.isNullOrBlank()) defaultValue() else this
     }
