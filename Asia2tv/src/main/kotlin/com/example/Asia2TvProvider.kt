@@ -131,7 +131,7 @@ class Asia2Tv : MainAPI() {
         val year = document.select("ul.mb-2 li:contains(سنة العرض) a")?.text()?.toIntOrNull()
         
         val rating = document.selectFirst("div.post_review_avg")?.text()?.trim()
-            ?.split(".")?.firstOrNull()?.toIntOrNull()?.times(100)
+            ?.split(".")?.firstOrNull()?.toIntOrNull()?.times(1000)
 
         // V43: Add "Featured" tag if present
         val isPro = document.selectFirst("span.series-ispro") != null
