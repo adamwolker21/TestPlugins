@@ -118,7 +118,6 @@ class Asia2Tv : MainAPI() {
         val title = document.selectFirst("div.info-detail-single h1")?.text()?.trim() ?: "No Title"
         var plot = document.selectFirst("div.info-detail-single p")?.text()?.trim()
         
-        // V41: Final, robust poster fetching logic
         val posterUrl = fixUrlNull(
             document.selectFirst("meta[property=og:image]")?.attr("content").ifNullOrBlank {
                 document.selectFirst("div.single-photo img, div.single-thumb-bg img")?.let {
@@ -130,11 +129,17 @@ class Asia2Tv : MainAPI() {
         )
         
         val year = document.select("ul.mb-2 li:contains(سنة العرض) a")?.text()?.toIntOrNull()
-        // V41: Correct rating calculation (multiply by 100)
-        val rating = document.selectFirst("div.post_review_avg")?.text()?.trim()
-            ?.toFloatOrNull()?.times(1000)?.toInt()
         
-        val tags = document.select("div.post_tags a")?.map { it.text() }
+        val rating = document.selectFirst("div.post_review_avg")?.text()?.trim()
+            ?.split(".")?.firstOrNull()?.toIntOrNull()?.times(100)
+
+        // V43: Add "Featured" tag if present
+        val isPro = document.selectFirst("span.series-ispro") != null
+        val tags = document.select("div.post_tags a")?.map { it.text() }?.toMutableList() ?: mutableListOf()
+        if (isPro) {
+            tags.add(0, "⭐ مميز")
+        }
+
         val status = getStatus(document.selectFirst("span.serie-isstatus"))
 
         val country = document.select("ul.mb-2 li:contains(البلد المنتج) a")?.text()?.trim()
