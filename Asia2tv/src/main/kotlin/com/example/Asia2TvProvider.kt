@@ -137,7 +137,7 @@ class Asia2Tv : MainAPI() {
         val isPro = document.selectFirst("span.series-ispro") != null
         val tags = document.select("div.post_tags a")?.map { it.text() }?.toMutableList() ?: mutableListOf()
         if (isPro) {
-            tags.add(0, "☆彡 مميز ᯓ★")
+            tags.add(0, "مميز ☆彡")
         }
 
         val status = getStatus(document.selectFirst("span.serie-isstatus"))
