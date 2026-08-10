@@ -130,9 +130,6 @@ class Asia2Tv : MainAPI() {
         
         val year = document.select("ul.mb-2 li:contains(سنة العرض) a")?.text()?.toIntOrNull()
         
-        val rating = document.selectFirst("div.post_review_avg")?.text()?.trim()
-            ?.split(".")?.firstOrNull()?.toIntOrNull()?.times(1000)
-
         // V43: Add "Featured" tag if present
         val isPro = document.selectFirst("span.series-ispro") != null
         val tags = document.select("div.post_tags a")?.map { it.text() }?.toMutableList() ?: mutableListOf()
@@ -212,11 +209,20 @@ class Asia2Tv : MainAPI() {
 
         return if (episodes.isNotEmpty()) {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.reversed()) {
-                this.posterUrl = posterUrl; this.year = year; this.plot = plot; this.tags = tags; this.rating = rating; this.showStatus = status
+                this.posterUrl = posterUrl
+                this.year = year
+                this.plot = plot
+                this.tags = tags
+                this.showStatus = status
+                // تم حذف this.rating لتجنب أخطاء التوافق
             }
         } else {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
-                this.posterUrl = posterUrl; this.year = year; this.plot = plot; this.tags = tags; this.rating = rating
+                this.posterUrl = posterUrl
+                this.year = year
+                this.plot = plot
+                this.tags = tags
+                // تم حذف this.rating لتجنب أخطاء التوافق
             }
         }
     }
@@ -229,9 +235,11 @@ class Asia2Tv : MainAPI() {
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
         val ajaxHeaders = getAjaxHeaders(data, csrfToken, cookies)
 
-        document.select("ul.dropdown-menu li a").apmap { server ->
+        // تم استبدال apmap بـ amap لحل مشكلة البناء والتوافق مع runBlocking
+        document.select("ul.dropdown-menu li a").amap { server ->
             try {
-                val code = server.attr("data-code").ifBlank { return@apmap }
+                // تم تعديل return@apmap لتصبح return@amap
+                val code = server.attr("data-code").ifBlank { return@amap }
                 val postData = "action=iframe_server&code=$code"
                 val requestBody = postData.toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaType())
                 
