@@ -10,6 +10,7 @@ import android.util.Log
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import com.lagradost.cloudstream3.network.CloudflareInterceptor
+import kotlinx.coroutines.delay
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MoreEpisodesResponse(
@@ -38,6 +39,8 @@ class Asia2Tv : MainAPI() {
     private val loginPassword = "kelly.brown93@"
     
     private var sessionCookies: Map<String, String> = emptyMap()
+    
+    // متغير بسيط لمنع الازدحام بدلاً من Mutex
     private var isLoggingIn = false
 
     private suspend fun performSilentLogin() {
@@ -47,12 +50,7 @@ class Asia2Tv : MainAPI() {
         if (isLoggingIn) {
             var waitCount = 0
             while (isLoggingIn && waitCount < 100) { // انتظار أقصاه 10 ثوانٍ
-                try {
-                    // استخدام Thread.sleep بدلاً من delay لتجنب أخطاء الاستيراد
-                    Thread.sleep(100)
-                } catch (e: Exception) {
-                    // تجاهل الخطأ في حالة المقاطعة
-                }
+                delay(100)
                 waitCount++
             }
             return
@@ -97,6 +95,7 @@ class Asia2Tv : MainAPI() {
         } catch (e: Exception) {
             Log.e(TAG, "خطأ برمجي أثناء الدخول: ${e.message}")
         } finally {
+            // تحرير القفل اليدوي بعد الانتهاء
             isLoggingIn = false
         }
     }
