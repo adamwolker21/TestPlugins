@@ -35,42 +35,31 @@ class Asia2Tv : MainAPI() {
 
     private val TAG = "Asia2TvDebug"
 
-    // بيانات الحساب
     private val loginUsername = "kelly93"
     private val loginPassword = "kelly.brown93@"
     
-    // متغيرات الجلسة (الكوكيز وقفل التزامن)
     private var sessionCookies: Map<String, String> = emptyMap()
-    private val loginMutex = Mutex() // يمنع تسجيل الدخول أكثر من مرة في نفس الوقت
+    private val loginMutex = Mutex() 
 
-    // توحيد الهيدر في كل الطلبات لتجنب الحظر
     private val defaultHeaders = mapOf(
         "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
         "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
         "Accept-Language" to "ar,en-US;q=0.7,en;q=0.3"
     )
 
-    // الدالة العبقرية: تسجيل الدخول بصمت في الخلفية
     private suspend fun performSilentLogin() {
-        // نستخدم Mutex لضمان أن عملية الدخول تحدث مرة واحدة فقط حتى لو طلبتها عدة دوال معاً
         loginMutex.withLock {
-            if (sessionCookies.isNotEmpty()) return // إذا كانت الكوكيز موجودة مسبقاً، تخطى الدخول
-
+            if (sessionCookies.isNotEmpty()) return 
             Log.d(TAG, "بدء عملية تسجيل الدخول التلقائي في الخلفية...")
             try {
                 val loginUrl = "$mainUrl/login"
-                
-                // 1. فتح صفحة الدخول لجلب CSRF Token والكوكيز المبدئية
                 val getResp = app.get(loginUrl, headers = defaultHeaders)
                 val document = Jsoup.parse(getResp.text)
-                
                 val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") 
                     ?: document.selectFirst("input[name=_token]")?.attr("value") 
                     ?: ""
-
                 val initialCookies = getResp.cookies
 
-                // 2. إرسال البيانات (POST)
                 val postResp = app.post(
                     loginUrl,
                     headers = defaultHeaders + mapOf(
@@ -84,17 +73,14 @@ class Asia2Tv : MainAPI() {
                         "password" to loginPassword,
                         "_token" to csrfToken
                     ),
-                    allowRedirects = true // للسماح للموقع بتوجيهنا بعد نجاح الدخول
+                    allowRedirects = true
                 )
 
-                // 3. التحقق من نجاح الدخول
-                // نتحقق من عدم وجودنا في صفحة login، أو نتحقق من وجود عناصر تدل على الدخول الناجح
                 if (!postResp.url.contains("login") || postResp.text.contains("تسجيل خروج") || postResp.text.contains("حسابي")) {
-                    // دمج الكوكيز القديمة مع الجديدة (كوكيز الجلسة الموثقة)
                     sessionCookies = initialCookies + postResp.cookies
                     Log.d(TAG, "نجاح تسجيل الدخول! تم حفظ الكوكيز: $sessionCookies")
                 } else {
-                    Log.e(TAG, "فشل تسجيل الدخول التلقائي. الرابط الحالي: ${postResp.url}")
+                    Log.e(TAG, "فشل تسجيل الدخول التلقائي.")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "خطأ برمجي أثناء الدخول: ${e.message}")
@@ -112,10 +98,20 @@ class Asia2Tv : MainAPI() {
     }
 
     private fun Element.toSearchResponse(): SearchResponse? {
-        val mainLink = this.selectFirst("a[data-type]") ?: this.selectFirst("a") ?: return null
-        val href = fixUrlNull(mainLink.attr("href")) ?: return null
+        val mainLink = this.selectFirst("a[data-type]") ?: this.selectFirst("a")
+        if (mainLink == null) {
+            Log.d(TAG, "لم يتم العثور على رابط (a tag) داخل العنصر.")
+            return null
+        }
+
+        val href = fixUrlNull(mainLink.attr("href"))
+        if (href == null || href == "#") return null
         
-        if (href == "#" || (!href.contains("/serie/") && !href.contains("/movie/"))) return null
+        // قمت بإلغاء الشرط الصارم مؤقتاً لنرى ما هي الروابط التي يعطينا إياها الموقع
+        // if (!href.contains("/serie/") && !href.contains("/movie/")) {
+        //     Log.d(TAG, "تم تجاهل الرابط لأنه لا يحتوي serie أو movie: $href")
+        //     return null
+        // }
 
         val title = mainLink.selectFirst("h3")?.text()?.trim() 
             ?: mainLink.selectFirst("img")?.attr("alt")?.trim() ?: "بدون عنوان"
@@ -124,6 +120,8 @@ class Asia2Tv : MainAPI() {
         val posterUrl = fixUrlNull(imgElement?.attr("data-src")?.ifBlank { imgElement.attr("src") })
         
         val isMovie = href.contains("/movie/") || mainLink.attr("data-type") == "movie"
+
+        Log.d(TAG, "تم العثور على عمل: الاسم=$title | الرابط=$href")
 
         return if (isMovie) {
             newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = posterUrl }
@@ -142,13 +140,24 @@ class Asia2Tv : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        performSilentLogin() // نطلب الدخول أولاً
+        performSilentLogin() 
         
         val url = "$mainUrl${request.data}?page=$page"
+        Log.d(TAG, "جاري جلب الصفحة الرئيسية: $url")
+        
         val response = app.get(url, headers = defaultHeaders, cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
 
-        val items = document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
+        // فحص لمعرفة هل الكلاس div.tw-movie-card موجود أصلاً في الصفحة
+        val elements = document.select("div.tw-movie-card")
+        Log.d(TAG, "عدد العناصر التي تم العثور عليها بكلاس tw-movie-card هو: ${elements.size}")
+
+        if (elements.isEmpty()) {
+            // إذا لم يجد شيئاً، سنقوم بطباعة جزء من كود HTML لنعرف ما هو الكلاس الصحيح
+            Log.d(TAG, "لم يتم العثور على أي عناصر! كود HTML للصفحة (أول 1000 حرف):\n${document.html().take(1000)}")
+        }
+
+        val items = elements.mapNotNull { it.toSearchResponse() }
         val hasNext = document.selectFirst("a.next.page-numbers, a[rel=next], ul.pagination li a[rel=next]") != null
         
         return newHomePageResponse(request.name, items, hasNext)
