@@ -1,15 +1,16 @@
-// تأكد من أن هذا المسار يطابق مسار ملفاتك تماماً
 package com.asia2tv
 
+import android.util.Log
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
-import android.util.Log
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MoreEpisodesResponse(
@@ -34,63 +35,75 @@ class Asia2Tv : MainAPI() {
 
     private val TAG = "Asia2TvDebug"
 
-    // بياناتك التي سيتم استخدامها في الخلفية
+    // بيانات الحساب
     private val loginUsername = "kelly93"
     private val loginPassword = "kelly.brown93@"
     
-    // متغير لحفظ الكوكيز في الذاكرة أثناء التصفح
+    // متغيرات الجلسة (الكوكيز وقفل التزامن)
     private var sessionCookies: Map<String, String> = emptyMap()
+    private val loginMutex = Mutex() // يمنع تسجيل الدخول أكثر من مرة في نفس الوقت
+
+    // توحيد الهيدر في كل الطلبات لتجنب الحظر
+    private val defaultHeaders = mapOf(
+        "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language" to "ar,en-US;q=0.7,en;q=0.3"
+    )
 
     // الدالة العبقرية: تسجيل الدخول بصمت في الخلفية
     private suspend fun performSilentLogin() {
-        // إذا كنا نملك الكوكيز بالفعل، لا داعي لتسجيل الدخول مجدداً
-        if (sessionCookies.isNotEmpty()) return
+        // نستخدم Mutex لضمان أن عملية الدخول تحدث مرة واحدة فقط حتى لو طلبتها عدة دوال معاً
+        loginMutex.withLock {
+            if (sessionCookies.isNotEmpty()) return // إذا كانت الكوكيز موجودة مسبقاً، تخطى الدخول
 
-        Log.d(TAG, "بدء عملية تسجيل الدخول التلقائي في الخلفية...")
-        try {
-            val loginUrl = "$mainUrl/login"
-            
-            // 1. فتح صفحة الدخول لجلب CSRF Token والكوكيز المبدئية
-            val getResp = app.get(loginUrl)
-            val document = Jsoup.parse(getResp.text)
-            
-            val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") 
-                ?: document.selectFirst("input[name=_token]")?.attr("value") 
-                ?: ""
+            Log.d(TAG, "بدء عملية تسجيل الدخول التلقائي في الخلفية...")
+            try {
+                val loginUrl = "$mainUrl/login"
+                
+                // 1. فتح صفحة الدخول لجلب CSRF Token والكوكيز المبدئية
+                val getResp = app.get(loginUrl, headers = defaultHeaders)
+                val document = Jsoup.parse(getResp.text)
+                
+                val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") 
+                    ?: document.selectFirst("input[name=_token]")?.attr("value") 
+                    ?: ""
 
-            val initialCookies = getResp.cookies
+                val initialCookies = getResp.cookies
 
-            // 2. إرسال البيانات (POST) كما لو كنا متصفحاً حقيقياً
-            val postResp = app.post(
-                loginUrl,
-                headers = mapOf(
-                    "Referer" to loginUrl,
-                    "X-CSRF-TOKEN" to csrfToken,
-                    "Content-Type" to "application/x-www-form-urlencoded"
-                ),
-                cookies = initialCookies,
-                data = mapOf(
-                    "email" to loginUsername,
-                    "password" to loginPassword,
-                    "_token" to csrfToken
+                // 2. إرسال البيانات (POST)
+                val postResp = app.post(
+                    loginUrl,
+                    headers = defaultHeaders + mapOf(
+                        "Referer" to loginUrl,
+                        "X-CSRF-TOKEN" to csrfToken,
+                        "Content-Type" to "application/x-www-form-urlencoded"
+                    ),
+                    cookies = initialCookies,
+                    data = mapOf(
+                        "email" to loginUsername,
+                        "password" to loginPassword,
+                        "_token" to csrfToken
+                    ),
+                    allowRedirects = true // للسماح للموقع بتوجيهنا بعد نجاح الدخول
                 )
-            )
 
-            // 3. التحقق من نجاح الدخول (إذا تغير الرابط من /login إلى الرئيسية)
-            if (!postResp.url.contains("login")) {
-                // حفظ الكوكيز النهائية الموثقة لاستخدامها في باقي الإضافة
-                sessionCookies = initialCookies + postResp.cookies
-                Log.d(TAG, "نجاح تسجيل الدخول! تم حفظ الكوكيز: $sessionCookies")
-            } else {
-                Log.e(TAG, "فشل تسجيل الدخول التلقائي.")
+                // 3. التحقق من نجاح الدخول
+                // نتحقق من عدم وجودنا في صفحة login، أو نتحقق من وجود عناصر تدل على الدخول الناجح
+                if (!postResp.url.contains("login") || postResp.text.contains("تسجيل خروج") || postResp.text.contains("حسابي")) {
+                    // دمج الكوكيز القديمة مع الجديدة (كوكيز الجلسة الموثقة)
+                    sessionCookies = initialCookies + postResp.cookies
+                    Log.d(TAG, "نجاح تسجيل الدخول! تم حفظ الكوكيز: $sessionCookies")
+                } else {
+                    Log.e(TAG, "فشل تسجيل الدخول التلقائي. الرابط الحالي: ${postResp.url}")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "خطأ برمجي أثناء الدخول: ${e.message}")
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "خطأ برمجي أثناء الدخول: ${e.message}")
         }
     }
 
     private fun getAjaxHeaders(referer: String, csrfToken: String): Map<String, String> {
-        return mapOf(
+        return defaultHeaders + mapOf(
             "X-CSRF-TOKEN" to csrfToken,
             "X-Requested-With" to "XMLHttpRequest",
             "Content-Type" to "application/x-www-form-urlencoded; charset=UTF-8",
@@ -129,11 +142,10 @@ class Asia2Tv : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        // نطلب الدخول أولاً قبل جلب الصفحة الرئيسية
-        performSilentLogin()
+        performSilentLogin() // نطلب الدخول أولاً
         
         val url = "$mainUrl${request.data}?page=$page"
-        val response = app.get(url, cookies = sessionCookies)
+        val response = app.get(url, headers = defaultHeaders, cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
 
         val items = document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
@@ -144,14 +156,14 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         performSilentLogin()
-        val response = app.get("$mainUrl/search?s=$query", cookies = sessionCookies)
+        val response = app.get("$mainUrl/search?s=$query", headers = defaultHeaders, cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
         return document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
         performSilentLogin()
-        val response = app.get(url, cookies = sessionCookies)
+        val response = app.get(url, headers = defaultHeaders, cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
 
         val title = document.selectFirst("h1")?.text()?.trim() ?: "No Title"
@@ -235,7 +247,7 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         performSilentLogin()
-        val response = app.get(data, cookies = sessionCookies)
+        val response = app.get(data, headers = defaultHeaders, cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
         
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
