@@ -118,9 +118,9 @@ class Asia2Tv : MainAPI() {
         }
 
         val finalHeaders = headers.toMutableMap().apply {
-            this["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            this["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
-            this["Accept-Language"] = "ar,en;q=0.9"
+            this["User-Agent"] = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"
+            this["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
+            this["Accept-Language"] = "en-US,en;q=0.9"
             if (csrfToken.isNotBlank()) {
                 this["X-CSRF-TOKEN"] = csrfToken
             }
@@ -149,6 +149,9 @@ class Asia2Tv : MainAPI() {
             }
 
             Log.d(TAG, "تم جلب الصفحة بنجاح، الطول: ${response.text.length}")
+            if (response.text.length > 100) {
+                Log.d(TAG, "عينة من الصفحة: ${response.text.take(500)}")
+            }
             return response.text
         } catch (e: Exception) {
             Log.e(TAG, "خطأ في الطلب: ${e.message}")
@@ -161,29 +164,51 @@ class Asia2Tv : MainAPI() {
             "X-Requested-With" to "XMLHttpRequest",
             "Content-Type" to "application/x-www-form-urlencoded; charset=UTF-8",
             "Referer" to referer,
-            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36",
             "Accept" to "application/json, text/javascript, */*; q=0.01"
         )
     }
 
+    // دالة محسنة لاستخراج البيانات من البطاقة
     private fun Element.toSearchResponse(): SearchResponse? {
-        val mainLink = this.selectFirst("a[data-type]") ?: this.selectFirst("a") ?: return null
-        val href = fixUrlNull(mainLink.attr("href")) ?: return null
-        
-        if (href == "#" || (!href.contains("/serie/") && !href.contains("/movie/"))) return null
+        try {
+            // البحث عن الرابط الرئيسي - قد يكون a مباشر أو داخل العنصر
+            val link = this.selectFirst("a[href]") ?: return null
+            val href = fixUrlNull(link.attr("href")) ?: return null
 
-        val title = mainLink.selectFirst("h3")?.text()?.trim() 
-            ?: mainLink.selectFirst("img")?.attr("alt")?.trim() ?: "بدون عنوان"
-            
-        val imgElement = mainLink.selectFirst("img")
-        val posterUrl = fixUrlNull(imgElement?.attr("data-src")?.ifBlank { imgElement.attr("src") })
-        
-        val isMovie = href.contains("/movie/") || mainLink.attr("data-type") == "movie"
+            // قبول الروابط التي تحتوي على /episode/ أو /serie/ أو /movie/
+            if (!href.contains("/episode/") && !href.contains("/serie/") && !href.contains("/movie/")) {
+                return null
+            }
 
-        return if (isMovie) {
-            newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = posterUrl }
-        } else {
-            newTvSeriesSearchResponse(title, href, TvType.TvSeries) { this.posterUrl = posterUrl }
+            // استخراج العنوان من h3 داخل الرابط
+            val title = link.selectFirst("h3")?.text()?.trim()
+                ?: link.attr("title")?.takeIf { it.isNotBlank() }
+                ?: "بدون عنوان"
+
+            // استخراج الصورة من img داخل الرابط
+            val img = link.selectFirst("img")
+            val posterUrl = fixUrlNull(
+                img?.attr("data-src")?.takeIf { it.isNotBlank() }
+                    ?: img?.attr("src")?.takeIf { it.isNotBlank() }
+            )
+
+            // تحديد النوع بناءً على الرابط
+            val isMovie = href.contains("/movie/") 
+                || this.selectFirst(".movie-type")?.text()?.contains("فيلم") == true
+
+            return if (isMovie) {
+                newMovieSearchResponse(title, href, TvType.Movie) {
+                    this.posterUrl = posterUrl
+                }
+            } else {
+                newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
+                    this.posterUrl = posterUrl
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "خطأ في تحويل عنصر: ${e.message}")
+            return null
         }
     }
 
@@ -204,14 +229,20 @@ class Asia2Tv : MainAPI() {
             val html = requestWithLogin(url)
             Log.d(TAG, "getMainPage: تم جلب الصفحة، طول النص=${html.length}")
             val document = Jsoup.parse(html)
-            val items = document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
-            Log.d(TAG, "getMainPage: عدد العناصر المسترجعة = ${items.size}")
+            
+            // اختيار جميع عناصر tw-movie-card
+            val cards = document.select("div.tw-movie-card")
+            Log.d(TAG, "عدد البطاقات الموجودة = ${cards.size}")
+            
+            val items = cards.mapNotNull { it.toSearchResponse() }
+            Log.d(TAG, "عدد العناصر المسترجعة = ${items.size}")
+            
             val hasNext = document.selectFirst("a.next.page-numbers, a[rel=next], ul.pagination li a[rel=next]") != null
             Log.d(TAG, "getMainPage: hasNext = $hasNext")
+            
             return newHomePageResponse(request.name, items, hasNext)
         } catch (e: Exception) {
             Log.e(TAG, "getMainPage: خطأ - ${e.message}", e)
-            // إعادة صفحة فارغة لتجنب تعطل التطبيق
             return newHomePageResponse(request.name, emptyList(), false)
         }
     }
@@ -221,7 +252,8 @@ class Asia2Tv : MainAPI() {
         try {
             val html = requestWithLogin("$mainUrl/search?s=$query")
             val document = Jsoup.parse(html)
-            return document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
+            val cards = document.select("div.tw-movie-card")
+            return cards.mapNotNull { it.toSearchResponse() }
         } catch (e: Exception) {
             Log.e(TAG, "search: خطأ - ${e.message}", e)
             return emptyList()
