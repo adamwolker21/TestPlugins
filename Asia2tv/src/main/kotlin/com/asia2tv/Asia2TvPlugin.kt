@@ -1,5 +1,4 @@
-package com.asia2tv 
-// تأكد أن المسار (package) يطابق المسار الموجود في ملفاتك، مثلاً: com.adamwolker21.asia2tv
+package com.asia2tv
 
 import android.content.Context
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
