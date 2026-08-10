@@ -1,11 +1,9 @@
 package com.asia2tv
 
-import android.content.Context
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonProperty
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import android.util.Log
@@ -33,25 +31,23 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    // متغير لحفظ الكوكيز أثناء التصفح
-    private var sessionCookies: Map<String, String> = emptyMap()
+    // ==========================================
+    // بيانات الدخول (تم تصحيحها)
+    // ==========================================
+    private val loginUsername = "kelly93"
+    private val loginPassword = "kelly.brown93@"
+    
+    // متغير لحفظ الكوكيز الحالية
+    private var currentCookies: Map<String, String> = emptyMap()
+    private var isLoggedIn = false
 
     private suspend fun performLogin() {
-        if (sessionCookies.isNotEmpty()) return
-
-        // قراءة البيانات من الإعدادات (التي أدخلها المستخدم في Plugin.kt)
-        val prefs = Asia2TvPlugin.pluginContext?.getSharedPreferences("Asia2TvAuth", Context.MODE_PRIVATE)
-        val username = prefs?.getString("username", "") ?: ""
-        val password = prefs?.getString("password", "") ?: ""
-
-        if (username.isBlank() || password.isBlank()) {
-            Log.e("Asia2Tv", "No credentials saved in settings.")
-            return
-        }
+        if (isLoggedIn) return
 
         try {
             val loginUrl = "$mainUrl/login"
-            // الخطوة 1: فتح صفحة الدخول لجلب الـ Token و الـ Cookies الأولية
+            
+            // 1. فتح صفحة الدخول لجلب الـ Token و الـ Cookies (هذه الخطوة مهمة جداً لـ Laravel)
             val getResp = app.get(loginUrl)
             val document = Jsoup.parse(getResp.text)
             
@@ -59,29 +55,37 @@ class Asia2Tv : MainAPI() {
                 ?: document.selectFirst("input[name=_token]")?.attr("value") 
                 ?: ""
 
-            // الخطوة 2: إرسال البيانات (السر هنا هو تمرير getResp.cookies)
+            // حفظ الكوكيز المبدئية التي أعطاها لنا الموقع
+            val initialCookies = getResp.cookies
+
+            // 2. إرسال بيانات الدخول مع تمرير الكوكيز المبدئية
             val postResp = app.post(
                 loginUrl,
                 headers = mapOf(
                     "Referer" to loginUrl,
                     "X-CSRF-TOKEN" to csrfToken
                 ),
-                cookies = getResp.cookies, // <--- هذا هو الحل السحري لمشكلة Laravel
+                cookies = initialCookies, // <--- هذا ما كان ينقصنا!
                 data = mapOf(
-                    "email" to username,
-                    "password" to password,
+                    "email" to loginUsername,
+                    "password" to loginPassword,
                     "_token" to csrfToken
                 )
             )
 
-            // دمج الكوكيز للاحتفاظ بجلسة الدخول
-            sessionCookies = getResp.cookies + postResp.cookies
-            Log.d("Asia2Tv", "Login Process Executed.")
-            
+            // 3. التحقق ودمج الكوكيز النهائية (إذا لم يوجهنا لصفحة Login مجدداً)
+            if (!postResp.url.contains("login")) {
+                isLoggedIn = true
+                currentCookies = initialCookies + postResp.cookies
+                Log.d("Asia2Tv", "تم تسجيل الدخول بنجاح وحفظ الـ Cookies!")
+            } else {
+                Log.e("Asia2Tv", "فشل تسجيل الدخول، ما زلنا في صفحة Login")
+            }
         } catch (e: Exception) {
-            Log.e("Asia2Tv", "Login Exception: ${e.message}")
+            Log.e("Asia2Tv", "استثناء أثناء تسجيل الدخول: ${e.message}")
         }
     }
+    // ==========================================
 
     private fun getAjaxHeaders(referer: String, csrfToken: String): Map<String, String> {
         return mapOf(
@@ -124,8 +128,8 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         performLogin()
-        // تمرير الكوكيز المحفوظة مع كل طلب
-        val response = app.get("$mainUrl${request.data}?page=$page", cookies = sessionCookies)
+        // تمرير الكوكيز مع كل طلب
+        val response = app.get("$mainUrl${request.data}?page=$page", cookies = currentCookies)
         val document = Jsoup.parse(response.text)
         
         val items = document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
@@ -136,14 +140,14 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         performLogin()
-        val response = app.get("$mainUrl/search?s=$query", cookies = sessionCookies)
+        val response = app.get("$mainUrl/search?s=$query", cookies = currentCookies)
         val document = Jsoup.parse(response.text)
         return document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
         performLogin()
-        val response = app.get(url, cookies = sessionCookies)
+        val response = app.get(url, cookies = currentCookies)
         val document = Jsoup.parse(response.text)
 
         val title = document.selectFirst("h1")?.text()?.trim() ?: "No Title"
@@ -189,7 +193,7 @@ class Asia2Tv : MainAPI() {
                     val responseText = app.post(
                         "$mainUrl/ajaxGetRequest",
                         headers = ajaxHeaders,
-                        cookies = sessionCookies,
+                        cookies = currentCookies,
                         requestBody = requestBody
                     ).text
 
@@ -227,7 +231,7 @@ class Asia2Tv : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val response = app.get(data, cookies = sessionCookies)
+        val response = app.get(data, cookies = currentCookies)
         val document = Jsoup.parse(response.text)
         
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
@@ -242,7 +246,7 @@ class Asia2Tv : MainAPI() {
                 val responseText = app.post(
                     "$mainUrl/ajaxGetRequest",
                     headers = ajaxHeaders,
-                    cookies = sessionCookies,
+                    cookies = currentCookies,
                     requestBody = requestBody
                 ).text
                 val ajaxResponse = tryParseJson<PlayerAjaxResponse>(responseText)
