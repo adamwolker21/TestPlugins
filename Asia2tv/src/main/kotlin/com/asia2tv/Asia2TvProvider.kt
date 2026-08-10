@@ -1,6 +1,5 @@
 package com.asia2tv
 
-import android.content.Context
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
@@ -32,39 +31,47 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
+    // ==========================================
+    // حساب الدخول
+    // ==========================================
+    private val loginUsername = "kelly93"
+    private val loginPassword = "kelly.brown93@"
+    
+    // متغير لحفظ الكوكيز الحالية
     private var currentCookies: Map<String, String> = emptyMap()
     private var isLoggedIn = false
 
     private suspend fun performLogin() {
         if (isLoggedIn) return
 
-        val prefs = Asia2TvPlugin.pluginContext?.getSharedPreferences("Asia2TvAuth", Context.MODE_PRIVATE)
-        val loginUsername = prefs?.getString("username", "") ?: ""
-        val loginPassword = prefs?.getString("password", "") ?: ""
-
-        if (loginUsername.isBlank() || loginPassword.isBlank()) return
-
         try {
             val loginUrl = "$mainUrl/login"
             
-            // جلب صفحة الدخول للحصول على التوكن والكوكيز المبدئية
+            // 1. فتح صفحة الدخول لجلب الـ Token و الـ Cookies (مهم جداً لتخطي حماية Laravel)
             val getResp = app.get(loginUrl)
             val document = Jsoup.parse(getResp.text)
             
+            // تحقق من حظر كلاودفلير
+            if (document.title().contains("Just a moment", true) || document.selectFirst("div.cf-browser-verification") != null) {
+                Log.e("Asia2Tv", "Cloudflare Block! Need WebView intervention.")
+                return
+            }
+
             val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") 
                 ?: document.selectFirst("input[name=_token]")?.attr("value") 
                 ?: ""
 
+            // حفظ الكوكيز المبدئية التي أعطاها لنا الموقع
             val initialCookies = getResp.cookies
 
-            // إرسال بيانات الدخول مع الكوكيز المبدئية (هذا هو الحل لتخطي حماية الموقع)
+            // 2. إرسال بيانات الدخول مع تمرير الكوكيز المبدئية
             val postResp = app.post(
                 loginUrl,
                 headers = mapOf(
                     "Referer" to loginUrl,
                     "X-CSRF-TOKEN" to csrfToken
                 ),
-                cookies = initialCookies,
+                cookies = initialCookies, // <--- سر النجاح يكمن هنا
                 data = mapOf(
                     "email" to loginUsername,
                     "password" to loginPassword,
@@ -72,15 +79,27 @@ class Asia2Tv : MainAPI() {
                 )
             )
 
-            // التحقق من نجاح الدخول وحفظ الكوكيز
+            // 3. التحقق ودمج الكوكيز النهائية 
             if (!postResp.url.contains("login")) {
                 isLoggedIn = true
                 currentCookies = initialCookies + postResp.cookies
-                Log.d("Asia2Tv", "Login Success! Cookies saved.")
+                Log.d("Asia2Tv", "تم تسجيل الدخول بنجاح وحفظ الـ Cookies!")
+            } else {
+                Log.e("Asia2Tv", "فشل تسجيل الدخول، ما زلنا في صفحة Login")
             }
         } catch (e: Exception) {
-            Log.e("Asia2Tv", "Login Error: ${e.message}")
+            Log.e("Asia2Tv", "استثناء أثناء تسجيل الدخول: ${e.message}")
         }
+    }
+    // ==========================================
+
+    private fun getAjaxHeaders(referer: String, csrfToken: String): Map<String, String> {
+        return mapOf(
+            "X-CSRF-TOKEN" to csrfToken,
+            "X-Requested-With" to "XMLHttpRequest",
+            "Content-Type" to "application/x-www-form-urlencoded; charset=UTF-8",
+            "Referer" to referer
+        )
     }
 
     private fun Element.toSearchResponse(): SearchResponse? {
@@ -115,6 +134,7 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         performLogin()
+        // تمرير الكوكيز مع كل طلب
         val response = app.get("$mainUrl${request.data}?page=$page", cookies = currentCookies)
         val document = Jsoup.parse(response.text)
         
@@ -172,12 +192,7 @@ class Asia2Tv : MainAPI() {
             var hasMore = true
             while (hasMore) {
                 try {
-                    val ajaxHeaders = mapOf(
-                        "X-CSRF-TOKEN" to csrfToken,
-                        "X-Requested-With" to "XMLHttpRequest",
-                        "Content-Type" to "application/x-www-form-urlencoded; charset=UTF-8",
-                        "Referer" to url
-                    )
+                    val ajaxHeaders = getAjaxHeaders(url, csrfToken)
                     val postData = "action=moreepisode&page=$currentPage&serieid=$serieId"
                     val requestBody = postData.toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaType())
                     
@@ -226,12 +241,7 @@ class Asia2Tv : MainAPI() {
         val document = Jsoup.parse(response.text)
         
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
-        val ajaxHeaders = mapOf(
-            "X-CSRF-TOKEN" to csrfToken,
-            "X-Requested-With" to "XMLHttpRequest",
-            "Content-Type" to "application/x-www-form-urlencoded; charset=UTF-8",
-            "Referer" to data
-        )
+        val ajaxHeaders = getAjaxHeaders(data, csrfToken)
 
         document.select("ul.dropdown-menu li a").amap { server ->
             try {
