@@ -11,7 +11,6 @@ buildscript {
     }
     dependencies {
         classpath("com.android.tools.build:gradle:8.2.2")
-        // تم تغيير هذا السطر لاستخدام أحدث إصدار لحل مشكلة التوافق (writeCacheEntry)
         classpath("com.github.recloudstream:gradle:master-SNAPSHOT")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22")
     }
@@ -41,7 +40,8 @@ subprojects {
     }
 
     android {
-        namespace = "com.megix"
+        // تم تغيير هذا السطر ليطابق اسم المجلد في مستودعك
+        namespace = "com.example"
         compileSdk = 34
         defaultConfig {
             minSdk = 21
