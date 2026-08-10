@@ -42,27 +42,26 @@ class Asia2Tv : MainAPI() {
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
     // ==========================================
-    // إعدادات تسجيل الدخول - ضع بياناتك هنا
+    // بيانات تسجيل الدخول بناءً على تحليلك
     // ==========================================
     private val userEmail = "kelly.brown93@mail.ru"
     private val userPassword = "kelly.brown93@"
     private var isLoggedIn = false
 
-    // دالة تسجيل الدخول التلقائي
     private suspend fun performLogin() {
-        if (isLoggedIn || userEmail == "kelly.brown93@mail.ru") return
+        if (isLoggedIn) return
 
         try {
-            // 1. جلب صفحة الدخول للحصول على التوكن (CSRF Token)
             val loginPageUrl = "$mainUrl/login"
             val loginPage = app.get(loginPageUrl)
             val document = Jsoup.parse(loginPage.text)
             
+            // استخراج التوكن من الصفحة
             val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") 
                 ?: document.selectFirst("input[name=_token]")?.attr("value") 
                 ?: ""
 
-            // 2. إرسال طلب تسجيل الدخول (POST Request)
+            // إرسال طلب الدخول بنفس الطريقة التي ظهرت لك في Payload
             val response = app.post(
                 loginPageUrl,
                 headers = mapOf(
@@ -76,17 +75,16 @@ class Asia2Tv : MainAPI() {
                 )
             )
 
-            // 3. التحقق (إذا تغير الرابط بعد الـ POST فهذا يعني غالباً نجاح الدخول)
+            // إذا تم توجيهنا لصفحة أخرى (مثل الرئيسية) فهذا يعني نجاح الدخول
             if (!response.url.contains("login")) {
                 isLoggedIn = true
-                Log.d("Asia2Tv", "تم تسجيل الدخول بنجاح!")
+                Log.d("Asia2Tv", "Login Successful!")
             }
         } catch (e: Exception) {
-            Log.e("Asia2Tv", "فشل تسجيل الدخول: ${e.message}")
+            Log.e("Asia2Tv", "Login Failed: ${e.message}")
         }
     }
     // ==========================================
-
 
     private fun getBaseHeaders(cookies: Map<String, String>): Map<String, String> {
         return mapOf(
@@ -110,22 +108,19 @@ class Asia2Tv : MainAPI() {
         )
     }
 
-    private fun getStatus(element: Element?): ShowStatus {
-        return when {
-            element?.hasClass("live") == true -> ShowStatus.Ongoing
-            element?.hasClass("complete") == true -> ShowStatus.Completed
-            else -> ShowStatus.Completed
-        }
-    }
-
+    // ==========================================
+    // تحديث دالة استخراج البيانات لتتوافق مع التصميم الجديد (Tailwind CSS)
+    // ==========================================
     private fun Element.toSearchResponse(): SearchResponse? {
-        val titleElement = this.selectFirst("h4 a") ?: return null
-        val href = fixUrlNull(titleElement.attr("href")) ?: return null
-        val title = titleElement.text()
-        val posterUrl = fixUrlNull(this.selectFirst("div.postmovie-photo img")?.let {
+        // this هنا تمثل الوسم <a> الذي يحتوي على الكلاس tw-movie-card
+        val href = fixUrlNull(this.attr("href")) ?: return null
+        val title = this.selectFirst("h3")?.text()?.trim() ?: return null
+        val posterUrl = fixUrlNull(this.selectFirst("img")?.let {
             it.attr("data-src").ifBlank { it.attr("src") }
         })
-        val isMovie = href.contains("/movie/")
+        
+        // التحقق مما إذا كان فيلم أو مسلسل من الرابط أو من خصائص العنصر
+        val isMovie = href.contains("/movie/") || this.attr("data-type") == "movie"
 
         return if (isMovie) {
             newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = posterUrl }
@@ -144,30 +139,37 @@ class Asia2Tv : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        performLogin() // التحقق من تسجيل الدخول قبل جلب الصفحة الرئيسية
+        performLogin() // تشغيل الدخول التلقائي
         
         val response = app.get("$mainUrl${request.data}?page=$page")
         val document = Jsoup.parse(response.text)
-        val items = document.select("div.postmovie").mapNotNull { it.toSearchResponse() }
-        val hasNext = document.selectFirst("a.next.page-numbers, a[rel=next]") != null
+        
+        // استخدام الكلاسات الجديدة لاستخراج العناصر
+        val items = document.select("div.tw-movie-card a").mapNotNull { it.toSearchResponse() }
+        val hasNext = document.selectFirst("a.next.page-numbers, a[rel=next], ul.pagination li a[rel=next]") != null
+        
         return newHomePageResponse(request.name, items, hasNext)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        performLogin() // التحقق من الدخول قبل البحث
+        performLogin()
         
         val response = app.get("$mainUrl/search?s=$query")
         val document = Jsoup.parse(response.text)
-        return document.select("div.postmovie").mapNotNull { it.toSearchResponse() }
+        
+        // استخدام الكلاسات الجديدة
+        return document.select("div.tw-movie-card a").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        performLogin() // التحقق من الدخول قبل فتح صفحة الفلم/المسلسل
+        performLogin()
         
         val response = app.get(url)
         val cookies = response.cookies
         val document = Jsoup.parse(response.text)
 
+        // ملاحظة: إذا تم تغيير تصميم الصفحة الرئيسية، فبنسبة كبيرة تم تغيير تصميم صفحة التفاصيل أيضاً.
+        // تركت الأكواد القديمة هنا مؤقتاً. إذا لم يفتح المسلسل عند الضغط عليه، فسنحتاج لتحديث هذا القسم أيضاً.
         val title = document.selectFirst("div.info-detail-single h1")?.text()?.trim() ?: "No Title"
         var plot = document.selectFirst("div.info-detail-single p")?.text()?.trim()
         
@@ -176,8 +178,6 @@ class Asia2Tv : MainAPI() {
                 document.selectFirst("div.single-photo img, div.single-thumb-bg img")?.let {
                     it.attr("data-src").ifBlank { it.attr("src") }
                 }
-            }.ifNullOrBlank {
-                tryParseJson<SchemaItem>(document.selectFirst("script[type=\"application/ld+json\"]")?.data() ?: "")?.itemReviewed?.image
             }
         )
         
@@ -188,8 +188,6 @@ class Asia2Tv : MainAPI() {
         if (isPro) {
             tags.add(0, "مميز ☆彡")
         }
-
-        val status = getStatus(document.selectFirst("span.serie-isstatus"))
 
         val country = document.select("ul.mb-2 li:contains(البلد المنتج) a")?.text()?.trim()
         val totalEpisodes = document.selectFirst("ul.mb-2 li:contains(عدد الحلقات)")?.ownText()?.trim()?.removePrefix(": ")
@@ -265,7 +263,6 @@ class Asia2Tv : MainAPI() {
                 this.year = year
                 this.plot = plot
                 this.tags = tags
-                this.showStatus = status
             }
         } else {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
