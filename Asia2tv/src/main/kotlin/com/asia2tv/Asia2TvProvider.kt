@@ -50,7 +50,6 @@ class Asia2Tv : MainAPI() {
     private suspend fun performSilentLogin() {
         loginMutex.withLock {
             if (sessionCookies.isNotEmpty()) return 
-            Log.d(TAG, "بدء عملية تسجيل الدخول التلقائي في الخلفية...")
             try {
                 val loginUrl = "$mainUrl/login"
                 val getResp = app.get(loginUrl, headers = defaultHeaders)
@@ -78,12 +77,10 @@ class Asia2Tv : MainAPI() {
 
                 if (!postResp.url.contains("login") || postResp.text.contains("تسجيل خروج") || postResp.text.contains("حسابي")) {
                     sessionCookies = initialCookies + postResp.cookies
-                    Log.d(TAG, "نجاح تسجيل الدخول! تم حفظ الكوكيز: $sessionCookies")
-                } else {
-                    Log.e(TAG, "فشل تسجيل الدخول التلقائي.")
+                    Log.d(TAG, "نجاح الدخول!")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "خطأ برمجي أثناء الدخول: ${e.message}")
+                Log.e(TAG, "خطأ بالدخول: ${e.message}")
             }
         }
     }
@@ -98,43 +95,44 @@ class Asia2Tv : MainAPI() {
     }
 
     private fun Element.toSearchResponse(): SearchResponse? {
-        val mainLink = this.selectFirst("a[data-type]") ?: this.selectFirst("a")
-        if (mainLink == null) {
-            Log.d(TAG, "لم يتم العثور على رابط (a tag) داخل العنصر.")
-            return null
+        // نختار فقط رابط حقيقي يحتوي على href ولا يحتوي على javascript
+        val mainLink = this.select("a[href]").firstOrNull { 
+            val h = it.attr("href")
+            h.isNotBlank() && h != "#" && !h.contains("javascript:") 
+        } ?: return null
+
+        val href = fixUrlNull(mainLink.attr("href")) ?: return null
+
+        // العنوان
+        val baseTitle = this.selectFirst("h3")?.text()?.trim() 
+            ?: this.selectFirst("img")?.attr("alt")?.trim() ?: "بدون عنوان"
+            
+        // دمج رقم الحلقة مع العنوان إن وجد
+        val badgeText = this.selectFirst(".tw-badge")?.text()?.trim()
+        val finalTitle = if (!badgeText.isNullOrEmpty() && badgeText.contains("الحلقة")) {
+            "$baseTitle ($badgeText)"
+        } else {
+            baseTitle
         }
 
-        val href = fixUrlNull(mainLink.attr("href"))
-        if (href == null || href == "#") return null
-        
-        // قمت بإلغاء الشرط الصارم مؤقتاً لنرى ما هي الروابط التي يعطينا إياها الموقع
-        // if (!href.contains("/serie/") && !href.contains("/movie/")) {
-        //     Log.d(TAG, "تم تجاهل الرابط لأنه لا يحتوي serie أو movie: $href")
-        //     return null
-        // }
-
-        val title = mainLink.selectFirst("h3")?.text()?.trim() 
-            ?: mainLink.selectFirst("img")?.attr("alt")?.trim() ?: "بدون عنوان"
-            
-        val imgElement = mainLink.selectFirst("img")
+        // الصورة
+        val imgElement = this.selectFirst("img")
         val posterUrl = fixUrlNull(imgElement?.attr("data-src")?.ifBlank { imgElement.attr("src") })
         
-        val isMovie = href.contains("/movie/") || mainLink.attr("data-type") == "movie"
-
-        Log.d(TAG, "تم العثور على عمل: الاسم=$title | الرابط=$href")
+        val isMovie = href.contains("/movie/")
 
         return if (isMovie) {
-            newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = posterUrl }
+            newMovieSearchResponse(finalTitle, href, TvType.Movie) { this.posterUrl = posterUrl }
         } else {
-            newTvSeriesSearchResponse(title, href, TvType.TvSeries) { this.posterUrl = posterUrl }
+            newTvSeriesSearchResponse(finalTitle, href, TvType.TvSeries) { this.posterUrl = posterUrl }
         }
     }
 
+    // ملاحظة بخصوص الأقسام: إذا بقيت الأقسام متشابهة، فهذا يعني أن الموقع
+    // لا يستخدم هذه الروابط للأقسام بل يستخدم نظام الفلترة (Filter).
+    // يمكنك تعديل هذه الروابط لاحقاً لتطابق الروابط الحقيقية في المتصفح.
     override val mainPage = mainPageOf(
-        "/newepisode" to "الحلقات الجديدة",
-        "/status/live" to "يبث حاليا",
-        "/status/coming-soon" to "الأعمال القادمة",
-        "/status/complete" to "أعمال مكتملة",
+        "/" to "الرئيسية",
         "/series" to "المسلسلات",
         "/movies" to "الأفلام"
     )
@@ -142,22 +140,11 @@ class Asia2Tv : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         performSilentLogin() 
         
-        val url = "$mainUrl${request.data}?page=$page"
-        Log.d(TAG, "جاري جلب الصفحة الرئيسية: $url")
-        
+        val url = if (request.data == "/") "$mainUrl/?page=$page" else "$mainUrl${request.data}?page=$page"
         val response = app.get(url, headers = defaultHeaders, cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
 
-        // فحص لمعرفة هل الكلاس div.tw-movie-card موجود أصلاً في الصفحة
-        val elements = document.select("div.tw-movie-card")
-        Log.d(TAG, "عدد العناصر التي تم العثور عليها بكلاس tw-movie-card هو: ${elements.size}")
-
-        if (elements.isEmpty()) {
-            // إذا لم يجد شيئاً، سنقوم بطباعة جزء من كود HTML لنعرف ما هو الكلاس الصحيح
-            Log.d(TAG, "لم يتم العثور على أي عناصر! كود HTML للصفحة (أول 1000 حرف):\n${document.html().take(1000)}")
-        }
-
-        val items = elements.mapNotNull { it.toSearchResponse() }
+        val items = document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
         val hasNext = document.selectFirst("a.next.page-numbers, a[rel=next], ul.pagination li a[rel=next]") != null
         
         return newHomePageResponse(request.name, items, hasNext)
@@ -191,7 +178,7 @@ class Asia2Tv : MainAPI() {
             for (element in elements) {
                 val href = element.attr("href")
                 val name = element.selectFirst(".titlepisode")?.text()?.trim()
-                if (href.isNotBlank() && href != "#" && seenUrls.add(href)) {
+                if (href.isNotBlank() && href != "#" && !href.contains("javascript:") && seenUrls.add(href)) {
                     val episodeNum = name?.replace(Regex("[^0-9]"), "")?.toIntOrNull()
                     episodes.add(newEpisode(href) {
                         this.name = name
@@ -201,7 +188,15 @@ class Asia2Tv : MainAPI() {
             }
         }
 
+        // جلب الحلقات الموجودة في الصفحة
         addUniqueEpisodes(document.select("div.loop-episode a.episode_box_tabs_container"))
+        
+        // إذا كان الرابط نفسه عبارة عن حلقة مفردة (من الرئيسية)
+        if (url.contains("/episode/")) {
+            episodes.add(newEpisode(url) {
+                this.name = title
+            })
+        }
 
         val serieId = document.selectFirst(".add_favorite")?.attr("data-id")
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content")
