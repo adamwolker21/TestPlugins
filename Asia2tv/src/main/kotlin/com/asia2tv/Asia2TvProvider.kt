@@ -46,8 +46,8 @@ class Asia2Tv : MainAPI() {
         try {
             val loginUrl = "$mainUrl/login"
             
-            // استخدام CloudflareInterceptor للتعامل الأفضل مع التحديات الأولية
-            val getResp = app.get(loginUrl, interceptor = CloudflareInterceptor())
+            // تم إزالة CloudflareInterceptor لضمان البناء بنجاح
+            val getResp = app.get(loginUrl)
             val document = Jsoup.parse(getResp.text)
             
             if (document.title().contains("Just a moment", true) || document.selectFirst("div.cf-browser-verification") != null) {
@@ -73,8 +73,7 @@ class Asia2Tv : MainAPI() {
                     "email" to loginUsername,
                     "password" to loginPassword,
                     "_token" to csrfToken
-                ),
-                interceptor = CloudflareInterceptor()
+                )
             )
 
             if (!postResp.url.contains("login")) {
@@ -133,7 +132,7 @@ class Asia2Tv : MainAPI() {
         
         val url = "$mainUrl${request.data}?page=$page"
         Log.d(TAG, "جلب الصفحة الرئيسية: $url")
-        val response = app.get(url, cookies = currentCookies, interceptor = CloudflareInterceptor())
+        val response = app.get(url, cookies = currentCookies)
         val document = Jsoup.parse(response.text)
 
         val items = document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
@@ -151,14 +150,14 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         performLogin()
-        val response = app.get("$mainUrl/search?s=$query", cookies = currentCookies, interceptor = CloudflareInterceptor())
+        val response = app.get("$mainUrl/search?s=$query", cookies = currentCookies)
         val document = Jsoup.parse(response.text)
         return document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
         performLogin()
-        val response = app.get(url, cookies = currentCookies, interceptor = CloudflareInterceptor())
+        val response = app.get(url, cookies = currentCookies)
         val document = Jsoup.parse(response.text)
 
         val title = document.selectFirst("h1")?.text()?.trim() ?: "No Title"
@@ -205,8 +204,7 @@ class Asia2Tv : MainAPI() {
                         "$mainUrl/ajaxGetRequest",
                         headers = ajaxHeaders,
                         cookies = currentCookies,
-                        requestBody = requestBody,
-                        interceptor = CloudflareInterceptor()
+                        requestBody = requestBody
                     ).text
 
                     val ajaxResponse = tryParseJson<MoreEpisodesResponse>(responseText)
@@ -243,7 +241,7 @@ class Asia2Tv : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val response = app.get(data, cookies = currentCookies, interceptor = CloudflareInterceptor())
+        val response = app.get(data, cookies = currentCookies)
         val document = Jsoup.parse(response.text)
         
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
@@ -259,8 +257,7 @@ class Asia2Tv : MainAPI() {
                     "$mainUrl/ajaxGetRequest",
                     headers = ajaxHeaders,
                     cookies = currentCookies,
-                    requestBody = requestBody,
-                    interceptor = CloudflareInterceptor()
+                    requestBody = requestBody
                 ).text
                 val ajaxResponse = tryParseJson<PlayerAjaxResponse>(responseText)
 
