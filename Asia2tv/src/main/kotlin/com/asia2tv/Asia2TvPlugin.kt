@@ -1,4 +1,4 @@
-package com.example
+package com.asia2tv
 
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
