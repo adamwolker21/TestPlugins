@@ -11,9 +11,6 @@ import android.util.Log
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 
-// الاستيرادات التي كانت تسبب خطأ البناء سابقاً أضفناها هنا!
-import com.lagradost.cloudstream3.network.CloudflareInterceptor
-
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MoreEpisodesResponse(
     val status: Boolean,
@@ -54,8 +51,7 @@ class Asia2Tv : MainAPI() {
             val loginUrl = "$mainUrl/login"
             
             // 1. فتح صفحة الدخول لجلب CSRF Token والكوكيز المبدئية
-            // استخدمنا CloudflareInterceptor لمعالجة أي حماية بشكل آلي
-            val getResp = app.get(loginUrl, interceptor = CloudflareInterceptor())
+            val getResp = app.get(loginUrl)
             val document = Jsoup.parse(getResp.text)
             
             val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") 
@@ -77,8 +73,7 @@ class Asia2Tv : MainAPI() {
                     "email" to loginUsername,
                     "password" to loginPassword,
                     "_token" to csrfToken
-                ),
-                interceptor = CloudflareInterceptor()
+                )
             )
 
             // 3. التحقق من نجاح الدخول (إذا تغير الرابط من /login إلى الرئيسية)
@@ -138,7 +133,7 @@ class Asia2Tv : MainAPI() {
         performSilentLogin()
         
         val url = "$mainUrl${request.data}?page=$page"
-        val response = app.get(url, cookies = sessionCookies, interceptor = CloudflareInterceptor())
+        val response = app.get(url, cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
 
         val items = document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
@@ -149,14 +144,14 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         performSilentLogin()
-        val response = app.get("$mainUrl/search?s=$query", cookies = sessionCookies, interceptor = CloudflareInterceptor())
+        val response = app.get("$mainUrl/search?s=$query", cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
         return document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
         performSilentLogin()
-        val response = app.get(url, cookies = sessionCookies, interceptor = CloudflareInterceptor())
+        val response = app.get(url, cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
 
         val title = document.selectFirst("h1")?.text()?.trim() ?: "No Title"
@@ -202,8 +197,7 @@ class Asia2Tv : MainAPI() {
                         "$mainUrl/ajaxGetRequest",
                         headers = getAjaxHeaders(url, csrfToken),
                         cookies = sessionCookies,
-                        requestBody = requestBody,
-                        interceptor = CloudflareInterceptor()
+                        requestBody = requestBody
                     ).text
 
                     val ajaxResponse = tryParseJson<MoreEpisodesResponse>(responseText)
@@ -241,7 +235,7 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         performSilentLogin()
-        val response = app.get(data, cookies = sessionCookies, interceptor = CloudflareInterceptor())
+        val response = app.get(data, cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
         
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
@@ -256,8 +250,7 @@ class Asia2Tv : MainAPI() {
                     "$mainUrl/ajaxGetRequest",
                     headers = getAjaxHeaders(data, csrfToken),
                     cookies = sessionCookies,
-                    requestBody = requestBody,
-                    interceptor = CloudflareInterceptor()
+                    requestBody = requestBody
                 ).text
                 val ajaxResponse = tryParseJson<PlayerAjaxResponse>(responseText)
 
