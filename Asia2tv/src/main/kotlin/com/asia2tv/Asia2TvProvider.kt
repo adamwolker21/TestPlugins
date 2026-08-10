@@ -15,23 +15,14 @@ import okhttp3.RequestBody.Companion.toRequestBody
 data class MoreEpisodesResponse(
     val status: Boolean,
     val html: String,
-    val showmore: Boolean? = false
+    val showmore: Boolean? = false,
+    val newpage: Int? = null
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class PlayerAjaxResponse(
     val status: Boolean,
     val codeplay: String
-)
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class SchemaItem(
-    @JsonProperty("itemReviewed") val itemReviewed: SchemaImage? = null
-)
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class SchemaImage(
-    @JsonProperty("image") val image: String? = null
 )
 
 class Asia2Tv : MainAPI() {
@@ -42,7 +33,7 @@ class Asia2Tv : MainAPI() {
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
     // ==========================================
-    // بيانات تسجيل الدخول بناءً على تحليلك
+    // بيانات تسجيل الدخول
     // ==========================================
     private val userEmail = "kelly.brown93@mail.ru"
     private val userPassword = "kelly.brown93@"
@@ -56,12 +47,10 @@ class Asia2Tv : MainAPI() {
             val loginPage = app.get(loginPageUrl)
             val document = Jsoup.parse(loginPage.text)
             
-            // استخراج التوكن من الصفحة
             val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") 
                 ?: document.selectFirst("input[name=_token]")?.attr("value") 
                 ?: ""
 
-            // إرسال طلب الدخول بنفس الطريقة التي ظهرت لك في Payload
             val response = app.post(
                 loginPageUrl,
                 headers = mapOf(
@@ -75,7 +64,7 @@ class Asia2Tv : MainAPI() {
                 )
             )
 
-            // إذا تم توجيهنا لصفحة أخرى (مثل الرئيسية) فهذا يعني نجاح الدخول
+            // إذا تغير الرابط بعد الإرسال (مثلاً ذهب للرئيسية) فهذا يعني النجاح
             if (!response.url.contains("login")) {
                 isLoggedIn = true
                 Log.d("Asia2Tv", "Login Successful!")
@@ -109,17 +98,19 @@ class Asia2Tv : MainAPI() {
     }
 
     // ==========================================
-    // تحديث دالة استخراج البيانات لتتوافق مع التصميم الجديد (Tailwind CSS)
+    // دالة استخراج الأفلام للصفحة الرئيسية (تم تعديلها لمنع التكرار)
     // ==========================================
     private fun Element.toSearchResponse(): SearchResponse? {
-        // this هنا تمثل الوسم <a> الذي يحتوي على الكلاس tw-movie-card
         val href = fixUrlNull(this.attr("href")) ?: return null
+        
+        // استبعاد أي روابط لا تخص المسلسلات أو الأفلام (مثل روابط qtip)
+        if (href == "#" || (!href.contains("/serie/") && !href.contains("/movie/"))) return null
+
         val title = this.selectFirst("h3")?.text()?.trim() ?: return null
         val posterUrl = fixUrlNull(this.selectFirst("img")?.let {
             it.attr("data-src").ifBlank { it.attr("src") }
         })
         
-        // التحقق مما إذا كان فيلم أو مسلسل من الرابط أو من خصائص العنصر
         val isMovie = href.contains("/movie/") || this.attr("data-type") == "movie"
 
         return if (isMovie) {
@@ -139,13 +130,13 @@ class Asia2Tv : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        performLogin() // تشغيل الدخول التلقائي
+        performLogin()
         
         val response = app.get("$mainUrl${request.data}?page=$page")
         val document = Jsoup.parse(response.text)
         
-        // استخدام الكلاسات الجديدة لاستخراج العناصر
-        val items = document.select("div.tw-movie-card a").mapNotNull { it.toSearchResponse() }
+        // اختيار الرابط المباشر فقط (a.z-10) لتجنب جلب الأزرار الأخرى داخل البطاقة وتكرار المحتوى
+        val items = document.select("div.tw-movie-card > a.z-10").mapNotNull { it.toSearchResponse() }
         val hasNext = document.selectFirst("a.next.page-numbers, a[rel=next], ul.pagination li a[rel=next]") != null
         
         return newHomePageResponse(request.name, items, hasNext)
@@ -157,8 +148,7 @@ class Asia2Tv : MainAPI() {
         val response = app.get("$mainUrl/search?s=$query")
         val document = Jsoup.parse(response.text)
         
-        // استخدام الكلاسات الجديدة
-        return document.select("div.tw-movie-card a").mapNotNull { it.toSearchResponse() }
+        return document.select("div.tw-movie-card > a.z-10").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
@@ -168,63 +158,46 @@ class Asia2Tv : MainAPI() {
         val cookies = response.cookies
         val document = Jsoup.parse(response.text)
 
-        // ملاحظة: إذا تم تغيير تصميم الصفحة الرئيسية، فبنسبة كبيرة تم تغيير تصميم صفحة التفاصيل أيضاً.
-        // تركت الأكواد القديمة هنا مؤقتاً. إذا لم يفتح المسلسل عند الضغط عليه، فسنحتاج لتحديث هذا القسم أيضاً.
-        val title = document.selectFirst("div.info-detail-single h1")?.text()?.trim() ?: "No Title"
-        var plot = document.selectFirst("div.info-detail-single p")?.text()?.trim()
+        // 1. استخراج العنوان والقصة بناءً على التصميم الجديد
+        val title = document.selectFirst("h1")?.text()?.trim() ?: "No Title"
+        val plot = document.selectFirst("h3:contains(القصة) + p")?.text()?.trim()
         
-        val posterUrl = fixUrlNull(
-            document.selectFirst("meta[property=og:image]")?.attr("content").ifNullOrBlank {
-                document.selectFirst("div.single-photo img, div.single-thumb-bg img")?.let {
-                    it.attr("data-src").ifBlank { it.attr("src") }
-                }
-            }
-        )
+        // 2. استخراج البوستر باستخدام الميتا تاج (أضمن طريقة)
+        val posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
         
-        val year = document.select("ul.mb-2 li:contains(سنة العرض) a")?.text()?.toIntOrNull()
+        // 3. استخراج سنة العرض
+        val year = document.selectFirst("span:contains(سنة العرض:) + a")?.text()?.toIntOrNull()
         
-        val isPro = document.selectFirst("span.series-ispro") != null
-        val tags = document.select("div.post_tags a")?.map { it.text() }?.toMutableList() ?: mutableListOf()
-        if (isPro) {
-            tags.add(0, "مميز ☆彡")
-        }
+        // 4. استخراج الأقسام (التصنيفات)
+        val tags = document.select("div.box-tags a").map { it.text().trim() }
+        
+        // 5. استخراج حالة المسلسل (مكتمل / يبث حالياً)
+        val statusBadge = document.selectFirst(".serie_status_pro span, span:contains(أعمال مكتملة), span:contains(يبث حاليا)")?.text() ?: ""
+        val status = if (statusBadge.contains("مكتملة")) ShowStatus.Completed else ShowStatus.Ongoing
 
-        val country = document.select("ul.mb-2 li:contains(البلد المنتج) a")?.text()?.trim()
-        val totalEpisodes = document.selectFirst("ul.mb-2 li:contains(عدد الحلقات)")?.ownText()?.trim()?.removePrefix(": ")
-        val statusText = document.selectFirst("span.serie-isstatus")?.text()?.trim()
-        val extraInfo = listOfNotNull(
-            statusText?.let { "الحالة: $it" },
-            country?.let { "البلد: $it" },
-            totalEpisodes?.let { "عدد الحلقات: $it" }
-        ).joinToString(" | ")
-        
-        if (extraInfo.isNotBlank()) {
-            plot = listOfNotNull(plot, "<br><br>${extraInfo}").joinToString("")
-        }
-
-        val episodes = ArrayList<Episode>()
+        // 6. استخراج الحلقات
+        val episodes = mutableListOf<Episode>()
         val seenUrls = HashSet<String>()
 
         fun addUniqueEpisodes(elements: List<Element>) {
             for (element in elements) {
                 val href = element.attr("href")
-                if (href.isNotBlank() && seenUrls.add(href)) {
-                    val episode = newEpisode(href) {
-                        name = element.selectFirst(".titlepisode")?.text()?.trim()
-                        this.episode = name?.replace(Regex("[^0-9]"), "")?.toIntOrNull()
-                    }
-                    episodes.add(episode)
+                val name = element.selectFirst(".titlepisode")?.text()?.trim()
+                if (href.isNotBlank() && href != "#" && seenUrls.add(href)) {
+                    val episodeNum = name?.replace(Regex("[^0-9]"), "")?.toIntOrNull()
+                    episodes.add(newEpisode(href) {
+                        this.name = name
+                        this.episode = episodeNum
+                    })
                 }
             }
         }
 
-        addUniqueEpisodes(document.select("div.box-loop-episode a.colorsw"))
+        // جلب الحلقات الموجودة في الصفحة الحالية
+        addUniqueEpisodes(document.select("div.loop-episode a.episode_box_tabs_container"))
 
-        val serieId = document.select("script").mapNotNull { script ->
-            script.data().let { scriptData ->
-                Regex("""single_id\s*=\s*["'](\d+)["']""").find(scriptData)?.groupValues?.get(1)
-            }
-        }.firstOrNull()
+        // 7. جلب باقي الحلقات عن طريق AJAX (إن وجدت)
+        val serieId = document.selectFirst(".add_favorite")?.attr("data-id")
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content")
 
         if (serieId != null && csrfToken != null) {
@@ -233,7 +206,7 @@ class Asia2Tv : MainAPI() {
             while (hasMore) {
                 try {
                     val ajaxHeaders = getAjaxHeaders(url, csrfToken, cookies)
-                    val postData = "action=moreepisode&serieid=$serieId&page=$currentPage"
+                    val postData = "action=moreepisode&page=$currentPage&serieid=$serieId"
                     val requestBody = postData.toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaType())
                     
                     val responseText = app.post(
@@ -244,10 +217,15 @@ class Asia2Tv : MainAPI() {
 
                     val ajaxResponse = tryParseJson<MoreEpisodesResponse>(responseText)
 
-                    if (ajaxResponse?.status == true && ajaxResponse.html.isNotBlank()) {
-                        addUniqueEpisodes(Jsoup.parse(ajaxResponse.html).select("a.colorsw"))
-                        hasMore = ajaxResponse.showmore ?: false
-                        currentPage++
+                    if (ajaxResponse?.status == true && !ajaxResponse.html.isNullOrBlank()) {
+                        addUniqueEpisodes(Jsoup.parse(ajaxResponse.html).select("a.episode_box_tabs_container"))
+                        
+                        // في الكود الخاص بهم، يرسلون رقم الصفحة التالية أو يعيدون status=false
+                        if (ajaxResponse.newpage != null && ajaxResponse.newpage > currentPage) {
+                            currentPage = ajaxResponse.newpage
+                        } else {
+                            hasMore = false
+                        }
                     } else {
                         hasMore = false
                     }
@@ -257,24 +235,31 @@ class Asia2Tv : MainAPI() {
             }
         }
 
-        return if (episodes.isNotEmpty()) {
-            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes.reversed()) {
-                this.posterUrl = posterUrl
-                this.year = year
-                this.plot = plot
-                this.tags = tags
-            }
-        } else {
+        // عكس ترتيب الحلقات لتصبح من 1 إلى الأخير (لأن المواقع غالباً تضع الأحدث بالأعلى)
+        episodes.reverse()
+
+        val isMovie = url.contains("/movie/")
+        return if (isMovie) {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
                 this.posterUrl = posterUrl
                 this.year = year
                 this.plot = plot
                 this.tags = tags
             }
+        } else {
+            newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+                this.posterUrl = posterUrl
+                this.year = year
+                this.plot = plot
+                this.tags = tags
+                this.showStatus = status
+            }
         }
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+        // إذا كان الرابط هو رابط مسلسل (episode) أو فيلم (movie)، سنحتاج لدراسة صفحة التشغيل 
+        // مؤقتاً سأترك الكود القديم هنا الخاص بسيرفرات المشاهدة
         val response = app.get(data)
         val cookies = response.cookies
         val document = Jsoup.parse(response.text)
@@ -306,9 +291,5 @@ class Asia2Tv : MainAPI() {
             }
         }
         return true
-    }
-
-    private fun String?.ifNullOrBlank(defaultValue: () -> String?): String? {
-        return if (this.isNullOrBlank()) defaultValue() else this
     }
 }
