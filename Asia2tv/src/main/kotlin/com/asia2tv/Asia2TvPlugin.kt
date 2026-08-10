@@ -1,14 +1,61 @@
 package com.asia2tv
 
+import android.app.AlertDialog
+import android.content.Context
+import android.text.InputType
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.Toast
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
-import android.content.Context
 
 @CloudstreamPlugin
-class Asia2TvPlugin: Plugin() {
+class Asia2TvPlugin : Plugin() {
+    companion object {
+        // نحتفظ بـ context للوصول إليه من ملف Provider لاحقاً
+        var pluginContext: Context? = null
+    }
+
     override fun load(context: Context) {
-        // All providers should be added in this manner.
-        // Please don't edit the names.
+        pluginContext = context
         registerMainAPI(Asia2Tv())
+    }
+
+    // هذه الدالة تنشئ زر الإعدادات في التطبيق بجانب اسم الإضافة
+    override fun openSettings(context: Context) {
+        val sharedPreferences = context.getSharedPreferences("Asia2TvAuth", Context.MODE_PRIVATE)
+        
+        val layout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(50, 40, 50, 10)
+        }
+
+        val userField = EditText(context).apply {
+            hint = "اسم المستخدم (Username)"
+            // استرجاع الاسم إذا كان محفوظاً مسبقاً
+            setText(sharedPreferences.getString("username", ""))
+        }
+
+        val passField = EditText(context).apply {
+            hint = "كلمة المرور (Password)"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            setText(sharedPreferences.getString("password", ""))
+        }
+
+        layout.addView(userField)
+        layout.addView(passField)
+
+        AlertDialog.Builder(context)
+            .setTitle("تسجيل الدخول - Asia2Tv")
+            .setView(layout)
+            .setPositiveButton("حفظ البيانات") { _, _ ->
+                sharedPreferences.edit()
+                    .putString("username", userField.text.toString())
+                    .putString("password", passField.text.toString())
+                    .apply()
+                Toast.makeText(context, "تم الحفظ بنجاح، قم بإعادة فتح التطبيق", Toast.LENGTH_LONG).show()
+            }
+            .setNegativeButton("إلغاء", null)
+            .show()
     }
 }
