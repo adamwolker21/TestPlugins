@@ -10,6 +10,7 @@ import android.util.Log
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import com.lagradost.cloudstream3.network.CloudflareInterceptor
+import kotlinx.coroutines.delay
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MoreEpisodesResponse(
@@ -49,7 +50,7 @@ class Asia2Tv : MainAPI() {
         if (isLoggingIn) {
             var waitCount = 0
             while (isLoggingIn && waitCount < 100) { // انتظار أقصاه 10 ثوانٍ
-                kotlinx.coroutines.delay(100)
+                delay(100)
                 waitCount++
             }
             return
