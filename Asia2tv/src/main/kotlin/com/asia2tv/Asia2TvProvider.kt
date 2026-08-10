@@ -9,8 +9,6 @@ import org.jsoup.nodes.Element
 import android.util.Log
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
-
-// استيرادات كوروتينات
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -41,29 +39,46 @@ class Asia2Tv : MainAPI() {
     private val loginPassword = "kelly.brown93@"
     
     private var sessionCookies: Map<String, String> = emptyMap()
+    private var csrfToken: String = ""
     
     private val loginMutex = Mutex()
 
-    // دالة تسجيل الدخول - تم إزالة أي ذكر لـ CloudflareInterceptor
-    private suspend fun performSilentLogin() {
-        loginMutex.withLock {
-            if (sessionCookies.isNotEmpty()) return
+    // دالة تسجيل الدخول المحسّنة
+    private suspend fun performSilentLogin(force: Boolean = false): Boolean {
+        return loginMutex.withLock {
+            // إذا كانت الكوكيز موجودة وليس force، نتحقق من صحتها
+            if (sessionCookies.isNotEmpty() && !force) {
+                // نختبر صلاحية الكوكيز بطلب صفحة رئيسية بسيطة
+                try {
+                    val testResp = app.get("$mainUrl/", cookies = sessionCookies)
+                    if (!testResp.url.contains("login")) {
+                        // الكوكيز صالحة
+                        return@withLock true
+                    } else {
+                        Log.d(TAG, "الكوكيز غير صالحة، نعيد تسجيل الدخول")
+                        sessionCookies = emptyMap()
+                    }
+                } catch (e: Exception) {
+                    Log.d(TAG, "فشل اختبار الكوكيز، نعيد تسجيل الدخول")
+                    sessionCookies = emptyMap()
+                }
+            }
 
-            Log.d(TAG, "بدء عملية تسجيل الدخول التلقائي في الخلفية...")
+            Log.d(TAG, "بدء عملية تسجيل الدخول التلقائي...")
             try {
                 val loginUrl = "$mainUrl/login"
                 
-                // ✅ تم حذف interceptor
+                // جلب صفحة الدخول للحصول على CSRF token والكوكيز الأولية
                 val getResp = app.get(loginUrl)
                 val document = Jsoup.parse(getResp.text)
                 
-                val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") 
+                csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") 
                     ?: document.selectFirst("input[name=_token]")?.attr("value") 
                     ?: ""
 
                 val initialCookies = getResp.cookies
 
-                // ✅ تم حذف interceptor من هنا أيضاً
+                // إرسال طلب الدخول
                 val postResp = app.post(
                     loginUrl,
                     headers = mapOf(
@@ -81,22 +96,84 @@ class Asia2Tv : MainAPI() {
 
                 if (!postResp.url.contains("login")) {
                     sessionCookies = initialCookies + postResp.cookies
-                    Log.d(TAG, "نجاح تسجيل الدخول! تم حفظ الكوكيز: $sessionCookies")
+                    Log.d(TAG, "نجاح تسجيل الدخول! الكوكيز: $sessionCookies")
+                    // تحديث CSRF token من الاستجابة
+                    csrfToken = postResp.headers["X-CSRF-TOKEN"] ?: csrfToken
+                    return@withLock true
                 } else {
-                    Log.e(TAG, "فشل تسجيل الدخول التلقائي.")
+                    Log.e(TAG, "فشل تسجيل الدخول: تم إعادة التوجيه إلى login")
+                    return@withLock false
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "خطأ برمجي أثناء الدخول: ${e.message}")
+                Log.e(TAG, "خطأ أثناء تسجيل الدخول: ${e.message}")
+                return@withLock false
             }
         }
     }
 
-    private fun getAjaxHeaders(referer: String, csrfToken: String): Map<String, String> {
+    // دالة مساعدة للطلبات مع إعادة محاولة تسجيل الدخول إذا لزم الأمر
+    private suspend fun requestWithLogin(
+        url: String,
+        method: String = "GET",
+        data: Map<String, String>? = null,
+        headers: Map<String, String> = emptyMap(),
+        requestBody: okhttp3.RequestBody? = null,
+        retry: Boolean = true
+    ): String {
+        // نضمن تسجيل الدخول أولاً
+        if (!performSilentLogin()) {
+            throw Exception("فشل تسجيل الدخول")
+        }
+
+        // إضافة الكوكيز والـ CSRF token إلى الـ headers
+        val finalHeaders = headers.toMutableMap().apply {
+            this["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            this["Accept"] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+            this["Accept-Language"] = "ar,en;q=0.9"
+            if (csrfToken.isNotBlank()) {
+                this["X-CSRF-TOKEN"] = csrfToken
+            }
+        }
+
+        try {
+            val response = if (method.equals("POST", ignoreCase = true)) {
+                if (requestBody != null) {
+                    app.post(url, headers = finalHeaders, cookies = sessionCookies, requestBody = requestBody)
+                } else {
+                    app.post(url, headers = finalHeaders, cookies = sessionCookies, data = data ?: emptyMap())
+                }
+            } else {
+                app.get(url, headers = finalHeaders, cookies = sessionCookies)
+            }
+
+            // التحقق من إعادة التوجيه إلى login
+            if (response.url.contains("login")) {
+                Log.d(TAG, "تم إعادة التوجيه إلى login، نعيد تسجيل الدخول")
+                if (retry) {
+                    // نعيد تسجيل الدخول بالقوة
+                    sessionCookies = emptyMap()
+                    performSilentLogin(force = true)
+                    // نكرر الطلب بدون retry لتجنب الحلقة
+                    return requestWithLogin(url, method, data, headers, requestBody, retry = false)
+                } else {
+                    throw Exception("لا يمكن تجاوز إعادة التوجيه إلى login")
+                }
+            }
+
+            return response.text
+        } catch (e: Exception) {
+            Log.e(TAG, "خطأ في الطلب: ${e.message}")
+            throw e
+        }
+    }
+
+    private fun getAjaxHeaders(referer: String): Map<String, String> {
         return mapOf(
-            "X-CSRF-TOKEN" to csrfToken,
             "X-Requested-With" to "XMLHttpRequest",
             "Content-Type" to "application/x-www-form-urlencoded; charset=UTF-8",
-            "Referer" to referer
+            "Referer" to referer,
+            "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept" to "application/json, text/javascript, */*; q=0.01"
         )
     }
 
@@ -131,12 +208,9 @@ class Asia2Tv : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        performSilentLogin()
-        
         val url = "$mainUrl${request.data}?page=$page"
-        // ✅ تم حذف interceptor
-        val response = app.get(url, cookies = sessionCookies)
-        val document = Jsoup.parse(response.text)
+        val html = requestWithLogin(url)
+        val document = Jsoup.parse(html)
 
         val items = document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
         val hasNext = document.selectFirst("a.next.page-numbers, a[rel=next], ul.pagination li a[rel=next]") != null
@@ -145,18 +219,14 @@ class Asia2Tv : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        performSilentLogin()
-        // ✅ تم حذف interceptor
-        val response = app.get("$mainUrl/search?s=$query", cookies = sessionCookies)
-        val document = Jsoup.parse(response.text)
+        val html = requestWithLogin("$mainUrl/search?s=$query")
+        val document = Jsoup.parse(html)
         return document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        performSilentLogin()
-        // ✅ تم حذف interceptor
-        val response = app.get(url, cookies = sessionCookies)
-        val document = Jsoup.parse(response.text)
+        val html = requestWithLogin(url)
+        val document = Jsoup.parse(html)
 
         val title = document.selectFirst("h1")?.text()?.trim() ?: "No Title"
         val plot = document.selectFirst("h3:contains(القصة) + p")?.text()?.trim()
@@ -187,9 +257,11 @@ class Asia2Tv : MainAPI() {
         addUniqueEpisodes(document.select("div.loop-episode a.episode_box_tabs_container"))
 
         val serieId = document.selectFirst(".add_favorite")?.attr("data-id")
-        val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content")
+        // للحصول على CSRF من الصفحة الحالية
+        val pageCsrf = document.selectFirst("meta[name=csrf-token]")?.attr("content")
+        if (pageCsrf != null) csrfToken = pageCsrf
 
-        if (serieId != null && csrfToken != null) {
+        if (serieId != null && csrfToken.isNotBlank()) {
             var currentPage = 2
             var hasMore = true
             while (hasMore) {
@@ -197,10 +269,9 @@ class Asia2Tv : MainAPI() {
                     val postData = "action=moreepisode&page=$currentPage&serieid=$serieId"
                     val requestBody = postData.toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaType())
                     
-                    // ✅ تم حذف interceptor من هنا
                     val responseText = app.post(
                         "$mainUrl/ajaxGetRequest",
-                        headers = getAjaxHeaders(url, csrfToken),
+                        headers = getAjaxHeaders(url) + mapOf("X-CSRF-TOKEN" to csrfToken),
                         cookies = sessionCookies,
                         requestBody = requestBody
                     ).text
@@ -239,12 +310,11 @@ class Asia2Tv : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        performSilentLogin()
-        // ✅ تم حذف interceptor
-        val response = app.get(data, cookies = sessionCookies)
-        val document = Jsoup.parse(response.text)
+        val html = requestWithLogin(data)
+        val document = Jsoup.parse(html)
         
-        val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
+        val pageCsrf = document.selectFirst("meta[name=csrf-token]")?.attr("content")
+        if (pageCsrf != null) csrfToken = pageCsrf
 
         document.select("ul.dropdown-menu li a").amap { server ->
             try {
@@ -252,10 +322,9 @@ class Asia2Tv : MainAPI() {
                 val postData = "action=iframe_server&code=$code"
                 val requestBody = postData.toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaType())
                 
-                // ✅ تم حذف interceptor من هنا أيضاً
                 val responseText = app.post(
                     "$mainUrl/ajaxGetRequest",
-                    headers = getAjaxHeaders(data, csrfToken),
+                    headers = getAjaxHeaders(data) + mapOf("X-CSRF-TOKEN" to csrfToken),
                     cookies = sessionCookies,
                     requestBody = requestBody
                 ).text
