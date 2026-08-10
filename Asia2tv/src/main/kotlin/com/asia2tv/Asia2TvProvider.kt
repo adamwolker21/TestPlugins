@@ -9,8 +9,7 @@ import org.jsoup.nodes.Element
 import android.util.Log
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
-import com.lagradost.cloudstream3.network.CloudflareInterceptor
-
+import com.lagradost.cloudstream3.utils.CloudflareInterceptor
 // الاستيرادات الصحيحة تماماً كما في إضافة Arabseed
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
