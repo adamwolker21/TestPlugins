@@ -6,7 +6,8 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
-import android.util.Log
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MoreEpisodesResponse(
@@ -29,46 +30,23 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    private val TAG = "Asia2TvDebug"
+    // ==========================================
+    // الكوكيز السحرية الخاصة بك من أمر Curl
+    // ==========================================
+    private val myHeaders = mapOf(
+        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "Accept-Language" to "en-US,en;q=0.9",
+        "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36",
+        "Cookie" to "XSRF-TOKEN=eyJpdiI6IkVQTWZCVTNjQ1NIMERCSG5SZ0lsVWc9PSIsInZhbHVlIjoiRGw5Q2Z1bFRNWmV4Z2RjMFczampiWkhaOWx3ZXMrQVhsbnZxNGEyOEhuUnF6N0NIV21jSDNNLzdEbmpKb25EUkRKOFpQcFYwdC96RzRxTDR0RnU3M3kwemhNZ3ZvQXVsYTNWTWhmYVUwZzRpd1lvWFZoZzFqOUJxcTlGc1R6cnQiLCJtYWMiOiIwZmQxNDlmYTI4NzAyZmQxYTE3YzcwM2M4MTE5MzMyOWUwNDAyYzQwYjc5ZDJjNTI5Zjk5NGZjNjk5ZGNkZTBiIiwidGFnIjoiIn0%3D; asia2tvcom_session=eyJpdiI6Ii93NGlSRjlxSWdWaWtxQ09lUDdZbWc9PSIsInZhbHVlIjoiank5VUtVY0hHek9GaFlZczVycWhPSjI3eUxaaENGOTBwb0FjeGN3ZytTOTZ6eFY5UU94VGZYSWFZbm1nY25rMm8zTzQ3eGpTclZoQmUwRXBjRTVraGZaVExia2NkOUpMaVdOYU16S1V4dUZCTTBNZ2hWTFVZYTVuZTFLMG5GNEUiLCJtYWMiOiI3NTQ0ODlhZjExZjE2MzhkZWIzMzdhMzRmZTlhYWU1ZjA3MzU0YzEzOTMyNzc4YzEyNDNkODgyYzEwNzIxYWUzIiwidGFnIjoiIn0%3D"
+    )
 
-    private val loginUsername = "kelly93"
-    private val loginPassword = "kelly.brown93@"
-    
-    // دالة تقوم بتجهيز جلسة (Session) فعالة
-    private suspend fun getAuthenticatedDocument(url: String): Element {
-        Log.d(TAG, "جاري طلب الرابط: $url")
-        
-        // 1. فتح الصفحة لغرض جلب الـ Token
-        val getResp = app.get("$mainUrl/login")
-        val loginDoc = Jsoup.parse(getResp.text)
-        
-        val csrfToken = loginDoc.selectFirst("meta[name=csrf-token]")?.attr("content") 
-            ?: loginDoc.selectFirst("input[name=_token]")?.attr("value") 
-            ?: ""
-
-        // 2. إرسال بيانات الدخول للحصول على كوكيز الجلسة الفعالة
-        val postResp = app.post(
-            "$mainUrl/login",
-            headers = mapOf(
-                "Referer" to "$mainUrl/login",
-                "X-CSRF-TOKEN" to csrfToken
-            ),
-            cookies = getResp.cookies,
-            data = mapOf(
-                "email" to loginUsername,
-                "password" to loginPassword,
-                "_token" to csrfToken
-            )
+    private fun getAjaxHeaders(referer: String, csrfToken: String): Map<String, String> {
+        return myHeaders + mapOf(
+            "X-CSRF-TOKEN" to csrfToken,
+            "X-Requested-With" to "XMLHttpRequest",
+            "Content-Type" to "application/x-www-form-urlencoded; charset=UTF-8",
+            "Referer" to referer
         )
-        
-        val activeCookies = getResp.cookies + postResp.cookies
-
-        // 3. جلب الرابط المطلوب باستخدام الكوكيز الفعالة
-        val finalResp = app.get(url, cookies = activeCookies)
-        val finalDoc = Jsoup.parse(finalResp.text)
-        
-        Log.d(TAG, "تم تحميل الصفحة: ${finalDoc.title()}")
-        return finalDoc
     }
 
     private fun Element.toSearchResponse(): SearchResponse? {
@@ -102,30 +80,25 @@ class Asia2Tv : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val url = "$mainUrl${request.data}?page=$page"
-        val document = getAuthenticatedDocument(url)
+        // نستخدم الكوكيز المسحوبة مباشرة
+        val response = app.get("$mainUrl${request.data}?page=$page", headers = myHeaders)
+        val document = Jsoup.parse(response.text)
 
         val items = document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
-        
-        if (items.isEmpty()) {
-            Log.e(TAG, "لا يوجد عناصر في الرئيسية! الـ HTML: \n ${document.html().take(500)}")
-        } else {
-            Log.d(TAG, "نجاح! تم جلب ${items.size} عنصر للرئيسية.")
-        }
-
         val hasNext = document.selectFirst("a.next.page-numbers, a[rel=next], ul.pagination li a[rel=next]") != null
         
         return newHomePageResponse(request.name, items, hasNext)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val url = "$mainUrl/search?s=$query"
-        val document = getAuthenticatedDocument(url)
+        val response = app.get("$mainUrl/search?s=$query", headers = myHeaders)
+        val document = Jsoup.parse(response.text)
         return document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val document = getAuthenticatedDocument(url)
+        val response = app.get(url, headers = myHeaders)
+        val document = Jsoup.parse(response.text)
 
         val title = document.selectFirst("h1")?.text()?.trim() ?: "No Title"
         val plot = document.selectFirst("h3:contains(القصة) + p")?.text()?.trim()
@@ -155,6 +128,42 @@ class Asia2Tv : MainAPI() {
 
         addUniqueEpisodes(document.select("div.loop-episode a.episode_box_tabs_container"))
 
+        val serieId = document.selectFirst(".add_favorite")?.attr("data-id")
+        val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content")
+
+        if (serieId != null && csrfToken != null) {
+            var currentPage = 2
+            var hasMore = true
+            while (hasMore) {
+                try {
+                    val postData = "action=moreepisode&page=$currentPage&serieid=$serieId"
+                    val requestBody = postData.toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaType())
+                    
+                    val responseText = app.post(
+                        "$mainUrl/ajaxGetRequest",
+                        headers = getAjaxHeaders(url, csrfToken),
+                        requestBody = requestBody
+                    ).text
+
+                    val ajaxResponse = tryParseJson<MoreEpisodesResponse>(responseText)
+
+                    if (ajaxResponse?.status == true && !ajaxResponse.html.isNullOrBlank()) {
+                        addUniqueEpisodes(Jsoup.parse(ajaxResponse.html).select("a.episode_box_tabs_container"))
+                        
+                        if (ajaxResponse.newpage != null && ajaxResponse.newpage > currentPage) {
+                            currentPage = ajaxResponse.newpage
+                        } else {
+                            hasMore = false
+                        }
+                    } else {
+                        hasMore = false
+                    }
+                } catch (e: Exception) {
+                    hasMore = false
+                }
+            }
+        }
+
         episodes.reverse()
 
         val isMovie = url.contains("/movie/")
@@ -169,8 +178,35 @@ class Asia2Tv : MainAPI() {
         }
     }
 
-    // تم تبسيط دالة الروابط حالياً لتعمل مباشرة
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+        val response = app.get(data, headers = myHeaders)
+        val document = Jsoup.parse(response.text)
+        
+        val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
+
+        document.select("ul.dropdown-menu li a").amap { server ->
+            try {
+                val code = server.attr("data-code").ifBlank { return@amap }
+                val postData = "action=iframe_server&code=$code"
+                val requestBody = postData.toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaType())
+                
+                val responseText = app.post(
+                    "$mainUrl/ajaxGetRequest",
+                    headers = getAjaxHeaders(data, csrfToken),
+                    requestBody = requestBody
+                ).text
+                val ajaxResponse = tryParseJson<PlayerAjaxResponse>(responseText)
+
+                if (ajaxResponse?.status == true) {
+                    val iframeSrc = Jsoup.parse(ajaxResponse.codeplay).selectFirst("iframe")?.attr("src")
+                    if (!iframeSrc.isNullOrBlank()) {
+                        loadExtractor(iframeSrc, data, subtitleCallback, callback)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
         return true
     }
 }
