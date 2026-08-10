@@ -9,8 +9,8 @@ import org.jsoup.nodes.Element
 import android.util.Log
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
-import com.lagradost.cloudstream3.utils.CloudflareInterceptor
-// الاستيرادات الصحيحة تماماً كما في إضافة Arabseed
+
+// استيرادات كوروتينات
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -42,20 +42,19 @@ class Asia2Tv : MainAPI() {
     
     private var sessionCookies: Map<String, String> = emptyMap()
     
-    // استخدام المتغير الاحترافي Mutex لمنع ازدحام الطلبات (تماما كما في Arabseed)
     private val loginMutex = Mutex()
 
+    // دالة تسجيل الدخول - تم إزالة أي ذكر لـ CloudflareInterceptor
     private suspend fun performSilentLogin() {
-        // نستخدم القفل لضمان عدم دخول أكثر من طلب في نفس الوقت إلى كود تسجيل الدخول
         loginMutex.withLock {
-            // إذا كان هناك طلب آخر قد جلب الكوكيز مسبقاً، ننهي الدالة فوراً
             if (sessionCookies.isNotEmpty()) return
 
-            Log.d(TAG, "بدء عملية تسجيل الدخول التلقائي في الخلفية بطلب واحد...")
+            Log.d(TAG, "بدء عملية تسجيل الدخول التلقائي في الخلفية...")
             try {
                 val loginUrl = "$mainUrl/login"
                 
-                val getResp = app.get(loginUrl, interceptor = CloudflareInterceptor())
+                // ✅ تم حذف interceptor
+                val getResp = app.get(loginUrl)
                 val document = Jsoup.parse(getResp.text)
                 
                 val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") 
@@ -64,6 +63,7 @@ class Asia2Tv : MainAPI() {
 
                 val initialCookies = getResp.cookies
 
+                // ✅ تم حذف interceptor من هنا أيضاً
                 val postResp = app.post(
                     loginUrl,
                     headers = mapOf(
@@ -76,8 +76,7 @@ class Asia2Tv : MainAPI() {
                         "email" to loginUsername,
                         "password" to loginPassword,
                         "_token" to csrfToken
-                    ),
-                    interceptor = CloudflareInterceptor()
+                    )
                 )
 
                 if (!postResp.url.contains("login")) {
@@ -135,7 +134,8 @@ class Asia2Tv : MainAPI() {
         performSilentLogin()
         
         val url = "$mainUrl${request.data}?page=$page"
-        val response = app.get(url, cookies = sessionCookies, interceptor = CloudflareInterceptor())
+        // ✅ تم حذف interceptor
+        val response = app.get(url, cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
 
         val items = document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
@@ -146,14 +146,16 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         performSilentLogin()
-        val response = app.get("$mainUrl/search?s=$query", cookies = sessionCookies, interceptor = CloudflareInterceptor())
+        // ✅ تم حذف interceptor
+        val response = app.get("$mainUrl/search?s=$query", cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
         return document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
         performSilentLogin()
-        val response = app.get(url, cookies = sessionCookies, interceptor = CloudflareInterceptor())
+        // ✅ تم حذف interceptor
+        val response = app.get(url, cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
 
         val title = document.selectFirst("h1")?.text()?.trim() ?: "No Title"
@@ -195,12 +197,12 @@ class Asia2Tv : MainAPI() {
                     val postData = "action=moreepisode&page=$currentPage&serieid=$serieId"
                     val requestBody = postData.toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaType())
                     
+                    // ✅ تم حذف interceptor من هنا
                     val responseText = app.post(
                         "$mainUrl/ajaxGetRequest",
                         headers = getAjaxHeaders(url, csrfToken),
                         cookies = sessionCookies,
-                        requestBody = requestBody,
-                        interceptor = CloudflareInterceptor()
+                        requestBody = requestBody
                     ).text
 
                     val ajaxResponse = tryParseJson<MoreEpisodesResponse>(responseText)
@@ -238,7 +240,8 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         performSilentLogin()
-        val response = app.get(data, cookies = sessionCookies, interceptor = CloudflareInterceptor())
+        // ✅ تم حذف interceptor
+        val response = app.get(data, cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
         
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
@@ -249,12 +252,12 @@ class Asia2Tv : MainAPI() {
                 val postData = "action=iframe_server&code=$code"
                 val requestBody = postData.toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaType())
                 
+                // ✅ تم حذف interceptor من هنا أيضاً
                 val responseText = app.post(
                     "$mainUrl/ajaxGetRequest",
                     headers = getAjaxHeaders(data, csrfToken),
                     cookies = sessionCookies,
-                    requestBody = requestBody,
-                    interceptor = CloudflareInterceptor()
+                    requestBody = requestBody
                 ).text
                 val ajaxResponse = tryParseJson<PlayerAjaxResponse>(responseText)
 
