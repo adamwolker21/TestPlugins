@@ -1,3 +1,4 @@
+// تأكد من أن هذا المسار يطابق مسار ملفاتك تماماً
 package com.asia2tv
 
 import com.lagradost.cloudstream3.*
@@ -9,7 +10,6 @@ import org.jsoup.nodes.Element
 import android.util.Log
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
-import com.lagradost.cloudstream3.network.CloudflareInterceptor
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MoreEpisodesResponse(
@@ -34,33 +34,24 @@ class Asia2Tv : MainAPI() {
 
     private val TAG = "Asia2TvDebug"
 
+    // بياناتك التي سيتم استخدامها في الخلفية
     private val loginUsername = "kelly93"
     private val loginPassword = "kelly.brown93@"
     
+    // متغير لحفظ الكوكيز في الذاكرة أثناء التصفح
     private var sessionCookies: Map<String, String> = emptyMap()
-    
-    // متغير مؤشر لمنع الازدحام (بسيط جداً ولا يحتاج استيرادات)
-    private var loginState = 0 // 0 = لم يبدأ، 1 = جاري الدخول، 2 = تم الانتهاء
 
+    // الدالة العبقرية: تسجيل الدخول بصمت في الخلفية
     private suspend fun performSilentLogin() {
-        if (sessionCookies.isNotEmpty() || loginState == 2) return
+        // إذا كنا نملك الكوكيز بالفعل، لا داعي لتسجيل الدخول مجدداً
+        if (sessionCookies.isNotEmpty()) return
 
-        if (loginState == 1) {
-            Log.d(TAG, "هناك طلب يقوم بالدخول، أنا سأنتظر...")
-            // حيلة بسيطة للانتظار بدون مكتبات
-            for (i in 1..50) {
-                if (loginState == 2) break
-                try { java.lang.Thread.sleep(100) } catch (e: Exception) { }
-            }
-            return
-        }
-
-        loginState = 1 // تغيير الحالة إلى: جاري الدخول
-        Log.d(TAG, "--- بدء عملية تسجيل الدخول الصامت بطلب واحد ---")
+        Log.d(TAG, "بدء عملية تسجيل الدخول التلقائي في الخلفية...")
         try {
             val loginUrl = "$mainUrl/login"
             
-            val getResp = app.get(loginUrl, interceptor = CloudflareInterceptor())
+            // 1. فتح صفحة الدخول لجلب CSRF Token والكوكيز المبدئية
+            val getResp = app.get(loginUrl)
             val document = Jsoup.parse(getResp.text)
             
             val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") 
@@ -69,6 +60,7 @@ class Asia2Tv : MainAPI() {
 
             val initialCookies = getResp.cookies
 
+            // 2. إرسال البيانات (POST) كما لو كنا متصفحاً حقيقياً
             val postResp = app.post(
                 loginUrl,
                 headers = mapOf(
@@ -81,20 +73,19 @@ class Asia2Tv : MainAPI() {
                     "email" to loginUsername,
                     "password" to loginPassword,
                     "_token" to csrfToken
-                ),
-                interceptor = CloudflareInterceptor()
+                )
             )
 
+            // 3. التحقق من نجاح الدخول (إذا تغير الرابط من /login إلى الرئيسية)
             if (!postResp.url.contains("login")) {
+                // حفظ الكوكيز النهائية الموثقة لاستخدامها في باقي الإضافة
                 sessionCookies = initialCookies + postResp.cookies
-                Log.d(TAG, "نجاح! تم حفظ الكوكيز: $sessionCookies")
+                Log.d(TAG, "نجاح تسجيل الدخول! تم حفظ الكوكيز: $sessionCookies")
             } else {
-                Log.e(TAG, "فشل تسجيل الدخول التلقائي. (الرابط لم يتغير عن login)")
+                Log.e(TAG, "فشل تسجيل الدخول التلقائي.")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "خطأ Exception أثناء الدخول: ${e.message}")
-        } finally {
-            loginState = 2 // تم الانتهاء سواء بالنجاح أو الفشل ليتمكن الآخرون من المرور
+            Log.e(TAG, "خطأ برمجي أثناء الدخول: ${e.message}")
         }
     }
 
@@ -138,18 +129,14 @@ class Asia2Tv : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        performSilentLogin() // التأكد من الدخول أولاً
+        // نطلب الدخول أولاً قبل جلب الصفحة الرئيسية
+        performSilentLogin()
         
         val url = "$mainUrl${request.data}?page=$page"
-        val response = app.get(url, cookies = sessionCookies, interceptor = CloudflareInterceptor())
+        val response = app.get(url, cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
 
         val items = document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
-        
-        if (items.isEmpty()) {
-            Log.e(TAG, "القائمة فارغة! الرابط: $url")
-        }
-
         val hasNext = document.selectFirst("a.next.page-numbers, a[rel=next], ul.pagination li a[rel=next]") != null
         
         return newHomePageResponse(request.name, items, hasNext)
@@ -157,14 +144,14 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         performSilentLogin()
-        val response = app.get("$mainUrl/search?s=$query", cookies = sessionCookies, interceptor = CloudflareInterceptor())
+        val response = app.get("$mainUrl/search?s=$query", cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
         return document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
         performSilentLogin()
-        val response = app.get(url, cookies = sessionCookies, interceptor = CloudflareInterceptor())
+        val response = app.get(url, cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
 
         val title = document.selectFirst("h1")?.text()?.trim() ?: "No Title"
@@ -210,8 +197,7 @@ class Asia2Tv : MainAPI() {
                         "$mainUrl/ajaxGetRequest",
                         headers = getAjaxHeaders(url, csrfToken),
                         cookies = sessionCookies,
-                        requestBody = requestBody,
-                        interceptor = CloudflareInterceptor()
+                        requestBody = requestBody
                     ).text
 
                     val ajaxResponse = tryParseJson<MoreEpisodesResponse>(responseText)
@@ -249,7 +235,7 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         performSilentLogin()
-        val response = app.get(data, cookies = sessionCookies, interceptor = CloudflareInterceptor())
+        val response = app.get(data, cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
         
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
@@ -264,8 +250,7 @@ class Asia2Tv : MainAPI() {
                     "$mainUrl/ajaxGetRequest",
                     headers = getAjaxHeaders(data, csrfToken),
                     cookies = sessionCookies,
-                    requestBody = requestBody,
-                    interceptor = CloudflareInterceptor()
+                    requestBody = requestBody
                 ).text
                 val ajaxResponse = tryParseJson<PlayerAjaxResponse>(responseText)
 
