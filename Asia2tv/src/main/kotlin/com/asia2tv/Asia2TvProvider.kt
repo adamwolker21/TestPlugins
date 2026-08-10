@@ -10,8 +10,6 @@ import android.util.Log
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import com.lagradost.cloudstream3.network.CloudflareInterceptor
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MoreEpisodesResponse(
@@ -41,53 +39,63 @@ class Asia2Tv : MainAPI() {
     
     private var sessionCookies: Map<String, String> = emptyMap()
     
-    // القفل لمنع الازدحام أثناء تسجيل الدخول
-    private val loginMutex = Mutex()
+    // متغير بسيط لمنع الازدحام بدلاً من Mutex
+    private var isLoggingIn = false
 
     private suspend fun performSilentLogin() {
-        // استخدام القفل: طلب واحد فقط يدخل هنا في نفس الوقت
-        loginMutex.withLock {
-            // إذا كان طلب سابق قد جلب الكوكيز بالفعل، لا حاجة للتكرار
-            if (sessionCookies.isNotEmpty()) return
+        if (sessionCookies.isNotEmpty()) return
 
-            Log.d(TAG, "بدء عملية تسجيل الدخول التلقائي في الخلفية بطلب واحد...")
-            try {
-                val loginUrl = "$mainUrl/login"
-                
-                val getResp = app.get(loginUrl, interceptor = CloudflareInterceptor())
-                val document = Jsoup.parse(getResp.text)
-                
-                val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") 
-                    ?: document.selectFirst("input[name=_token]")?.attr("value") 
-                    ?: ""
-
-                val initialCookies = getResp.cookies
-
-                val postResp = app.post(
-                    loginUrl,
-                    headers = mapOf(
-                        "Referer" to loginUrl,
-                        "X-CSRF-TOKEN" to csrfToken,
-                        "Content-Type" to "application/x-www-form-urlencoded"
-                    ),
-                    cookies = initialCookies,
-                    data = mapOf(
-                        "email" to loginUsername,
-                        "password" to loginPassword,
-                        "_token" to csrfToken
-                    ),
-                    interceptor = CloudflareInterceptor()
-                )
-
-                if (!postResp.url.contains("login")) {
-                    sessionCookies = initialCookies + postResp.cookies
-                    Log.d(TAG, "نجاح تسجيل الدخول! تم حفظ الكوكيز: $sessionCookies")
-                } else {
-                    Log.e(TAG, "فشل تسجيل الدخول التلقائي.")
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "خطأ برمجي أثناء الدخول: ${e.message}")
+        // إذا كان هناك طلب يقوم بالدخول حالياً، نجعل الطلبات الأخرى تنتظر بصمت
+        if (isLoggingIn) {
+            var waitCount = 0
+            while (isLoggingIn && waitCount < 100) { // انتظار أقصاه 10 ثوانٍ
+                kotlinx.coroutines.delay(100)
+                waitCount++
             }
+            return
+        }
+
+        isLoggingIn = true
+        Log.d(TAG, "بدء عملية تسجيل الدخول التلقائي في الخلفية بطلب واحد...")
+        try {
+            val loginUrl = "$mainUrl/login"
+            
+            val getResp = app.get(loginUrl, interceptor = CloudflareInterceptor())
+            val document = Jsoup.parse(getResp.text)
+            
+            val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") 
+                ?: document.selectFirst("input[name=_token]")?.attr("value") 
+                ?: ""
+
+            val initialCookies = getResp.cookies
+
+            val postResp = app.post(
+                loginUrl,
+                headers = mapOf(
+                    "Referer" to loginUrl,
+                    "X-CSRF-TOKEN" to csrfToken,
+                    "Content-Type" to "application/x-www-form-urlencoded"
+                ),
+                cookies = initialCookies,
+                data = mapOf(
+                    "email" to loginUsername,
+                    "password" to loginPassword,
+                    "_token" to csrfToken
+                ),
+                interceptor = CloudflareInterceptor()
+            )
+
+            if (!postResp.url.contains("login")) {
+                sessionCookies = initialCookies + postResp.cookies
+                Log.d(TAG, "نجاح تسجيل الدخول! تم حفظ الكوكيز: $sessionCookies")
+            } else {
+                Log.e(TAG, "فشل تسجيل الدخول التلقائي.")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "خطأ برمجي أثناء الدخول: ${e.message}")
+        } finally {
+            // تحرير القفل اليدوي بعد الانتهاء
+            isLoggingIn = false
         }
     }
 
