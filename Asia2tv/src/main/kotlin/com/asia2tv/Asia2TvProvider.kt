@@ -41,6 +41,53 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
+    // ==========================================
+    // إعدادات تسجيل الدخول - ضع بياناتك هنا
+    // ==========================================
+    private val userEmail = "kelly.brown93@mail.ru"
+    private val userPassword = "kelly.brown93@"
+    private var isLoggedIn = false
+
+    // دالة تسجيل الدخول التلقائي
+    private suspend fun performLogin() {
+        if (isLoggedIn || userEmail == "kelly.brown93@mail.ru") return
+
+        try {
+            // 1. جلب صفحة الدخول للحصول على التوكن (CSRF Token)
+            val loginPageUrl = "$mainUrl/login"
+            val loginPage = app.get(loginPageUrl)
+            val document = Jsoup.parse(loginPage.text)
+            
+            val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") 
+                ?: document.selectFirst("input[name=_token]")?.attr("value") 
+                ?: ""
+
+            // 2. إرسال طلب تسجيل الدخول (POST Request)
+            val response = app.post(
+                loginPageUrl,
+                headers = mapOf(
+                    "Referer" to loginPageUrl,
+                    "X-CSRF-TOKEN" to csrfToken
+                ),
+                data = mapOf(
+                    "email" to userEmail,
+                    "password" to userPassword,
+                    "_token" to csrfToken
+                )
+            )
+
+            // 3. التحقق (إذا تغير الرابط بعد الـ POST فهذا يعني غالباً نجاح الدخول)
+            if (!response.url.contains("login")) {
+                isLoggedIn = true
+                Log.d("Asia2Tv", "تم تسجيل الدخول بنجاح!")
+            }
+        } catch (e: Exception) {
+            Log.e("Asia2Tv", "فشل تسجيل الدخول: ${e.message}")
+        }
+    }
+    // ==========================================
+
+
     private fun getBaseHeaders(cookies: Map<String, String>): Map<String, String> {
         return mapOf(
             "Authority" to mainUrl.substringAfter("://").substringBefore("/"),
@@ -97,6 +144,8 @@ class Asia2Tv : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        performLogin() // التحقق من تسجيل الدخول قبل جلب الصفحة الرئيسية
+        
         val response = app.get("$mainUrl${request.data}?page=$page")
         val document = Jsoup.parse(response.text)
         val items = document.select("div.postmovie").mapNotNull { it.toSearchResponse() }
@@ -105,12 +154,16 @@ class Asia2Tv : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        performLogin() // التحقق من الدخول قبل البحث
+        
         val response = app.get("$mainUrl/search?s=$query")
         val document = Jsoup.parse(response.text)
         return document.select("div.postmovie").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
+        performLogin() // التحقق من الدخول قبل فتح صفحة الفلم/المسلسل
+        
         val response = app.get(url)
         val cookies = response.cookies
         val document = Jsoup.parse(response.text)
@@ -130,7 +183,6 @@ class Asia2Tv : MainAPI() {
         
         val year = document.select("ul.mb-2 li:contains(سنة العرض) a")?.text()?.toIntOrNull()
         
-        // V43: Add "Featured" tag if present
         val isPro = document.selectFirst("span.series-ispro") != null
         val tags = document.select("div.post_tags a")?.map { it.text() }?.toMutableList() ?: mutableListOf()
         if (isPro) {
@@ -214,7 +266,6 @@ class Asia2Tv : MainAPI() {
                 this.plot = plot
                 this.tags = tags
                 this.showStatus = status
-                // تم حذف this.rating لتجنب أخطاء التوافق
             }
         } else {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
@@ -222,7 +273,6 @@ class Asia2Tv : MainAPI() {
                 this.year = year
                 this.plot = plot
                 this.tags = tags
-                // تم حذف this.rating لتجنب أخطاء التوافق
             }
         }
     }
@@ -235,10 +285,8 @@ class Asia2Tv : MainAPI() {
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
         val ajaxHeaders = getAjaxHeaders(data, csrfToken, cookies)
 
-        // تم استبدال apmap بـ amap لحل مشكلة البناء والتوافق مع runBlocking
         document.select("ul.dropdown-menu li a").amap { server ->
             try {
-                // تم تعديل return@apmap لتصبح return@amap
                 val code = server.attr("data-code").ifBlank { return@amap }
                 val postData = "action=iframe_server&code=$code"
                 val requestBody = postData.toRequestBody("application/x-www-form-urlencoded; charset=UTF-8".toMediaType())
