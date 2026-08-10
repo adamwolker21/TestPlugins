@@ -1,5 +1,6 @@
 package com.asia2tv
 
+import android.content.Context
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
@@ -9,7 +10,6 @@ import org.jsoup.nodes.Element
 import android.util.Log
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
-import androidx.preference.PreferenceManager
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MoreEpisodesResponse(
@@ -35,42 +35,29 @@ class Asia2Tv : MainAPI() {
     private var currentCookies: Map<String, String> = emptyMap()
     private var isLoggedIn = false
 
-    // دالة لجلب الإعدادات التي يدخلها المستخدم
-    private fun getPreference(key: String, defaultValue: String): String {
-        val context = Asia2TvPlugin.pluginContext ?: return defaultValue
-        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        return prefs.getString(key, defaultValue) ?: defaultValue
-    }
-
     private suspend fun performLogin() {
         if (isLoggedIn) return
 
-        val loginUsername = getPreference("asia2tv_username", "kelly93")
-        val loginPassword = getPreference("asia2tv_password", "kelly.brown93@")
+        val prefs = Asia2TvPlugin.pluginContext?.getSharedPreferences("Asia2TvAuth", Context.MODE_PRIVATE)
+        val loginUsername = prefs?.getString("username", "") ?: ""
+        val loginPassword = prefs?.getString("password", "") ?: ""
 
         if (loginUsername.isBlank() || loginPassword.isBlank()) return
 
         try {
             val loginUrl = "$mainUrl/login"
             
-            // إضافة interceptor = CloudflareInterceptor() يساعد في بعض الأحيان 
-            // على تخطي تحديات كلاودفلير المبدئية في التطبيق
-            val getResp = app.get(loginUrl, interceptor = CloudflareInterceptor())
+            // جلب صفحة الدخول للحصول على التوكن والكوكيز المبدئية
+            val getResp = app.get(loginUrl)
             val document = Jsoup.parse(getResp.text)
             
-            // تحقق مما إذا كانت الصفحة هي صفحة فحص كلاودفلير (Just a moment...)
-            if (document.title().contains("Just a moment", true) || document.selectFirst("div.cf-browser-verification") != null) {
-                Log.e("Asia2Tv", "Cloudflare Block! Need WebView intervention.")
-                // في هذه الحالة يحتاج المستخدم لاستخدام زر Open in WebView من الإعدادات
-                return
-            }
-
             val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") 
                 ?: document.selectFirst("input[name=_token]")?.attr("value") 
                 ?: ""
 
             val initialCookies = getResp.cookies
 
+            // إرسال بيانات الدخول مع الكوكيز المبدئية (هذا هو الحل لتخطي حماية الموقع)
             val postResp = app.post(
                 loginUrl,
                 headers = mapOf(
@@ -82,10 +69,10 @@ class Asia2Tv : MainAPI() {
                     "email" to loginUsername,
                     "password" to loginPassword,
                     "_token" to csrfToken
-                ),
-                interceptor = CloudflareInterceptor()
+                )
             )
 
+            // التحقق من نجاح الدخول وحفظ الكوكيز
             if (!postResp.url.contains("login")) {
                 isLoggedIn = true
                 currentCookies = initialCookies + postResp.cookies
@@ -128,7 +115,7 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         performLogin()
-        val response = app.get("$mainUrl${request.data}?page=$page", cookies = currentCookies, interceptor = CloudflareInterceptor())
+        val response = app.get("$mainUrl${request.data}?page=$page", cookies = currentCookies)
         val document = Jsoup.parse(response.text)
         
         val items = document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
@@ -139,14 +126,14 @@ class Asia2Tv : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         performLogin()
-        val response = app.get("$mainUrl/search?s=$query", cookies = currentCookies, interceptor = CloudflareInterceptor())
+        val response = app.get("$mainUrl/search?s=$query", cookies = currentCookies)
         val document = Jsoup.parse(response.text)
         return document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
         performLogin()
-        val response = app.get(url, cookies = currentCookies, interceptor = CloudflareInterceptor())
+        val response = app.get(url, cookies = currentCookies)
         val document = Jsoup.parse(response.text)
 
         val title = document.selectFirst("h1")?.text()?.trim() ?: "No Title"
@@ -198,8 +185,7 @@ class Asia2Tv : MainAPI() {
                         "$mainUrl/ajaxGetRequest",
                         headers = ajaxHeaders,
                         cookies = currentCookies,
-                        requestBody = requestBody,
-                        interceptor = CloudflareInterceptor()
+                        requestBody = requestBody
                     ).text
 
                     val ajaxResponse = tryParseJson<MoreEpisodesResponse>(responseText)
@@ -236,7 +222,7 @@ class Asia2Tv : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val response = app.get(data, cookies = currentCookies, interceptor = CloudflareInterceptor())
+        val response = app.get(data, cookies = currentCookies)
         val document = Jsoup.parse(response.text)
         
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
@@ -257,8 +243,7 @@ class Asia2Tv : MainAPI() {
                     "$mainUrl/ajaxGetRequest",
                     headers = ajaxHeaders,
                     cookies = currentCookies,
-                    requestBody = requestBody,
-                    interceptor = CloudflareInterceptor()
+                    requestBody = requestBody
                 ).text
                 val ajaxResponse = tryParseJson<PlayerAjaxResponse>(responseText)
 
