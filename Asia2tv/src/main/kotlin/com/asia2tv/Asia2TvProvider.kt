@@ -33,10 +33,10 @@ class Asia2Tv : MainAPI() {
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
     // ==========================================
-    // بيانات تسجيل الدخول
+    // بيانات تسجيل الدخول (تم تصحيحها بناءً على الـ Payload الخاص بك)
     // ==========================================
-    private val userEmail = "kelly.brown93@mail.ru"
-    private val userPassword = "kelly.brown93@"
+    private val loginUsername = "kelly93" 
+    private val loginPassword = "kelly.brown93@"
     private var isLoggedIn = false
 
     private suspend fun performLogin() {
@@ -51,6 +51,7 @@ class Asia2Tv : MainAPI() {
                 ?: document.selectFirst("input[name=_token]")?.attr("value") 
                 ?: ""
 
+            // إرسال البيانات تماماً كما ظهرت في صورتك
             val response = app.post(
                 loginPageUrl,
                 headers = mapOf(
@@ -58,18 +59,21 @@ class Asia2Tv : MainAPI() {
                     "X-CSRF-TOKEN" to csrfToken
                 ),
                 data = mapOf(
-                    "email" to userEmail,
-                    "password" to userPassword,
+                    "email" to loginUsername, // الموقع يستخدم حقل email لاستقبال اسم المستخدم!
+                    "password" to loginPassword,
                     "_token" to csrfToken
                 )
             )
 
+            // التحقق من نجاح الدخول (إذا تغير الرابط للرئيسية)
             if (!response.url.contains("login")) {
                 isLoggedIn = true
                 Log.d("Asia2Tv", "Login Successful!")
+            } else {
+                Log.e("Asia2Tv", "Login Failed: Still on login page")
             }
         } catch (e: Exception) {
-            Log.e("Asia2Tv", "Login Failed: ${e.message}")
+            Log.e("Asia2Tv", "Login Exception: ${e.message}")
         }
     }
     // ==========================================
@@ -97,29 +101,28 @@ class Asia2Tv : MainAPI() {
     }
 
     // ==========================================
-    // تم تصحيح استخراج البطاقات
+    // دالة استخراج ذكية ومضادة للأخطاء
     // ==========================================
     private fun Element.toSearchResponse(): SearchResponse? {
-        // نأخذ جميع الروابط داخل البطاقة (tw-movie-card) ونفلترها لاحقاً
-        val links = this.select("a")
-        
-        // نبحث عن الرابط الذي يحتوي على مسار فيلم أو مسلسل حقيقي، وليس زر مفضلة "#"
-        val mainLink = links.find { 
-            val h = it.attr("href")
-            h.isNotBlank() && h != "#" && (h.contains("/serie/") || h.contains("/movie/")) 
-        } ?: return null
-
-        val href = fixUrlNull(mainLink.attr("href")) ?: return null
-        
-        // محاولة جلب العنوان من h3، وإن لم يوجد نجلبه من الخاصية alt للصورة
-        val title = mainLink.selectFirst("h3")?.text()?.trim() 
-            ?: mainLink.selectFirst("img")?.attr("alt")?.trim() 
+        // البحث عن الرابط الأساسي الذي يحتوي على data-type (أدق طريقة حسب الكود المصدري للموقع)
+        val mainLink = this.selectFirst("a[data-type]") 
+            ?: this.selectFirst("a.z-10") 
+            ?: this.selectFirst("a") 
             ?: return null
             
-        // جلب البوستر
-        val posterUrl = fixUrlNull(mainLink.selectFirst("img")?.let {
-            it.attr("data-src").ifBlank { it.attr("src") }
-        })
+        val href = fixUrlNull(mainLink.attr("href")) ?: return null
+        
+        // استبعاد الروابط الفارغة أو روابط الأزرار الجانبية
+        if (href == "#" || (!href.contains("/serie/") && !href.contains("/movie/"))) return null
+
+        // استخراج العنوان
+        val title = this.selectFirst("h3")?.text()?.trim() 
+            ?: mainLink.selectFirst("img")?.attr("alt")?.trim() 
+            ?: "بدون عنوان"
+            
+        // استخراج البوستر
+        val imgElement = mainLink.selectFirst("img")
+        val posterUrl = fixUrlNull(imgElement?.attr("data-src")?.ifBlank { imgElement.attr("src") })
         
         val isMovie = href.contains("/movie/") || mainLink.attr("data-type") == "movie"
 
@@ -145,8 +148,8 @@ class Asia2Tv : MainAPI() {
         val response = app.get("$mainUrl${request.data}?page=$page")
         val document = Jsoup.parse(response.text)
         
-        // استخراج البطاقة بأكملها، والدالة toSearchResponse ستتولى الفلترة من الداخل
-        val items = document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
+        // استخدام محددين لدعم التصميم الجديد والقديم احتياطياً
+        val items = document.select("div.tw-movie-card, div.postmovie").mapNotNull { it.toSearchResponse() }
         val hasNext = document.selectFirst("a.next.page-numbers, a[rel=next], ul.pagination li a[rel=next]") != null
         
         return newHomePageResponse(request.name, items, hasNext)
@@ -158,7 +161,7 @@ class Asia2Tv : MainAPI() {
         val response = app.get("$mainUrl/search?s=$query")
         val document = Jsoup.parse(response.text)
         
-        return document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
+        return document.select("div.tw-movie-card, div.postmovie").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
