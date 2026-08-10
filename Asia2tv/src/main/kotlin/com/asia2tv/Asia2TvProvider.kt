@@ -64,7 +64,6 @@ class Asia2Tv : MainAPI() {
                 )
             )
 
-            // إذا تغير الرابط بعد الإرسال (مثلاً ذهب للرئيسية) فهذا يعني النجاح
             if (!response.url.contains("login")) {
                 isLoggedIn = true
                 Log.d("Asia2Tv", "Login Successful!")
@@ -98,20 +97,31 @@ class Asia2Tv : MainAPI() {
     }
 
     // ==========================================
-    // دالة استخراج الأفلام للصفحة الرئيسية (تم تعديلها لمنع التكرار)
+    // تم تصحيح استخراج البطاقات
     // ==========================================
     private fun Element.toSearchResponse(): SearchResponse? {
-        val href = fixUrlNull(this.attr("href")) ?: return null
+        // نأخذ جميع الروابط داخل البطاقة (tw-movie-card) ونفلترها لاحقاً
+        val links = this.select("a")
         
-        // استبعاد أي روابط لا تخص المسلسلات أو الأفلام (مثل روابط qtip)
-        if (href == "#" || (!href.contains("/serie/") && !href.contains("/movie/"))) return null
+        // نبحث عن الرابط الذي يحتوي على مسار فيلم أو مسلسل حقيقي، وليس زر مفضلة "#"
+        val mainLink = links.find { 
+            val h = it.attr("href")
+            h.isNotBlank() && h != "#" && (h.contains("/serie/") || h.contains("/movie/")) 
+        } ?: return null
 
-        val title = this.selectFirst("h3")?.text()?.trim() ?: return null
-        val posterUrl = fixUrlNull(this.selectFirst("img")?.let {
+        val href = fixUrlNull(mainLink.attr("href")) ?: return null
+        
+        // محاولة جلب العنوان من h3، وإن لم يوجد نجلبه من الخاصية alt للصورة
+        val title = mainLink.selectFirst("h3")?.text()?.trim() 
+            ?: mainLink.selectFirst("img")?.attr("alt")?.trim() 
+            ?: return null
+            
+        // جلب البوستر
+        val posterUrl = fixUrlNull(mainLink.selectFirst("img")?.let {
             it.attr("data-src").ifBlank { it.attr("src") }
         })
         
-        val isMovie = href.contains("/movie/") || this.attr("data-type") == "movie"
+        val isMovie = href.contains("/movie/") || mainLink.attr("data-type") == "movie"
 
         return if (isMovie) {
             newMovieSearchResponse(title, href, TvType.Movie) { this.posterUrl = posterUrl }
@@ -135,8 +145,8 @@ class Asia2Tv : MainAPI() {
         val response = app.get("$mainUrl${request.data}?page=$page")
         val document = Jsoup.parse(response.text)
         
-        // اختيار الرابط المباشر فقط (a.z-10) لتجنب جلب الأزرار الأخرى داخل البطاقة وتكرار المحتوى
-        val items = document.select("div.tw-movie-card > a.z-10").mapNotNull { it.toSearchResponse() }
+        // استخراج البطاقة بأكملها، والدالة toSearchResponse ستتولى الفلترة من الداخل
+        val items = document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
         val hasNext = document.selectFirst("a.next.page-numbers, a[rel=next], ul.pagination li a[rel=next]") != null
         
         return newHomePageResponse(request.name, items, hasNext)
@@ -148,7 +158,7 @@ class Asia2Tv : MainAPI() {
         val response = app.get("$mainUrl/search?s=$query")
         val document = Jsoup.parse(response.text)
         
-        return document.select("div.tw-movie-card > a.z-10").mapNotNull { it.toSearchResponse() }
+        return document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
@@ -158,24 +168,18 @@ class Asia2Tv : MainAPI() {
         val cookies = response.cookies
         val document = Jsoup.parse(response.text)
 
-        // 1. استخراج العنوان والقصة بناءً على التصميم الجديد
         val title = document.selectFirst("h1")?.text()?.trim() ?: "No Title"
         val plot = document.selectFirst("h3:contains(القصة) + p")?.text()?.trim()
         
-        // 2. استخراج البوستر باستخدام الميتا تاج (أضمن طريقة)
         val posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
         
-        // 3. استخراج سنة العرض
         val year = document.selectFirst("span:contains(سنة العرض:) + a")?.text()?.toIntOrNull()
         
-        // 4. استخراج الأقسام (التصنيفات)
         val tags = document.select("div.box-tags a").map { it.text().trim() }
         
-        // 5. استخراج حالة المسلسل (مكتمل / يبث حالياً)
         val statusBadge = document.selectFirst(".serie_status_pro span, span:contains(أعمال مكتملة), span:contains(يبث حاليا)")?.text() ?: ""
         val status = if (statusBadge.contains("مكتملة")) ShowStatus.Completed else ShowStatus.Ongoing
 
-        // 6. استخراج الحلقات
         val episodes = mutableListOf<Episode>()
         val seenUrls = HashSet<String>()
 
@@ -193,10 +197,8 @@ class Asia2Tv : MainAPI() {
             }
         }
 
-        // جلب الحلقات الموجودة في الصفحة الحالية
         addUniqueEpisodes(document.select("div.loop-episode a.episode_box_tabs_container"))
 
-        // 7. جلب باقي الحلقات عن طريق AJAX (إن وجدت)
         val serieId = document.selectFirst(".add_favorite")?.attr("data-id")
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content")
 
@@ -220,7 +222,6 @@ class Asia2Tv : MainAPI() {
                     if (ajaxResponse?.status == true && !ajaxResponse.html.isNullOrBlank()) {
                         addUniqueEpisodes(Jsoup.parse(ajaxResponse.html).select("a.episode_box_tabs_container"))
                         
-                        // في الكود الخاص بهم، يرسلون رقم الصفحة التالية أو يعيدون status=false
                         if (ajaxResponse.newpage != null && ajaxResponse.newpage > currentPage) {
                             currentPage = ajaxResponse.newpage
                         } else {
@@ -235,7 +236,6 @@ class Asia2Tv : MainAPI() {
             }
         }
 
-        // عكس ترتيب الحلقات لتصبح من 1 إلى الأخير (لأن المواقع غالباً تضع الأحدث بالأعلى)
         episodes.reverse()
 
         val isMovie = url.contains("/movie/")
@@ -258,8 +258,6 @@ class Asia2Tv : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        // إذا كان الرابط هو رابط مسلسل (episode) أو فيلم (movie)، سنحتاج لدراسة صفحة التشغيل 
-        // مؤقتاً سأترك الكود القديم هنا الخاص بسيرفرات المشاهدة
         val response = app.get(data)
         val cookies = response.cookies
         val document = Jsoup.parse(response.text)
