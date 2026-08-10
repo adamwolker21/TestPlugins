@@ -30,14 +30,11 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    // ==========================================
-    // الكوكيز السحرية الخاصة بك من أمر Curl
-    // ==========================================
+    // لم نعد بحاجة للكوكيز الثابتة، التطبيق سيجلبها من الـ WebView تلقائياً
     private val myHeaders = mapOf(
-        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
         "Accept-Language" to "en-US,en;q=0.9",
-        "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36",
-        "Cookie" to "XSRF-TOKEN=eyJpdiI6IkVQTWZCVTNjQ1NIMERCSG5SZ0lsVWc9PSIsInZhbHVlIjoiRGw5Q2Z1bFRNWmV4Z2RjMFczampiWkhaOWx3ZXMrQVhsbnZxNGEyOEhuUnF6N0NIV21jSDNNLzdEbmpKb25EUkRKOFpQcFYwdC96RzRxTDR0RnU3M3kwemhNZ3ZvQXVsYTNWTWhmYVUwZzRpd1lvWFZoZzFqOUJxcTlGc1R6cnQiLCJtYWMiOiIwZmQxNDlmYTI4NzAyZmQxYTE3YzcwM2M4MTE5MzMyOWUwNDAyYzQwYjc5ZDJjNTI5Zjk5NGZjNjk5ZGNkZTBiIiwidGFnIjoiIn0%3D; asia2tvcom_session=eyJpdiI6Ii93NGlSRjlxSWdWaWtxQ09lUDdZbWc9PSIsInZhbHVlIjoiank5VUtVY0hHek9GaFlZczVycWhPSjI3eUxaaENGOTBwb0FjeGN3ZytTOTZ6eFY5UU94VGZYSWFZbm1nY25rMm8zTzQ3eGpTclZoQmUwRXBjRTVraGZaVExia2NkOUpMaVdOYU16S1V4dUZCTTBNZ2hWTFVZYTVuZTFLMG5GNEUiLCJtYWMiOiI3NTQ0ODlhZjExZjE2MzhkZWIzMzdhMzRmZTlhYWU1ZjA3MzU0YzEzOTMyNzc4YzEyNDNkODgyYzEwNzIxYWUzIiwidGFnIjoiIn0%3D"
+        "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"
     )
 
     private fun getAjaxHeaders(referer: String, csrfToken: String): Map<String, String> {
@@ -80,7 +77,6 @@ class Asia2Tv : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        // نستخدم الكوكيز المسحوبة مباشرة
         val response = app.get("$mainUrl${request.data}?page=$page", headers = myHeaders)
         val document = Jsoup.parse(response.text)
 
