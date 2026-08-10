@@ -1,4 +1,4 @@
-package com.example
+package com.asia2tv
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
