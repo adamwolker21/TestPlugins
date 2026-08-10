@@ -32,63 +32,20 @@ class Asia2Tv : MainAPI() {
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
     // ==========================================
-    // بيانات الدخول (تم تصحيحها)
+    // الكوكيز التي قمت أنت بجلبها من المتصفح (صالحة مؤقتاً للتجربة)
     // ==========================================
-    private val loginUsername = "kelly93"
-    private val loginPassword = "kelly.brown93@"
-    
-    // متغير لحفظ الكوكيز الحالية
-    private var currentCookies: Map<String, String> = emptyMap()
-    private var isLoggedIn = false
+    private val myTestCookie = "XSRF-TOKEN=eyJpdiI6ImFQRGNOc1FDMnBidzZ0UzRGNmYwaEE9PSIsInZhbHVlIjoid1N1K0w3UFVFSCtjc0JLVVcwRlJuRW9yZnIzeVlLN1RMbGFrTnM0aWErN3d0V2lRWmxnQUhOUS9hVWxRQW9xaHdLSFZoVlJ4T000QVZwWEwwSU1CRHZLdUVwTEF2V0RMNjVqV2pBbmhUZDk2NFFrV1dTNUpvTHllSGcxVllaeGUiLCJtYWMiOiIxZjg5ZDRiMWQyNDNiN2I1ODg4ZTYzMzZlODRjYmNlNWM4OTQ5MTdmMWRjMTYzNWY4YzhmZTIwNGQwYjExY2ViIiwidGFnIjoiIn0%3D; asia2tvcom_session=eyJpdiI6IkVXVXlIbkdnbHl0aVpobXlLV0hJNVE9PSIsInZhbHVlIjoiVHNrRU5IUTRlTWVoMy9abkE1WXFDWVAzM1hLNTA4dXVYdXNFL29iVUVOTGh3MjhiczlNMi9aSGZYUE9HcHJMbkZxYXVCV2grQ2ZCSXVZSDl2NDFVRjlrVFUraThLSGRFODZRbm9URlphZUM0WlUvMFE4SkwyNFlHU2p2dWN0VEUiLCJtYWMiOiJmOWIwYzFhZTEyYjA1M2VlYzcyNGUxOGRmZjdhNzk3ZWM1OTkzY2Q2YTg4ZmNkMWQxZDE1OWRiOGE5OTg5ODM2IiwidGFnIjoiIn0%3D"
 
-    private suspend fun performLogin() {
-        if (isLoggedIn) return
-
-        try {
-            val loginUrl = "$mainUrl/login"
-            
-            // 1. فتح صفحة الدخول لجلب الـ Token و الـ Cookies (هذه الخطوة مهمة جداً لـ Laravel)
-            val getResp = app.get(loginUrl)
-            val document = Jsoup.parse(getResp.text)
-            
-            val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") 
-                ?: document.selectFirst("input[name=_token]")?.attr("value") 
-                ?: ""
-
-            // حفظ الكوكيز المبدئية التي أعطاها لنا الموقع
-            val initialCookies = getResp.cookies
-
-            // 2. إرسال بيانات الدخول مع تمرير الكوكيز المبدئية
-            val postResp = app.post(
-                loginUrl,
-                headers = mapOf(
-                    "Referer" to loginUrl,
-                    "X-CSRF-TOKEN" to csrfToken
-                ),
-                cookies = initialCookies, // <--- هذا ما كان ينقصنا!
-                data = mapOf(
-                    "email" to loginUsername,
-                    "password" to loginPassword,
-                    "_token" to csrfToken
-                )
-            )
-
-            // 3. التحقق ودمج الكوكيز النهائية (إذا لم يوجهنا لصفحة Login مجدداً)
-            if (!postResp.url.contains("login")) {
-                isLoggedIn = true
-                currentCookies = initialCookies + postResp.cookies
-                Log.d("Asia2Tv", "تم تسجيل الدخول بنجاح وحفظ الـ Cookies!")
-            } else {
-                Log.e("Asia2Tv", "فشل تسجيل الدخول، ما زلنا في صفحة Login")
-            }
-        } catch (e: Exception) {
-            Log.e("Asia2Tv", "استثناء أثناء تسجيل الدخول: ${e.message}")
-        }
+    private fun getBaseHeaders(): Map<String, String> {
+        return mapOf(
+            "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36",
+            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Cookie" to myTestCookie
+        )
     }
-    // ==========================================
 
     private fun getAjaxHeaders(referer: String, csrfToken: String): Map<String, String> {
-        return mapOf(
+        return getBaseHeaders() + mapOf(
             "X-CSRF-TOKEN" to csrfToken,
             "X-Requested-With" to "XMLHttpRequest",
             "Content-Type" to "application/x-www-form-urlencoded; charset=UTF-8",
@@ -127,9 +84,7 @@ class Asia2Tv : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        performLogin()
-        // تمرير الكوكيز مع كل طلب
-        val response = app.get("$mainUrl${request.data}?page=$page", cookies = currentCookies)
+        val response = app.get("$mainUrl${request.data}?page=$page", headers = getBaseHeaders())
         val document = Jsoup.parse(response.text)
         
         val items = document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
@@ -139,15 +94,13 @@ class Asia2Tv : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        performLogin()
-        val response = app.get("$mainUrl/search?s=$query", cookies = currentCookies)
+        val response = app.get("$mainUrl/search?s=$query", headers = getBaseHeaders())
         val document = Jsoup.parse(response.text)
         return document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        performLogin()
-        val response = app.get(url, cookies = currentCookies)
+        val response = app.get(url, headers = getBaseHeaders())
         val document = Jsoup.parse(response.text)
 
         val title = document.selectFirst("h1")?.text()?.trim() ?: "No Title"
@@ -193,7 +146,6 @@ class Asia2Tv : MainAPI() {
                     val responseText = app.post(
                         "$mainUrl/ajaxGetRequest",
                         headers = ajaxHeaders,
-                        cookies = currentCookies,
                         requestBody = requestBody
                     ).text
 
@@ -231,7 +183,7 @@ class Asia2Tv : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val response = app.get(data, cookies = currentCookies)
+        val response = app.get(data, headers = getBaseHeaders())
         val document = Jsoup.parse(response.text)
         
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
@@ -246,7 +198,6 @@ class Asia2Tv : MainAPI() {
                 val responseText = app.post(
                     "$mainUrl/ajaxGetRequest",
                     headers = ajaxHeaders,
-                    cookies = currentCookies,
                     requestBody = requestBody
                 ).text
                 val ajaxResponse = tryParseJson<PlayerAjaxResponse>(responseText)
