@@ -31,47 +31,51 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    // ==========================================
-    // حساب الدخول
-    // ==========================================
+    // علامة التتبع في الـ Logcat
+    private val TAG = "Asia2TvDebug"
+
     private val loginUsername = "kelly93"
     private val loginPassword = "kelly.brown93@"
     
-    // متغير لحفظ الكوكيز الحالية
     private var currentCookies: Map<String, String> = emptyMap()
     private var isLoggedIn = false
 
     private suspend fun performLogin() {
-        if (isLoggedIn) return
+        if (isLoggedIn) {
+            Log.d(TAG, "تم تسجيل الدخول مسبقاً، تخطي العملية.")
+            return
+        }
 
+        Log.d(TAG, "--- بدء عملية تسجيل الدخول ---")
         try {
             val loginUrl = "$mainUrl/login"
             
-            // 1. فتح صفحة الدخول لجلب الـ Token و الـ Cookies (مهم جداً لتخطي حماية Laravel)
             val getResp = app.get(loginUrl)
+            Log.d(TAG, "1. طلب GET لصفحة الدخول: الكود ${getResp.code}, الرابط: ${getResp.url}")
+            
             val document = Jsoup.parse(getResp.text)
             
-            // تحقق من حظر كلاودفلير
             if (document.title().contains("Just a moment", true) || document.selectFirst("div.cf-browser-verification") != null) {
-                Log.e("Asia2Tv", "Cloudflare Block! Need WebView intervention.")
+                Log.e(TAG, "حظر Cloudflare! نحن في صفحة التحدي.")
                 return
             }
 
             val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") 
                 ?: document.selectFirst("input[name=_token]")?.attr("value") 
                 ?: ""
+            
+            Log.d(TAG, "2. تم استخراج CSRF Token: $csrfToken")
 
-            // حفظ الكوكيز المبدئية التي أعطاها لنا الموقع
             val initialCookies = getResp.cookies
+            Log.d(TAG, "3. الكوكيز المبدئية: $initialCookies")
 
-            // 2. إرسال بيانات الدخول مع تمرير الكوكيز المبدئية
             val postResp = app.post(
                 loginUrl,
                 headers = mapOf(
                     "Referer" to loginUrl,
                     "X-CSRF-TOKEN" to csrfToken
                 ),
-                cookies = initialCookies, // <--- سر النجاح يكمن هنا
+                cookies = initialCookies,
                 data = mapOf(
                     "email" to loginUsername,
                     "password" to loginPassword,
@@ -79,19 +83,19 @@ class Asia2Tv : MainAPI() {
                 )
             )
 
-            // 3. التحقق ودمج الكوكيز النهائية 
+            Log.d(TAG, "4. طلب POST أرجع الكود: ${postResp.code}, الرابط: ${postResp.url}")
+
             if (!postResp.url.contains("login")) {
                 isLoggedIn = true
                 currentCookies = initialCookies + postResp.cookies
-                Log.d("Asia2Tv", "تم تسجيل الدخول بنجاح وحفظ الـ Cookies!")
+                Log.d(TAG, "--- نجاح تسجيل الدخول! الكوكيز النهائية: $currentCookies ---")
             } else {
-                Log.e("Asia2Tv", "فشل تسجيل الدخول، ما زلنا في صفحة Login")
+                Log.e(TAG, "فشل تسجيل الدخول (ما زلنا في صفحة Login). جزء من HTML: ${postResp.text.take(300)}")
             }
         } catch (e: Exception) {
-            Log.e("Asia2Tv", "استثناء أثناء تسجيل الدخول: ${e.message}")
+            Log.e(TAG, "خطأ (Exception) أثناء الدخول: ${e.message}")
         }
     }
-    // ==========================================
 
     private fun getAjaxHeaders(referer: String, csrfToken: String): Map<String, String> {
         return mapOf(
@@ -133,25 +137,49 @@ class Asia2Tv : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        Log.d(TAG, "--- طلب الصفحة الرئيسية: ${request.name}, الصفحة: $page ---")
         performLogin()
-        // تمرير الكوكيز مع كل طلب
-        val response = app.get("$mainUrl${request.data}?page=$page", cookies = currentCookies)
+        
+        val url = "$mainUrl${request.data}?page=$page"
+        Log.d(TAG, "الرابط المطلوب: $url")
+        
+        val response = app.get(url, cookies = currentCookies)
+        Log.d(TAG, "كود استجابة الصفحة الرئيسية: ${response.code}")
+        
         val document = Jsoup.parse(response.text)
         
+        // التحقق مما إذا كنا في صفحة حماية كلاودفلير
+        if (document.title().contains("Just a moment", true)) {
+            Log.e(TAG, "تم حظرنا من Cloudflare في الصفحة الرئيسية!")
+        }
+
         val items = document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
+        
+        Log.d(TAG, "تم العثور على ${items.size} عنصر في هذه الصفحة.")
+        
+        // إذا كان العدد 0، سنقوم بطباعة جزء من كود HTML لمعرفة ما يوجد في الصفحة
+        if (items.isEmpty()) {
+            Log.e(TAG, "لم يتم العثور على أي عناصر! جزء من كود الصفحة: \n ${response.text.take(600)}")
+        }
+
         val hasNext = document.selectFirst("a.next.page-numbers, a[rel=next], ul.pagination li a[rel=next]") != null
         
         return newHomePageResponse(request.name, items, hasNext)
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
+        Log.d(TAG, "--- طلب بحث: $query ---")
         performLogin()
         val response = app.get("$mainUrl/search?s=$query", cookies = currentCookies)
         val document = Jsoup.parse(response.text)
-        return document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
+        
+        val items = document.select("div.tw-movie-card").mapNotNull { it.toSearchResponse() }
+        Log.d(TAG, "تم العثور على ${items.size} نتيجة للبحث.")
+        return items
     }
 
     override suspend fun load(url: String): LoadResponse {
+        Log.d(TAG, "--- طلب تفاصيل: $url ---")
         performLogin()
         val response = app.get(url, cookies = currentCookies)
         val document = Jsoup.parse(response.text)
@@ -183,6 +211,8 @@ class Asia2Tv : MainAPI() {
         }
 
         addUniqueEpisodes(document.select("div.loop-episode a.episode_box_tabs_container"))
+        
+        Log.d(TAG, "تم العثور على ${episodes.size} حلقة في الصفحة الأولى.")
 
         val serieId = document.selectFirst(".add_favorite")?.attr("data-id")
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content")
