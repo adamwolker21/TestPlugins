@@ -10,9 +10,9 @@ buildscript {
         maven("https://jitpack.io")
     }
     dependencies {
-        // تم تغيير الإصدارات لتتوافق مع Gradle 8 الموجود في Github Actions
         classpath("com.android.tools.build:gradle:8.2.2")
-        classpath("com.github.recloudstream:gradle:81b1d424d2")
+        // تم تغيير هذا السطر لاستخدام أحدث إصدار لحل مشكلة التوافق (writeCacheEntry)
+        classpath("com.github.recloudstream:gradle:master-SNAPSHOT")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22")
     }
 }
@@ -42,7 +42,6 @@ subprojects {
 
     android {
         namespace = "com.megix"
-        // تم تغييره إلى 34 كونه الإصدار المستقر والمدعوم بشكل كامل حالياً
         compileSdk = 34
         defaultConfig {
             minSdk = 21
