@@ -1,7 +1,6 @@
 import com.android.build.gradle.BaseExtension
 import com.lagradost.cloudstream3.gradle.CloudstreamExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-// السطر التالي تمت إضافته ليتوافق مع طريقة compilerOptions الجديدة
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget 
 
 buildscript {
@@ -55,15 +54,17 @@ subprojects {
         }
     }
 
-    // هنا تم تغيير kotlinOptions إلى compilerOptions
     tasks.withType<KotlinCompile>().configureEach {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
             allWarningsAsErrors.set(false)
+            // التصحيح هنا: إضافة listOf(...) حول الحجج (Arguments)
             freeCompilerArgs.addAll(
-                "-Xno-call-assertions",
-                "-Xno-param-assertions",
-                "-Xno-receiver-assertions"
+                listOf(
+                    "-Xno-call-assertions",
+                    "-Xno-param-assertions",
+                    "-Xno-receiver-assertions"
+                )
             )
         }
     }
