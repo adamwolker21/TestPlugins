@@ -42,7 +42,7 @@ class VidmolyAsia : ExtractorApi() {
                         type = ExtractorLinkType.M3U8
                     ) {
                         this.referer = response.url
-                        this.quality = Qualities.Unknown.value
+                        this.quality = Qualities.Qualities.P1080.value
                     }
                 )
             }
@@ -58,7 +58,7 @@ class StreamHG : ExtractorApi() {
     override var name = "Hgcloud"
     override var mainUrl = "hglink.to"
     override val requiresReferer = true
-    private val potentialHosts = listOf("https://hglink.to", "https://audinifer.com", "https://vibuxer.com")
+    private val potentialHosts = listOf("https://hglink.to", "https://hglink.to", "https://hglink.to")
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val videoId = url.substringAfterLast("/")
