@@ -37,7 +37,7 @@ class Asia2Tv : MainAPI() {
     private var sessionCookies: Map<String, String> = emptyMap()
     private val loginMutex = Mutex()
 
-    // الهيدر الخاص بك كما هو بالضبط (تم إزالة الكوكيز اليدوية فقط)
+    // الهيدر الخاص بك كما هو بالضبط
     private val myHeaders = mapOf(
         "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         "Accept-Language" to "en-US,en;q=0.9",
@@ -55,8 +55,9 @@ class Asia2Tv : MainAPI() {
                 val getResp = app.get(loginUrl, headers = myHeaders)
                 val document = Jsoup.parse(getResp.text)
                 
-                val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") 
-                    ?: document.selectFirst("input[name=_token]")?.attr("value") 
+                // البحث عن التوكن (استناداً إلى صورتك من المتصفح هو _token)
+                val csrfToken = document.selectFirst("input[name=_token]")?.attr("value") 
+                    ?: document.selectFirst("meta[name=csrf-token]")?.attr("content") 
                     ?: ""
 
                 val initialCookies = getResp.cookies
@@ -66,23 +67,32 @@ class Asia2Tv : MainAPI() {
                     loginUrl,
                     headers = myHeaders + mapOf(
                         "Referer" to loginUrl,
-                        "X-CSRF-TOKEN" to csrfToken,
-                        "Content-Type" to "application/x-www-form-urlencoded"
+                        "Origin" to mainUrl
                     ),
                     cookies = initialCookies,
                     data = mapOf(
+                        "_token" to csrfToken,
                         "email" to "kelly93",
-                        "password" to "kelly.brown93@",
-                        "_token" to csrfToken
+                        "password" to "kelly.brown93@"
                     ),
-                    allowRedirects = true
+                    allowRedirects = false // أهم نقطة! نمنع التوجيه لالتقاط الكوكيز من كود 302
                 )
 
-                // 3. حفظ الكوكيز الموثقة
-                sessionCookies = initialCookies + postResp.cookies
-                Log.d("Asia2Tv", "تم جلب وتحديث الكوكيز تلقائياً بنجاح!")
+                // استخراج الرابط الذي كان يريد السيرفر توجيهنا إليه
+                val location = postResp.headers["location"] ?: postResp.headers["Location"] ?: ""
+
+                // إذا كان الرد 302 والرابط لا يحتوي على login، فهذا يعني نجاح الدخول
+                if (postResp.code == 302 && !location.contains("login")) {
+                    // دمج الكوكيز الأولية مع كوكيز الجلسة الموثقة (session)
+                    sessionCookies = initialCookies + postResp.cookies
+                    Log.d("Asia2Tv", "تم تسجيل الدخول بنجاح! الكوكيز: $sessionCookies")
+                } else {
+                    Log.e("Asia2Tv", "فشل الدخول. Code: ${postResp.code}, Location: $location")
+                    // في حال الفشل نستخدم الكوكيز الأولية لكي لا تنهار الإضافة
+                    sessionCookies = initialCookies
+                }
             } catch (e: Exception) {
-                Log.e("Asia2Tv", "فشل جلب الكوكيز: ${e.message}")
+                Log.e("Asia2Tv", "خطأ بالدخول: ${e.message}")
             }
         }
     }
@@ -118,7 +128,6 @@ class Asia2Tv : MainAPI() {
         }
     }
 
-    // الأقسام الخاصة بك حرفياً
     override val mainPage = mainPageOf(
         "/newepisode" to "الحلقات الجديدة",
         "/status/live" to "يبث حاليا",
@@ -129,7 +138,7 @@ class Asia2Tv : MainAPI() {
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        performSilentLogin() // استدعاء الدخول
+        performSilentLogin()
         
         val response = app.get("$mainUrl${request.data}?page=$page", headers = myHeaders, cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
@@ -141,7 +150,7 @@ class Asia2Tv : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        performSilentLogin() // استدعاء الدخول
+        performSilentLogin()
         
         val response = app.get("$mainUrl/search?s=$query", headers = myHeaders, cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
@@ -149,7 +158,7 @@ class Asia2Tv : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-        performSilentLogin() // استدعاء الدخول
+        performSilentLogin()
         
         val response = app.get(url, headers = myHeaders, cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
@@ -196,7 +205,7 @@ class Asia2Tv : MainAPI() {
                     val responseText = app.post(
                         "$mainUrl/ajaxGetRequest",
                         headers = getAjaxHeaders(url, csrfToken),
-                        cookies = sessionCookies, // تمرير الكوكيز هنا أيضاً
+                        cookies = sessionCookies,
                         requestBody = requestBody
                     ).text
 
@@ -234,7 +243,7 @@ class Asia2Tv : MainAPI() {
     }
 
     override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        performSilentLogin() // استدعاء الدخول
+        performSilentLogin()
         
         val response = app.get(data, headers = myHeaders, cookies = sessionCookies)
         val document = Jsoup.parse(response.text)
@@ -250,7 +259,7 @@ class Asia2Tv : MainAPI() {
                 val responseText = app.post(
                     "$mainUrl/ajaxGetRequest",
                     headers = getAjaxHeaders(data, csrfToken),
-                    cookies = sessionCookies, // تمرير الكوكيز هنا أيضاً
+                    cookies = sessionCookies,
                     requestBody = requestBody
                 ).text
                 val ajaxResponse = tryParseJson<PlayerAjaxResponse>(responseText)
