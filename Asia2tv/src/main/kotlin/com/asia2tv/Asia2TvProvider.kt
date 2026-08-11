@@ -99,13 +99,11 @@ class Asia2Tv : MainAPI() {
         val mainLink = this.selectFirst("a[data-type]") ?: this.selectFirst("a") ?: return null
         val href = fixUrlNull(mainLink.attr("href")) ?: return null
         
-        // تم إضافة السماح بروابط الحلقات (/episode/) لكي يظهر المحتوى في قسم الحلقات الجديدة
         if (href == "#" || (!href.contains("/serie/") && !href.contains("/movie/") && !href.contains("/episode/"))) return null
 
         val baseTitle = mainLink.selectFirst("h3")?.text()?.trim() 
             ?: mainLink.selectFirst("img")?.attr("alt")?.trim() ?: "بدون عنوان"
             
-        // استخراج رقم الحلقة من البادج ودمجه مع العنوان لكي يظهر بوضوح
         val badge = this.selectFirst(".tw-badge")?.text()?.trim()
         val title = if (!badge.isNullOrBlank() && href.contains("/episode/")) "$baseTitle ($badge)" else baseTitle
 
@@ -121,7 +119,6 @@ class Asia2Tv : MainAPI() {
         }
     }
 
-    // تم إزالة قسم الأفلام
     override val mainPage = mainPageOf(
         "/newepisode" to "الحلقات الجديدة",
         "/status/live" to "يبث حاليا",
@@ -165,14 +162,13 @@ class Asia2Tv : MainAPI() {
         val statusBadge = document.selectFirst(".serie_status_pro span, span:contains(أعمال مكتملة), span:contains(يبث حاليا)")?.text() ?: ""
         val status = if (statusBadge.contains("مكتملة")) ShowStatus.Completed else ShowStatus.Ongoing
 
-        // استخراج بيانات الممثلين
+        // تم تصحيح خطأ البناء هنا باستخدام ActorData بدلاً من Actor مباشرة
         val actorsList = document.select("div.flex.flex-wrap.gap-3 a[href*=/artist/]").mapNotNull {
             val name = it.selectFirst("span")?.text()?.trim() ?: return@mapNotNull null
             val image = fixUrlNull(it.selectFirst("img")?.attr("data-src")?.ifBlank { it.selectFirst("img")?.attr("src") })
-            Actor(name, image)
+            ActorData(actor = Actor(name, image))
         }
 
-        // استخراج المعلومات الإضافية (البلد، عدد الحلقات، موعد البث)
         var country = ""
         var epsCount = ""
         var airDate = ""
@@ -191,7 +187,6 @@ class Asia2Tv : MainAPI() {
 
         val extraInfo = extraInfoList.joinToString(" | ")
 
-        // دمج القصة مع المعلومات الإضافية
         val finalPlot = if (extraInfo.isNotBlank()) {
             if (plotRaw.isBlank()) extraInfo else "$plotRaw\n\n$extraInfo"
         } else {
@@ -254,7 +249,6 @@ class Asia2Tv : MainAPI() {
             }
         }
 
-        // في حال كان الرابط لحلقة مفردة تم الضغط عليها من قسم "الحلقات الجديدة"
         if (episodes.isEmpty() && url.contains("/episode/")) {
             episodes.add(newEpisode(url) {
                 this.name = title
