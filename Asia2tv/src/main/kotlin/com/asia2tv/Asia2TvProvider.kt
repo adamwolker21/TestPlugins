@@ -33,36 +33,30 @@ class Asia2Tv : MainAPI() {
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
 
-    // متغيرات حفظ الجلسة وتأمين التزامن
     private var sessionCookies: Map<String, String> = emptyMap()
     private val loginMutex = Mutex()
 
-    // الهيدر الخاص بك كما هو بالضبط
     private val myHeaders = mapOf(
         "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
         "Accept-Language" to "en-US,en;q=0.9",
         "User-Agent" to "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"
     )
 
-    // دالة سحب الكوكيز تلقائياً
     private suspend fun performSilentLogin() {
         loginMutex.withLock {
             if (sessionCookies.isNotEmpty()) return
 
             try {
                 val loginUrl = "$mainUrl/login"
-                // 1. فتح صفحة الدخول لجلب التوكن
                 val getResp = app.get(loginUrl, headers = myHeaders)
                 val document = Jsoup.parse(getResp.text)
                 
-                // البحث عن التوكن (استناداً إلى صورتك من المتصفح هو _token)
                 val csrfToken = document.selectFirst("input[name=_token]")?.attr("value") 
                     ?: document.selectFirst("meta[name=csrf-token]")?.attr("content") 
                     ?: ""
 
                 val initialCookies = getResp.cookies
 
-                // 2. إرسال طلب الدخول
                 val postResp = app.post(
                     loginUrl,
                     headers = myHeaders + mapOf(
@@ -75,20 +69,15 @@ class Asia2Tv : MainAPI() {
                         "email" to "kelly93",
                         "password" to "kelly.brown93@"
                     ),
-                    allowRedirects = false // أهم نقطة! نمنع التوجيه لالتقاط الكوكيز من كود 302
+                    allowRedirects = false
                 )
 
-                // استخراج الرابط الذي كان يريد السيرفر توجيهنا إليه
                 val location = postResp.headers["location"] ?: postResp.headers["Location"] ?: ""
 
-                // إذا كان الرد 302 والرابط لا يحتوي على login، فهذا يعني نجاح الدخول
                 if (postResp.code == 302 && !location.contains("login")) {
-                    // دمج الكوكيز الأولية مع كوكيز الجلسة الموثقة (session)
                     sessionCookies = initialCookies + postResp.cookies
                     Log.d("Asia2Tv", "تم تسجيل الدخول بنجاح! الكوكيز: $sessionCookies")
                 } else {
-                    Log.e("Asia2Tv", "فشل الدخول. Code: ${postResp.code}, Location: $location")
-                    // في حال الفشل نستخدم الكوكيز الأولية لكي لا تنهار الإضافة
                     sessionCookies = initialCookies
                 }
             } catch (e: Exception) {
@@ -106,16 +95,20 @@ class Asia2Tv : MainAPI() {
         )
     }
 
-    // الكود الخاص بك حرفياً بدون أي تغيير
     private fun Element.toSearchResponse(): SearchResponse? {
         val mainLink = this.selectFirst("a[data-type]") ?: this.selectFirst("a") ?: return null
         val href = fixUrlNull(mainLink.attr("href")) ?: return null
         
-        if (href == "#" || (!href.contains("/serie/") && !href.contains("/movie/"))) return null
+        // تم إضافة السماح بروابط الحلقات (/episode/) لكي يظهر المحتوى في قسم الحلقات الجديدة
+        if (href == "#" || (!href.contains("/serie/") && !href.contains("/movie/") && !href.contains("/episode/"))) return null
 
-        val title = mainLink.selectFirst("h3")?.text()?.trim() 
+        val baseTitle = mainLink.selectFirst("h3")?.text()?.trim() 
             ?: mainLink.selectFirst("img")?.attr("alt")?.trim() ?: "بدون عنوان"
             
+        // استخراج رقم الحلقة من البادج ودمجه مع العنوان لكي يظهر بوضوح
+        val badge = this.selectFirst(".tw-badge")?.text()?.trim()
+        val title = if (!badge.isNullOrBlank() && href.contains("/episode/")) "$baseTitle ($badge)" else baseTitle
+
         val imgElement = mainLink.selectFirst("img")
         val posterUrl = fixUrlNull(imgElement?.attr("data-src")?.ifBlank { imgElement.attr("src") })
         
@@ -128,13 +121,13 @@ class Asia2Tv : MainAPI() {
         }
     }
 
+    // تم إزالة قسم الأفلام
     override val mainPage = mainPageOf(
         "/newepisode" to "الحلقات الجديدة",
         "/status/live" to "يبث حاليا",
         "/status/coming-soon" to "الأعمال القادمة",
         "/status/complete" to "أعمال مكتملة",
-        "/series" to "المسلسلات",
-        "/movies" to "الأفلام"
+        "/series" to "المسلسلات"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -164,13 +157,46 @@ class Asia2Tv : MainAPI() {
         val document = Jsoup.parse(response.text)
 
         val title = document.selectFirst("h1")?.text()?.trim() ?: "No Title"
-        val plot = document.selectFirst("h3:contains(القصة) + p")?.text()?.trim()
+        val plotRaw = document.selectFirst("h3:contains(القصة) + p")?.text()?.trim() ?: ""
         val posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
         val year = document.selectFirst("span:contains(سنة العرض:) + a")?.text()?.toIntOrNull()
         val tags = document.select("div.box-tags a").map { it.text().trim() }
         
         val statusBadge = document.selectFirst(".serie_status_pro span, span:contains(أعمال مكتملة), span:contains(يبث حاليا)")?.text() ?: ""
         val status = if (statusBadge.contains("مكتملة")) ShowStatus.Completed else ShowStatus.Ongoing
+
+        // استخراج بيانات الممثلين
+        val actorsList = document.select("div.flex.flex-wrap.gap-3 a[href*=/artist/]").mapNotNull {
+            val name = it.selectFirst("span")?.text()?.trim() ?: return@mapNotNull null
+            val image = fixUrlNull(it.selectFirst("img")?.attr("data-src")?.ifBlank { it.selectFirst("img")?.attr("src") })
+            Actor(name, image)
+        }
+
+        // استخراج المعلومات الإضافية (البلد، عدد الحلقات، موعد البث)
+        var country = ""
+        var epsCount = ""
+        var airDate = ""
+
+        document.select("div.grid.grid-cols-1.gap-2 div.flex.items-center").forEach { row ->
+            val text = row.text()
+            if (text.contains("البلد المنتج:")) country = text.replace("البلد المنتج:", "").trim()
+            if (text.contains("عدد الحلقات:")) epsCount = text.replace("عدد الحلقات:", "").trim()
+            if (text.contains("موعد البث:")) airDate = text.replace("موعد البث:", "").trim()
+        }
+
+        val extraInfoList = mutableListOf<String>()
+        if (country.isNotBlank()) extraInfoList.add("البلد المنتج: $country")
+        if (epsCount.isNotBlank()) extraInfoList.add("عدد الحلقات: $epsCount")
+        if (airDate.isNotBlank()) extraInfoList.add("موعد البث: $airDate")
+
+        val extraInfo = extraInfoList.joinToString(" | ")
+
+        // دمج القصة مع المعلومات الإضافية
+        val finalPlot = if (extraInfo.isNotBlank()) {
+            if (plotRaw.isBlank()) extraInfo else "$plotRaw\n\n$extraInfo"
+        } else {
+            plotRaw
+        }
 
         val episodes = mutableListOf<Episode>()
         val seenUrls = HashSet<String>()
@@ -228,16 +254,33 @@ class Asia2Tv : MainAPI() {
             }
         }
 
+        // في حال كان الرابط لحلقة مفردة تم الضغط عليها من قسم "الحلقات الجديدة"
+        if (episodes.isEmpty() && url.contains("/episode/")) {
+            episodes.add(newEpisode(url) {
+                this.name = title
+                this.episode = title.replace(Regex("[^0-9]"), "").toIntOrNull()
+            })
+        }
+
         episodes.reverse()
 
         val isMovie = url.contains("/movie/")
         return if (isMovie) {
             newMovieLoadResponse(title, url, TvType.Movie, url) {
-                this.posterUrl = posterUrl; this.year = year; this.plot = plot; this.tags = tags
+                this.posterUrl = posterUrl
+                this.year = year
+                this.plot = finalPlot
+                this.tags = tags
+                this.actors = actorsList
             }
         } else {
             newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
-                this.posterUrl = posterUrl; this.year = year; this.plot = plot; this.tags = tags; this.showStatus = status
+                this.posterUrl = posterUrl
+                this.year = year
+                this.plot = finalPlot
+                this.tags = tags
+                this.showStatus = status
+                this.actors = actorsList
             }
         }
     }
