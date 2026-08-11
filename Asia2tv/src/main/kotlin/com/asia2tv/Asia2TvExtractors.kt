@@ -20,7 +20,7 @@ private fun findUrlInUnpackedJs(unpackedJs: String): String? {
     return null
 }
 
-// 1. مستخرج Vidmoly (تم تصحيح الخطأ هنا)
+// 1. مستخرج Vidmoly (يعمل بنجاح)
 class VidmolyAsia : ExtractorApi() {
     override var name = "Vidmoly"
     override var mainUrl = "vidmoly.net"
@@ -42,7 +42,7 @@ class VidmolyAsia : ExtractorApi() {
                         type = ExtractorLinkType.M3U8
                     ) {
                         this.referer = response.url
-                        this.quality = Qualities.P1080.value
+                        this.quality = Qualities.P720.value
                     }
                 )
             }
@@ -53,28 +53,53 @@ class VidmolyAsia : ExtractorApi() {
     }
 }
 
-// 2. مستخرج StreamHG
+// 2. مستخرج StreamHG (تم التحديث للتأقلم مع الدومينات العشوائية والـ Referer)
 class StreamHG : ExtractorApi() {
-    override var name = "Hgcloud"
-    override var mainUrl = "hglink.to"
+    override var name = "StreamHG"
+    override var mainUrl = "hglink.to" 
     override val requiresReferer = true
-    private val potentialHosts = listOf("https://hglink.to", "https://hglink.to", "https://hglink.to")
+    
+    // دومينات احتياطية في حال فشل جلب الرابط من التوجيه
+    private val knownHosts = listOf("https://vibuxer.com", "https://hanerix.com", "https://audinifer.com")
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val videoId = url.substringAfterLast("/")
         if (videoId.isBlank()) return null
+        
+        var actualUrl = url
+        val reqReferer = "https://hglink.to/" // الـ referer المطلوب دائماً للسيرفرات الوسيطة
 
-        for (host in potentialHosts) {
+        try {
+            // الخطوة 1: طلب الرابط الأصلي مع إيقاف التوجيه التلقائي لسحب الدومين الجديد
+            val initialResponse = app.get(url, allowRedirects = false)
+            val location = initialResponse.headers.entries.firstOrNull { it.key.equals("location", ignoreCase = true) }?.value
+            
+            if (initialResponse.code in 300..399 && !location.isNullOrBlank()) {
+                actualUrl = location
+            }
+        } catch (e: Exception) {
+            // صامت
+        }
+
+        // بناء قائمة الروابط للبحث: (الرابط المستخرج من التوجيه أولاً، ثم الاحتياطية)
+        val urlsToTry = mutableListOf(actualUrl)
+        knownHosts.forEach { host ->
+            val fallbackUrl = "$host/e/$videoId"
+            if (!urlsToTry.contains(fallbackUrl)) urlsToTry.add(fallbackUrl)
+        }
+
+        // الخطوة 2: الدخول للرابط مع الـ Referer الإجباري وفك التشفير
+        for (targetUrl in urlsToTry) {
             try {
-                val finalPageUrl = "$host/e/$videoId"
-                
-                val playerPageContent = app.get(finalPageUrl, referer = url, interceptor = cloudflareKiller).text
+                val response = app.get(targetUrl, referer = reqReferer, interceptor = cloudflareKiller)
+                val playerPageContent = response.text
+
                 if (playerPageContent.isBlank()) continue
 
                 val unpackedJs = JsUnpacker(playerPageContent).unpack() ?: continue
                 val videoLink = findUrlInUnpackedJs(unpackedJs) ?: continue
 
-                val headers = mapOf("Referer" to finalPageUrl, "User-Agent" to USER_AGENT)
+                val headers = mapOf("Referer" to targetUrl, "User-Agent" to USER_AGENT)
                 val finalUrlWithHeaders = "$videoLink#headers=${JSONObject(headers)}"
 
                 val isM3u8 = videoLink.contains(".m3u8")
@@ -87,12 +112,12 @@ class StreamHG : ExtractorApi() {
                         url = finalUrlWithHeaders,
                         type = linkType
                     ) {
-                        this.referer = finalPageUrl
+                        this.referer = targetUrl
                         this.quality = Qualities.Unknown.value
                     }
                 )
             } catch (e: Exception) {
-                // صامت
+                // استمرار في المحاولة للرابط التالي
             }
         }
         return null
