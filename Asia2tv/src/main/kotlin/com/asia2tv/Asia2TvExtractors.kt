@@ -20,7 +20,7 @@ private fun findUrlInUnpackedJs(unpackedJs: String): String? {
     return null
 }
 
-// 1. مستخرج Vidmoly (يعمل بنجاح)
+// 1. مستخرج Vidmoly
 class VidmolyAsia : ExtractorApi() {
     override var name = "Vidmoly"
     override var mainUrl = "vidmoly.net"
@@ -53,7 +53,7 @@ class VidmolyAsia : ExtractorApi() {
     }
 }
 
-// 2. مستخرج StreamHG (تم التحديث للتأقلم مع الدومينات العشوائية والـ Referer)
+// 2. مستخرج StreamHG (تم تصحيح الخطأ هنا)
 class StreamHG : ExtractorApi() {
     override var name = "StreamHG"
     override var mainUrl = "hglink.to" 
@@ -67,21 +67,21 @@ class StreamHG : ExtractorApi() {
         if (videoId.isBlank()) return null
         
         var actualUrl = url
-        val reqReferer = "https://hglink.to/" // الـ referer المطلوب دائماً للسيرفرات الوسيطة
+        val reqReferer = "https://hglink.to/"
 
         try {
             // الخطوة 1: طلب الرابط الأصلي مع إيقاف التوجيه التلقائي لسحب الدومين الجديد
             val initialResponse = app.get(url, allowRedirects = false)
-            val location = initialResponse.headers.entries.firstOrNull { it.key.equals("location", ignoreCase = true) }?.value
+            // استخراج الترويسة بشكل مباشر لتفادي خطأ البناء
+            val location = initialResponse.headers["location"] ?: initialResponse.headers["Location"] ?: ""
             
-            if (initialResponse.code in 300..399 && !location.isNullOrBlank()) {
+            if (initialResponse.code in 300..399 && location.isNotBlank()) {
                 actualUrl = location
             }
         } catch (e: Exception) {
             // صامت
         }
 
-        // بناء قائمة الروابط للبحث: (الرابط المستخرج من التوجيه أولاً، ثم الاحتياطية)
         val urlsToTry = mutableListOf(actualUrl)
         knownHosts.forEach { host ->
             val fallbackUrl = "$host/e/$videoId"
@@ -117,7 +117,7 @@ class StreamHG : ExtractorApi() {
                     }
                 )
             } catch (e: Exception) {
-                // استمرار في المحاولة للرابط التالي
+                // استمرار المحاولة
             }
         }
         return null
@@ -162,7 +162,7 @@ class Morencius : ExtractorApi() {
                     }
                 )
             } catch (e: Exception) {
-                // تجاهل الخطأ والمحاولة في النطاق التالي
+                // المحاولة في النطاق التالي
             }
         }
         return null
