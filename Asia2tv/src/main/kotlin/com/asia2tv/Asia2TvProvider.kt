@@ -317,3 +317,4 @@ class Asia2Tv : MainAPI() {
         }
         return true
     }
+}
