@@ -155,7 +155,16 @@ class Asia2Tv : MainAPI() {
 
         val title = document.selectFirst("h1")?.text()?.trim() ?: "No Title"
         val plotRaw = document.selectFirst("h3:contains(القصة) + p")?.text()?.trim() ?: ""
-        val posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
+        
+        // تعديل جلب البوستر لصفحات الحلقات (الأولوية لصورة الكلاس المحدد)
+        val episodeImageElement = document.selectFirst("img.w-full.h-full.object-cover")
+        var posterUrl = fixUrlNull(episodeImageElement?.attr("data-src")?.ifBlank { episodeImageElement.attr("src") })
+        
+        // إذا لم نجد صورة الحلقة، نعود للبحث في Meta Tags (الخاصة بالمسلسلات)
+        if (posterUrl.isNullOrBlank()) {
+            posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
+        }
+
         val year = document.selectFirst("span:contains(سنة العرض:) + a")?.text()?.toIntOrNull()
         val tags = document.select("div.box-tags a").map { it.text().trim() }
         
@@ -179,15 +188,20 @@ class Asia2Tv : MainAPI() {
             if (text.contains("موعد البث:")) airDate = text.replace("موعد البث:", "").trim()
         }
 
-        val extraInfoList = mutableListOf<String>()
-        // استخدام <b> لجعل العناوين بخط خشن
-        if (country.isNotBlank()) extraInfoList.add("<b>البلد المنتج:</b> $country")
-        if (epsCount.isNotBlank()) extraInfoList.add("<b>عدد الحلقات:</b> $epsCount")
-        if (airDate.isNotBlank()) extraInfoList.add("<b>موعد البث:</b> $airDate")
+        // تنسيق السطر الأول (البلد + عدد الحلقات)
+        val row1List = mutableListOf<String>()
+        if (country.isNotBlank()) row1List.add("<b>البلد المنتج:</b> $country")
+        if (epsCount.isNotBlank()) row1List.add("<b>عدد الحلقات:</b> $epsCount")
+        
+        var extraInfo = row1List.joinToString(" | ")
 
-        val extraInfo = extraInfoList.joinToString(" | ")
+        // إضافة موعد البث في سطر جديد
+        if (airDate.isNotBlank()) {
+            if (extraInfo.isNotBlank()) extraInfo += "<br>" // سطر جديد
+            extraInfo += "<b>موعد البث:</b> $airDate"
+        }
 
-        // استخدام <br><br> بدلاً من \n\n لضمان ظهور السطر الفارغ
+        // دمج القصة مع المعلومات
         val finalPlot = if (extraInfo.isNotBlank()) {
             if (plotRaw.isBlank()) extraInfo else "$plotRaw<br><br>$extraInfo"
         } else {
@@ -280,7 +294,7 @@ class Asia2Tv : MainAPI() {
         }
     }
 
-    override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+        override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         performSilentLogin()
         
         val response = app.get(data, headers = myHeaders, cookies = sessionCookies)
@@ -333,5 +347,5 @@ class Asia2Tv : MainAPI() {
             }
         }
         return true
-    }
-} 
+        }
+}
