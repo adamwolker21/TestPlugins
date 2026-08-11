@@ -20,7 +20,7 @@ private fun findUrlInUnpackedJs(unpackedJs: String): String? {
     return null
 }
 
-// 1. مستخرج Vidmoly (الجديد)
+// 1. مستخرج Vidmoly (تم تصحيح الخطأ هنا)
 class VidmolyAsia : ExtractorApi() {
     override var name = "Vidmoly"
     override var mainUrl = "vidmoly.net"
@@ -28,11 +28,9 @@ class VidmolyAsia : ExtractorApi() {
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         try {
-            // جلب محتوى الصفحة، تطبيق Cloudstream سيقوم بتتبع الـ 301 تلقائياً
             val response = app.get(url, referer = referer ?: "https://asia2tv.com/")
             val document = response.text
 
-            // استخراج الرابط من sources: [{ file: 'URL' }]
             val m3u8Url = Regex("""sources:\s*\[\s*\{\s*file:\s*['"](http[^'"]+\.m3u8[^'"]*)['"]""").find(document)?.groupValues?.get(1)
             
             if (!m3u8Url.isNullOrBlank()) {
@@ -41,10 +39,11 @@ class VidmolyAsia : ExtractorApi() {
                         source = this.name,
                         name = this.name,
                         url = m3u8Url,
-                        referer = response.url, // الرابط النهائي بعد التحويل
-                        quality = Qualities.P720.value,
                         type = ExtractorLinkType.M3U8
-                    )
+                    ) {
+                        this.referer = response.url
+                        this.quality = Qualities.P720.value
+                    }
                 )
             }
         } catch (e: Exception) {
@@ -54,7 +53,7 @@ class VidmolyAsia : ExtractorApi() {
     }
 }
 
-// 2. مستخرج StreamHG (المحدث للتعامل مع الـ Redirects)
+// 2. مستخرج StreamHG
 class StreamHG : ExtractorApi() {
     override var name = "StreamHG"
     override var mainUrl = "hglink.to" 
@@ -62,9 +61,8 @@ class StreamHG : ExtractorApi() {
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         try {
-            // app.get ستقوم بالانتقال التلقائي من hglink.to إلى hanerix.com أو غيره
             val response = app.get(url, referer = referer ?: url, interceptor = cloudflareKiller)
-            val finalUrl = response.url // الرابط النهائي بعد إعادة التوجيه
+            val finalUrl = response.url
             val playerPageContent = response.text
 
             if (playerPageContent.isBlank()) return null
@@ -96,7 +94,7 @@ class StreamHG : ExtractorApi() {
     }
 }
 
-// بقية المستخرجات السابقة
+// 3. مستخرج Morencius
 class Morencius : ExtractorApi() {
     override var name = "Morencius"
     override var mainUrl = "morencius.com" 
@@ -141,6 +139,7 @@ class Morencius : ExtractorApi() {
     }
 }
 
+// 4. مستخرج MoonServer
 class MoonServer : ExtractorApi() {
     override var name = "MoonServer"
     override var mainUrl = "bysefujedu.com"
@@ -174,6 +173,7 @@ class MoonServer : ExtractorApi() {
     }
 }
 
+// 5. مستخرج LuluServer
 class LuluServer : ExtractorApi() {
     override var name = "LuluServer"
     override var mainUrl = "luluvid.com"
