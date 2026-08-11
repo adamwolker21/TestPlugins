@@ -162,7 +162,6 @@ class Asia2Tv : MainAPI() {
         val statusBadge = document.selectFirst(".serie_status_pro span, span:contains(أعمال مكتملة), span:contains(يبث حاليا)")?.text() ?: ""
         val status = if (statusBadge.contains("مكتملة")) ShowStatus.Completed else ShowStatus.Ongoing
 
-        // تم تصحيح خطأ البناء هنا باستخدام ActorData بدلاً من Actor مباشرة
         val actorsList = document.select("div.flex.flex-wrap.gap-3 a[href*=/artist/]").mapNotNull {
             val name = it.selectFirst("span")?.text()?.trim() ?: return@mapNotNull null
             val image = fixUrlNull(it.selectFirst("img")?.attr("data-src")?.ifBlank { it.selectFirst("img")?.attr("src") })
@@ -181,14 +180,16 @@ class Asia2Tv : MainAPI() {
         }
 
         val extraInfoList = mutableListOf<String>()
-        if (country.isNotBlank()) extraInfoList.add("البلد المنتج: $country")
-        if (epsCount.isNotBlank()) extraInfoList.add("عدد الحلقات: $epsCount")
-        if (airDate.isNotBlank()) extraInfoList.add("موعد البث: $airDate")
+        // استخدام <b> لجعل العناوين بخط خشن
+        if (country.isNotBlank()) extraInfoList.add("<b>البلد المنتج:</b> $country")
+        if (epsCount.isNotBlank()) extraInfoList.add("<b>عدد الحلقات:</b> $epsCount")
+        if (airDate.isNotBlank()) extraInfoList.add("<b>موعد البث:</b> $airDate")
 
         val extraInfo = extraInfoList.joinToString(" | ")
 
+        // استخدام <br><br> بدلاً من \n\n لضمان ظهور السطر الفارغ
         val finalPlot = if (extraInfo.isNotBlank()) {
-            if (plotRaw.isBlank()) extraInfo else "$plotRaw\n\n$extraInfo"
+            if (plotRaw.isBlank()) extraInfo else "$plotRaw<br><br>$extraInfo"
         } else {
             plotRaw
         }
