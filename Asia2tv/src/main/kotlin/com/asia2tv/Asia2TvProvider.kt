@@ -156,14 +156,10 @@ class Asia2Tv : MainAPI() {
         val title = document.selectFirst("h1")?.text()?.trim() ?: "No Title"
         val plotRaw = document.selectFirst("h3:contains(القصة) + p")?.text()?.trim() ?: ""
         
-        // تعديل جلب البوستر لصفحات الحلقات (الأولوية لصورة الكلاس المحدد)
-        val episodeImageElement = document.selectFirst("img.w-full.h-full.object-cover")
-        var posterUrl = fixUrlNull(episodeImageElement?.attr("data-src")?.ifBlank { episodeImageElement.attr("src") })
-        
-        // إذا لم نجد صورة الحلقة، نعود للبحث في Meta Tags (الخاصة بالمسلسلات)
-        if (posterUrl.isNullOrBlank()) {
-            posterUrl = fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
-        }
+        // استهداف البوستر الخاص بالحلقات عبر الكلاس sticky top-24 أولاً، ثم العودة للـ Meta كخيار بديل
+        val specificImageElement = document.selectFirst("div.sticky.top-24 img")
+        val posterUrl = fixUrlNull(specificImageElement?.attr("data-src")?.ifBlank { specificImageElement.attr("src") }) 
+            ?: fixUrlNull(document.selectFirst("meta[property=og:image]")?.attr("content"))
 
         val year = document.selectFirst("span:contains(سنة العرض:) + a")?.text()?.toIntOrNull()
         val tags = document.select("div.box-tags a").map { it.text().trim() }
@@ -188,20 +184,17 @@ class Asia2Tv : MainAPI() {
             if (text.contains("موعد البث:")) airDate = text.replace("موعد البث:", "").trim()
         }
 
-        // تنسيق السطر الأول (البلد + عدد الحلقات)
         val row1List = mutableListOf<String>()
         if (country.isNotBlank()) row1List.add("<b>البلد المنتج:</b> $country")
         if (epsCount.isNotBlank()) row1List.add("<b>عدد الحلقات:</b> $epsCount")
         
         var extraInfo = row1List.joinToString(" | ")
 
-        // إضافة موعد البث في سطر جديد
         if (airDate.isNotBlank()) {
-            if (extraInfo.isNotBlank()) extraInfo += "<br>" // سطر جديد
+            if (extraInfo.isNotBlank()) extraInfo += "<br>"
             extraInfo += "<b>موعد البث:</b> $airDate"
         }
 
-        // دمج القصة مع المعلومات
         val finalPlot = if (extraInfo.isNotBlank()) {
             if (plotRaw.isBlank()) extraInfo else "$plotRaw<br><br>$extraInfo"
         } else {
