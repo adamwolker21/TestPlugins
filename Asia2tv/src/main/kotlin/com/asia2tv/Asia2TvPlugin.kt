@@ -7,13 +7,13 @@ import com.lagradost.cloudstream3.plugins.Plugin
 @CloudstreamPlugin
 class Asia2TvPlugin : Plugin() {
     override fun load(context: Context) {
-        // تسجيل المزود الأساسي
         registerMainAPI(Asia2Tv())
         
-        // تسجيل المستخرجات (Extractors) الخاصة بالسيرفرات
+        // تسجيل المستخرجات
         registerExtractorAPI(Morencius())
         registerExtractorAPI(StreamHG())
         registerExtractorAPI(MoonServer())
         registerExtractorAPI(LuluServer())
+        registerExtractorAPI(VidmolyAsia()) // تمت إضافته هنا
     }
 }
