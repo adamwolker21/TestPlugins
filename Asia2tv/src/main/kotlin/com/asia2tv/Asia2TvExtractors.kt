@@ -67,9 +67,9 @@ class Morencius : ExtractorApi() {
 
 class StreamHG : ExtractorApi() {
     override var name = "StreamHG"
-    override var mainUrl = "hanerix.com" // تم التعديل ليتوافق مع رابط asia2tv الحالي
+    override var mainUrl = "hglink.to" // تم التعديل ليتوافق مع رابط asia2tv الحالي
     override val requiresReferer = true
-    private val potentialHosts = listOf("https://hanerix.com", "https://hgcloud.to", "https://vibuxer.com")
+    private val potentialHosts = listOf("https://hanerix.com", "https://audinifer.com", "https://vibuxer.com")
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val videoId = url.substringAfterLast("/")
