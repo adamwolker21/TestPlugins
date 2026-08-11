@@ -42,7 +42,7 @@ class VidmolyAsia : ExtractorApi() {
                         type = ExtractorLinkType.M3U8
                     ) {
                         this.referer = response.url
-                        this.quality = Qualities.P720.value
+                        this.quality = Qualities.Unknown.value
                     }
                 )
             }
