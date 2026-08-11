@@ -42,7 +42,7 @@ class VidmolyAsia : ExtractorApi() {
                         type = ExtractorLinkType.M3U8
                     ) {
                         this.referer = response.url
-                        this.quality = Qualities.P720.value
+                        this.quality = Qualities.Unknown.value
                     }
                 )
             }
@@ -55,40 +55,45 @@ class VidmolyAsia : ExtractorApi() {
 
 // 2. مستخرج StreamHG
 class StreamHG : ExtractorApi() {
-    override var name = "StreamHG"
-    override var mainUrl = "hglink.to" 
+    override var name = "Hgcloud"
+    override var mainUrl = "hglink.to"
     override val requiresReferer = true
+    private val potentialHosts = listOf("https://hglink.to", "https://audinifer.com", "https://vibuxer.com")
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        try {
-            val response = app.get(url, referer = referer ?: url, interceptor = cloudflareKiller)
-            val finalUrl = response.url
-            val playerPageContent = response.text
+        val videoId = url.substringAfterLast("/")
+        if (videoId.isBlank()) return null
 
-            if (playerPageContent.isBlank()) return null
+        for (host in potentialHosts) {
+            try {
+                val finalPageUrl = "$host/e/$videoId"
+                
+                val playerPageContent = app.get(finalPageUrl, referer = url, interceptor = cloudflareKiller).text
+                if (playerPageContent.isBlank()) continue
 
-            val unpackedJs = JsUnpacker(playerPageContent).unpack() ?: return null
-            val videoLink = findUrlInUnpackedJs(unpackedJs) ?: return null
+                val unpackedJs = JsUnpacker(playerPageContent).unpack() ?: continue
+                val videoLink = findUrlInUnpackedJs(unpackedJs) ?: continue
 
-            val headers = mapOf("Referer" to finalUrl, "User-Agent" to USER_AGENT)
-            val finalUrlWithHeaders = "$videoLink#headers=${JSONObject(headers)}"
+                val headers = mapOf("Referer" to finalPageUrl, "User-Agent" to USER_AGENT)
+                val finalUrlWithHeaders = "$videoLink#headers=${JSONObject(headers)}"
 
-            val isM3u8 = videoLink.contains(".m3u8")
-            val linkType = if (isM3u8) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
+                val isM3u8 = videoLink.contains(".m3u8")
+                val linkType = if (isM3u8) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
 
-            return listOf(
-                newExtractorLink(
-                    source = this.name,
-                    name = this.name,
-                    url = finalUrlWithHeaders,
-                    type = linkType
-                ) {
-                    this.referer = finalUrl
-                    this.quality = Qualities.Unknown.value
-                }
-            )
-        } catch (e: Exception) {
-            e.printStackTrace()
+                return listOf(
+                    newExtractorLink(
+                        source = this.name,
+                        name = this.name,
+                        url = finalUrlWithHeaders,
+                        type = linkType
+                    ) {
+                        this.referer = finalPageUrl
+                        this.quality = Qualities.Unknown.value
+                    }
+                )
+            } catch (e: Exception) {
+                // صامت
+            }
         }
         return null
     }
