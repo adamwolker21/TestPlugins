@@ -280,7 +280,7 @@ class Asia2Tv : MainAPI() {
         }
     }
 
-        override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+    override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         performSilentLogin()
         
         val response = app.get(data, headers = myHeaders, cookies = sessionCookies)
@@ -288,7 +288,6 @@ class Asia2Tv : MainAPI() {
         
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
 
-        // التغيير هنا: تحديث محدد CSS لجلب روابط السيرفرات المجانية والـ VIP
         document.select("li.getplay a[data-code]").amap { server ->
             try {
                 val code = server.attr("data-code").ifBlank { return@amap }
@@ -307,15 +306,27 @@ class Asia2Tv : MainAPI() {
                 if (ajaxResponse?.status == true) {
                     val iframeSrc = Jsoup.parse(ajaxResponse.codeplay).selectFirst("iframe")?.attr("src")
                     if (!iframeSrc.isNullOrBlank()) {
-        var finalUrl = fixUrl(iframeSrc)
-        
-        // تحايل لتشغيل سيرفر Tape عبر مستخرج StreamTape المدمج في التطبيق
-        if (finalUrl.contains("tapewithadblock.org")) {
-            finalUrl = finalUrl.replace("tapewithadblock.org", "streamtape.com")
-        }
-        
-        loadExtractor(finalUrl, data, subtitleCallback, callback)
-    }
+                        var finalUrl = fixUrl(iframeSrc)
+                        
+                        // 1. توحيد سيرفر Tape
+                        if (finalUrl.contains("tapewithadblock.org")) {
+                            finalUrl = finalUrl.replace("tapewithadblock.org", "streamtape.com")
+                        }
+                        
+                        // 2. توحيد سيرفر Vidmoly (في حال كان vidmoly.biz نجعله vidmoly.net ليطابق المستخرج الخاص بنا)
+                        if (finalUrl.contains("vidmoly.")) {
+                            val id = finalUrl.substringAfterLast("/")
+                            finalUrl = "https://vidmoly.net/$id"
+                        }
+
+                        // 3. توحيد سيرفر StreamHG (الذي يتحول لدومينات عشوائية)
+                        if (finalUrl.contains("hanerix.com") || finalUrl.contains("audinifer.com") || finalUrl.contains("vibuxer.com") || finalUrl.contains("hglink.to")) {
+                            val id = finalUrl.substringAfterLast("/")
+                            finalUrl = "https://hglink.to/e/$id" // سيطابق مستخرج StreamHG
+                        }
+                        
+                        loadExtractor(finalUrl, data, subtitleCallback, callback)
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("Asia2Tv LoadLinks", "Error loading server: ${e.message}")
