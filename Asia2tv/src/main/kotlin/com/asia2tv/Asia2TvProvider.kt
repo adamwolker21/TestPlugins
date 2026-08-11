@@ -307,9 +307,15 @@ class Asia2Tv : MainAPI() {
                 if (ajaxResponse?.status == true) {
                     val iframeSrc = Jsoup.parse(ajaxResponse.codeplay).selectFirst("iframe")?.attr("src")
                     if (!iframeSrc.isNullOrBlank()) {
-                        // استخدام fixUrl لضمان عمل الرابط في حال كان يبدأ بـ // 
-                        loadExtractor(fixUrl(iframeSrc), data, subtitleCallback, callback)
-                    }
+        var finalUrl = fixUrl(iframeSrc)
+        
+        // تحايل لتشغيل سيرفر Tape عبر مستخرج StreamTape المدمج في التطبيق
+        if (finalUrl.contains("tapewithadblock.org")) {
+            finalUrl = finalUrl.replace("tapewithadblock.org", "streamtape.com")
+        }
+        
+        loadExtractor(finalUrl, data, subtitleCallback, callback)
+    }
                 }
             } catch (e: Exception) {
                 Log.e("Asia2Tv LoadLinks", "Error loading server: ${e.message}")
@@ -317,4 +323,4 @@ class Asia2Tv : MainAPI() {
         }
         return true
     }
-}
+} 
