@@ -280,7 +280,7 @@ class Asia2Tv : MainAPI() {
         }
     }
 
-    override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
+        override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         performSilentLogin()
         
         val response = app.get(data, headers = myHeaders, cookies = sessionCookies)
@@ -288,7 +288,8 @@ class Asia2Tv : MainAPI() {
         
         val csrfToken = document.selectFirst("meta[name=csrf-token]")?.attr("content") ?: ""
 
-        document.select("ul.dropdown-menu li a").amap { server ->
+        // التغيير هنا: تحديث محدد CSS لجلب روابط السيرفرات المجانية والـ VIP
+        document.select("li.getplay a[data-code]").amap { server ->
             try {
                 val code = server.attr("data-code").ifBlank { return@amap }
                 val postData = "action=iframe_server&code=$code"
@@ -300,18 +301,19 @@ class Asia2Tv : MainAPI() {
                     cookies = sessionCookies,
                     requestBody = requestBody
                 ).text
+                
                 val ajaxResponse = tryParseJson<PlayerAjaxResponse>(responseText)
 
                 if (ajaxResponse?.status == true) {
                     val iframeSrc = Jsoup.parse(ajaxResponse.codeplay).selectFirst("iframe")?.attr("src")
                     if (!iframeSrc.isNullOrBlank()) {
-                        loadExtractor(iframeSrc, data, subtitleCallback, callback)
+                        // استخدام fixUrl لضمان عمل الرابط في حال كان يبدأ بـ // 
+                        loadExtractor(fixUrl(iframeSrc), data, subtitleCallback, callback)
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("Asia2Tv LoadLinks", "Error loading server: ${e.message}")
             }
         }
         return true
     }
-}
